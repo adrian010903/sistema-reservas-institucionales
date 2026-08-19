@@ -26,11 +26,13 @@ public class ReservaService {
     private final ReservaRepository reservaRepository;
     private final UsuarioRepository usuarioRepository;
     private final EspacioRepository espacioRepository;
+    private final NotificacionService notificacionService;
 
-    public ReservaService(ReservaRepository reservaRepository, UsuarioRepository usuarioRepository, EspacioRepository espacioRepository) {
+    public ReservaService(ReservaRepository reservaRepository, UsuarioRepository usuarioRepository, EspacioRepository espacioRepository, NotificacionService notificacionService) {
         this.reservaRepository = reservaRepository;
         this.usuarioRepository = usuarioRepository;
         this.espacioRepository = espacioRepository;
+        this.notificacionService = notificacionService;
     }
 
     @Transactional
@@ -48,7 +50,10 @@ public class ReservaService {
         Reserva reserva = new Reserva();
         reserva.setFecha(request.fecha()); reserva.setHoraInicio(request.horaInicio()); reserva.setHoraFin(request.horaFin());
         reserva.setCantidadPersonas(request.cantidadPersonas()); reserva.setUsuario(usuario); reserva.setEspacio(espacio);
-        return ReservaResponse.desde(reservaRepository.save(reserva));
+        Reserva guardada = reservaRepository.save(reserva);
+        notificacionService.crear(usuario, cr.or.guiasyscouts.reservas.model.TipoNotificacion.RESERVA, "Reserva creada", "Tu reserva #" + guardada.getId() + " para " + espacio.getNombre() + " fue registrada.");
+        notificacionService.administradores(cr.or.guiasyscouts.reservas.model.TipoNotificacion.RESERVA, "Nueva reserva", "Se registró la reserva #" + guardada.getId() + " para " + espacio.getNombre() + ".");
+        return ReservaResponse.desde(guardada);
     }
 
     @Transactional
@@ -64,7 +69,10 @@ public class ReservaService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "El espacio ya esta reservado en ese horario");
         reserva.setFecha(request.fecha()); reserva.setHoraInicio(request.horaInicio()); reserva.setHoraFin(request.horaFin());
         reserva.setCantidadPersonas(request.cantidadPersonas()); reserva.setEspacio(espacio); reserva.setEstado(EstadoReserva.PENDIENTE);
-        return ReservaResponse.desde(reservaRepository.save(reserva));
+        Reserva guardada = reservaRepository.save(reserva);
+        notificacionService.crear(guardada.getUsuario(), cr.or.guiasyscouts.reservas.model.TipoNotificacion.RESERVA, "Reserva modificada", "La reserva #" + guardada.getId() + " fue modificada y está pendiente de revisión.");
+        notificacionService.administradores(cr.or.guiasyscouts.reservas.model.TipoNotificacion.RESERVA, "Reserva modificada", "La reserva #" + guardada.getId() + " requiere revisión.");
+        return ReservaResponse.desde(guardada);
     }
 
     @Transactional
@@ -73,7 +81,10 @@ public class ReservaService {
         if (!estadosOcupados().contains(reserva.getEstado()))
             throw new ResponseStatusException(HttpStatus.CONFLICT, "La reserva ya no se puede cancelar");
         reserva.setEstado(EstadoReserva.CANCELADA);
-        return ReservaResponse.desde(reservaRepository.save(reserva));
+        Reserva guardada = reservaRepository.save(reserva);
+        notificacionService.crear(guardada.getUsuario(), cr.or.guiasyscouts.reservas.model.TipoNotificacion.RESERVA, "Reserva cancelada", "La reserva #" + guardada.getId() + " fue cancelada.");
+        notificacionService.administradores(cr.or.guiasyscouts.reservas.model.TipoNotificacion.RESERVA, "Reserva cancelada", "El usuario canceló la reserva #" + guardada.getId() + ".");
+        return ReservaResponse.desde(guardada);
     }
 
     @Transactional(readOnly = true)
@@ -115,7 +126,10 @@ public class ReservaService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Solo se pueden revisar reservas pendientes");
         }
         reserva.setEstado(nuevoEstado);
-        return ReservaResponse.desde(reservaRepository.save(reserva));
+        Reserva guardada = reservaRepository.save(reserva);
+        String accion = nuevoEstado == EstadoReserva.APROBADA ? "aprobada" : "rechazada";
+        notificacionService.crear(guardada.getUsuario(), cr.or.guiasyscouts.reservas.model.TipoNotificacion.RESERVA, "Reserva " + accion, "Tu reserva #" + guardada.getId() + " fue " + accion + ".");
+        return ReservaResponse.desde(guardada);
     }
 
     private Reserva obtenerPropia(String correo, Long id) {

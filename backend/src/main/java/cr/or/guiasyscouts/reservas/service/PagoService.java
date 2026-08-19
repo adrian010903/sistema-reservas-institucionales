@@ -21,10 +21,12 @@ public class PagoService {
     private static final BigDecimal TARIFA_DEMO = new BigDecimal("25000");
     private final PagoRepository pagoRepository;
     private final ReservaRepository reservaRepository;
+    private final NotificacionService notificacionService;
 
-    public PagoService(PagoRepository pagoRepository, ReservaRepository reservaRepository) {
+    public PagoService(PagoRepository pagoRepository, ReservaRepository reservaRepository, NotificacionService notificacionService) {
         this.pagoRepository = pagoRepository;
         this.reservaRepository = reservaRepository;
+        this.notificacionService = notificacionService;
     }
 
     @Transactional
@@ -50,7 +52,10 @@ public class PagoService {
         pago.setReferencia("CRC-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         if (estado == EstadoPago.APROBADO) reserva.setEstado(EstadoReserva.CONFIRMADA);
         reservaRepository.save(reserva);
-        return PagoResponse.desde(pagoRepository.save(pago));
+        Pago guardado = pagoRepository.save(pago);
+        notificacionService.crear(reserva.getUsuario(), TipoNotificacion.PAGO, "Pago registrado", "El pago " + guardado.getReferencia() + " quedó " + estado.name().toLowerCase().replace('_', ' ') + ".");
+        if (estado == EstadoPago.PENDIENTE_VERIFICACION) notificacionService.administradores(TipoNotificacion.PAGO, "Pago pendiente", "El pago " + guardado.getReferencia() + " requiere verificación.");
+        return PagoResponse.desde(guardado);
     }
 
     @Transactional(readOnly = true)
@@ -73,6 +78,8 @@ public class PagoService {
         pago.setEstado(estado);
         pago.getReserva().setEstado(estado == EstadoPago.APROBADO ? EstadoReserva.CONFIRMADA : EstadoReserva.PENDIENTE);
         reservaRepository.save(pago.getReserva());
-        return PagoResponse.desde(pagoRepository.save(pago));
+        Pago guardado = pagoRepository.save(pago);
+        notificacionService.crear(pago.getReserva().getUsuario(), TipoNotificacion.PAGO, estado == EstadoPago.APROBADO ? "Pago aprobado" : "Pago rechazado", "El pago " + pago.getReferencia() + " fue " + estado.name().toLowerCase() + ".");
+        return PagoResponse.desde(guardado);
     }
 }

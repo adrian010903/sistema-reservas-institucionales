@@ -38,6 +38,7 @@ El backend utiliza `http://localhost:8081/api/v1` como URL base. El puerto puede
 - Control de roles `USUARIO`, `ADMIN` y `SUPERADMIN`.
 - Registro, edición del perfil y cambio de contraseña.
 - Recuperación local mediante token temporal de un solo uso.
+- Centro de notificaciones internas para reservas y pagos.
 
 El avance detallado de los requerimientos se encuentra en [docs/ESTADO_REQUERIMIENTOS.md](docs/ESTADO_REQUERIMIENTOS.md).
 

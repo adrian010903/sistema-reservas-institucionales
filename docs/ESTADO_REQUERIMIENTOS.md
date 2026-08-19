@@ -26,7 +26,7 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 | RF-20 | Gestionar reservas | Implementado | Aprobar y rechazar solicitudes pendientes |
 | RF-21 | Generar reportes | Pendiente | Falta módulo y exportación |
 | RF-22 | Gestionar pagos | Implementado (mock) | Validación administrativa de pagos pendientes |
-| RF-23 | Enviar notificaciones | Pendiente | Falta persistencia y proveedor de correo |
+| RF-23 | Enviar notificaciones | Parcial | Centro interno persistente y avisos automáticos; falta proveedor de correo |
 | RF-24 | Mostrar validaciones | Implementado | Mensajes del backend presentados en frontend |
 | RF-25 | Controlar permisos por rol | Implementado | Spring Security y controles visuales por rol |
 
