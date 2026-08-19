@@ -46,4 +46,4 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 1. Integrar correo para recuperación y notificaciones.
 2. Verificación visual final del comprobante y la bitácora con backend ejecutándose.
 3. Ampliar reportes con gráficos y PDF.
-4. Pruebas automatizadas de servicios y controladores.
+4. Ampliar las pruebas automatizadas existentes hacia controladores y seguridad HTTP.

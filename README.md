@@ -45,6 +45,10 @@ El backend utiliza `http://localhost:8081/api/v1` como URL base. El puerto puede
 
 El avance detallado de los requerimientos se encuentra en [docs/ESTADO_REQUERIMIENTOS.md](docs/ESTADO_REQUERIMIENTOS.md).
 
+## Pruebas
+
+El backend incluye pruebas unitarias de reservas y pagos, además de una prueba de arranque con H2 en memoria. Se ejecutan desde `backend` con `mvn test` o directamente desde IntelliJ IDEA. Las pruebas nunca utilizan la base MySQL local.
+
 > Los pagos con tarjeta son una simulación. El sistema no solicita ni almacena información bancaria real.
 
 ## Seguridad
