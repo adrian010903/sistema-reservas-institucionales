@@ -18,15 +18,17 @@ import java.util.UUID;
 
 @Service
 public class PagoService {
-    private static final BigDecimal TARIFA_DEMO = new BigDecimal("25000");
     private final PagoRepository pagoRepository;
     private final ReservaRepository reservaRepository;
     private final NotificacionService notificacionService;
+    private final TarifaService tarifaService;
 
-    public PagoService(PagoRepository pagoRepository, ReservaRepository reservaRepository, NotificacionService notificacionService) {
+    public PagoService(PagoRepository pagoRepository, ReservaRepository reservaRepository,
+                       NotificacionService notificacionService, TarifaService tarifaService) {
         this.pagoRepository = pagoRepository;
         this.reservaRepository = reservaRepository;
         this.notificacionService = notificacionService;
+        this.tarifaService = tarifaService;
     }
 
     @Transactional
@@ -42,7 +44,7 @@ public class PagoService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "La reserva no admite pagos");
 
         long minutos = Duration.between(reserva.getHoraInicio(), reserva.getHoraFin()).toMinutes();
-        BigDecimal monto = TARIFA_DEMO.multiply(BigDecimal.valueOf(minutos))
+        BigDecimal monto = tarifaService.tarifaHora().multiply(BigDecimal.valueOf(minutos))
                 .divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
         EstadoPago estado = request.metodo() == MetodoPago.TARJETA_MOCK
                 ? EstadoPago.APROBADO : EstadoPago.PENDIENTE_VERIFICACION;

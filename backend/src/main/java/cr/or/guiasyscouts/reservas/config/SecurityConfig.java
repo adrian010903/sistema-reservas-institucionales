@@ -33,7 +33,7 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/status", "/api/v1/auth/**", "/uploads/**").permitAll()
+                        .requestMatchers("/api/v1/status", "/api/v1/auth/**", "/api/v1/configuracion-publica", "/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/espacios").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/lugares").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/reservas/disponibilidad").permitAll()

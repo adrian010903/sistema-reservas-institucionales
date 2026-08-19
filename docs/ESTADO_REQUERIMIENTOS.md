@@ -38,6 +38,7 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 - Las reservas ocupan un horario mientras estén pendientes, aprobadas o confirmadas.
 - Una reserva cancelada libera automáticamente el intervalo.
 - Los pagos rechazados pueden intentarse nuevamente.
+- La tarifa demostrativa tiene una única fuente configurable en el backend y se publica al frontend en colones costarricenses.
 - Las operaciones administrativas requieren rol `ADMIN` o `SUPERADMIN`.
 - Las modificaciones sensibles de catálogo, usuarios, reservas y pagos dejan una entrada inmutable en la bitácora administrativa.
 

@@ -30,7 +30,8 @@ class PagoServiceTest {
 
     @BeforeEach
     void configurar() {
-        service = new PagoService(pagoRepository, reservaRepository, notificacionService);
+        service = new PagoService(pagoRepository, reservaRepository, notificacionService,
+                new TarifaService(new BigDecimal("25000")));
     }
 
     @Test

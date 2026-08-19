@@ -34,6 +34,7 @@ El backend utiliza `http://localhost:8081/api/v1` como URL base. El puerto puede
 - Modificación y cancelación de reservas activas.
 - Validación del horario institucional de 08:00 a 17:00.
 - Flujo de pagos demostrativo en colones costarricenses.
+- Tarifa por hora configurable desde el backend mediante `TARIFA_HORA` o la propiedad local correspondiente.
 - Administración de lugares, espacios, usuarios, reservas y pagos.
 - Control de roles `USUARIO`, `ADMIN` y `SUPERADMIN`.
 - Registro, edición del perfil y cambio de contraseña con política de seguridad uniforme.
