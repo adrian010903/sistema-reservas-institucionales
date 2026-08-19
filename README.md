@@ -23,16 +23,21 @@ npm run dev
 
 6. Abre `http://localhost:5173`.
 
-El backend utiliza `http://localhost:8080/api/v1` como URL base.
+El backend utiliza `http://localhost:8081/api/v1` como URL base. El puerto puede cambiarse con la variable de entorno `SERVER_PORT`; en ese caso también debe configurarse `VITE_API_URL` en el frontend.
 
 ## Funciones actuales
 
 - Registro e inicio de sesión con roles.
 - Catálogo público de espacios.
 - Creación y seguimiento de reservas.
+- Consulta de disponibilidad por lugar, fecha, horario y capacidad.
+- Modificación y cancelación de reservas activas.
 - Validación del horario institucional de 08:00 a 17:00.
 - Flujo de pagos demostrativo en colones costarricenses.
-- Administración inicial de usuarios, espacios y reservas.
+- Administración de lugares, espacios, usuarios, reservas y pagos.
+- Control de roles `USUARIO`, `ADMIN` y `SUPERADMIN`.
+
+El avance detallado de los requerimientos se encuentra en [docs/ESTADO_REQUERIMIENTOS.md](docs/ESTADO_REQUERIMIENTOS.md).
 
 > Los pagos con tarjeta son una simulación. El sistema no solicita ni almacena información bancaria real.
 
@@ -43,4 +48,3 @@ No se deben subir contraseñas, secretos JWT ni archivos `application-local.prop
 ## Licencia
 
 Este proyecto se distribuye bajo la licencia MIT. Consulta [LICENSE](LICENSE).
-

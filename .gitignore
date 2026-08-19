@@ -15,8 +15,8 @@
 
 # Configuración local con secretos
 backend/src/main/resources/application-local.properties
+backend/uploads/
 
 # Sistema operativo
 .DS_Store
 Thumbs.db
-

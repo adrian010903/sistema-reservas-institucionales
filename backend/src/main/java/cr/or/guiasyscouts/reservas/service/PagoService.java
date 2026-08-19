@@ -33,7 +33,8 @@ public class PagoService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Reserva no encontrada"));
         if (!reserva.getUsuario().getCorreo().equalsIgnoreCase(correo))
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "La reserva no pertenece al usuario");
-        if (pagoRepository.existsByReservaId(reserva.getId()))
+        Pago pagoExistente = pagoRepository.findByReservaId(reserva.getId()).orElse(null);
+        if (pagoExistente != null && pagoExistente.getEstado() != EstadoPago.RECHAZADO)
             throw new ResponseStatusException(HttpStatus.CONFLICT, "La reserva ya tiene un pago registrado");
         if (reserva.getEstado() == EstadoReserva.CANCELADA || reserva.getEstado() == EstadoReserva.RECHAZADA)
             throw new ResponseStatusException(HttpStatus.CONFLICT, "La reserva no admite pagos");
@@ -44,7 +45,7 @@ public class PagoService {
         EstadoPago estado = request.metodo() == MetodoPago.TARJETA_MOCK
                 ? EstadoPago.APROBADO : EstadoPago.PENDIENTE_VERIFICACION;
 
-        Pago pago = new Pago();
+        Pago pago = pagoExistente == null ? new Pago() : pagoExistente;
         pago.setReserva(reserva); pago.setMonto(monto); pago.setMetodo(request.metodo()); pago.setEstado(estado);
         pago.setReferencia("CRC-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase());
         if (estado == EstadoPago.APROBADO) reserva.setEstado(EstadoReserva.CONFIRMADA);
@@ -56,5 +57,22 @@ public class PagoService {
     public List<PagoResponse> propios(String correo) {
         return pagoRepository.findByReservaUsuarioCorreoIgnoreCaseOrderByCreadoEnDesc(correo)
                 .stream().map(PagoResponse::desde).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<PagoResponse> todos() {
+        return pagoRepository.findAll().stream().map(PagoResponse::desde).toList();
+    }
+
+    @Transactional
+    public PagoResponse validar(Long id, EstadoPago estado) {
+        Pago pago = pagoRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pago no encontrado"));
+        if (pago.getEstado() != EstadoPago.PENDIENTE_VERIFICACION)
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Solo se pueden validar pagos pendientes");
+        pago.setEstado(estado);
+        pago.getReserva().setEstado(estado == EstadoPago.APROBADO ? EstadoReserva.CONFIRMADA : EstadoReserva.PENDIENTE);
+        reservaRepository.save(pago.getReserva());
+        return PagoResponse.desde(pagoRepository.save(pago));
     }
 }

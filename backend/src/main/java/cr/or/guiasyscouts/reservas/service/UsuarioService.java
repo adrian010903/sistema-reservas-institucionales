@@ -5,6 +5,7 @@ import cr.or.guiasyscouts.reservas.dto.AuthResponse;
 import cr.or.guiasyscouts.reservas.dto.LoginRequest;
 import cr.or.guiasyscouts.reservas.dto.UsuarioResponse;
 import cr.or.guiasyscouts.reservas.model.Usuario;
+import cr.or.guiasyscouts.reservas.model.EstadoUsuario;
 import cr.or.guiasyscouts.reservas.repository.UsuarioRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -45,6 +46,9 @@ public class UsuarioService {
         Usuario usuario = usuarioRepository.findByCorreoIgnoreCase(request.correo().trim())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciales invalidas"));
 
+        if (usuario.getEstado() != EstadoUsuario.ACTIVO) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "El usuario se encuentra bloqueado o inactivo");
+        }
         if (!passwordEncoder.matches(request.password(), usuario.getPasswordHash())) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciales invalidas");
         }

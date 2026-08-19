@@ -33,8 +33,10 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/status", "/api/v1/auth/**").permitAll()
+                        .requestMatchers("/api/v1/status", "/api/v1/auth/**", "/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/espacios").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/lugares").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/reservas/disponibilidad").permitAll()
                         .anyRequest().authenticated())
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .build();

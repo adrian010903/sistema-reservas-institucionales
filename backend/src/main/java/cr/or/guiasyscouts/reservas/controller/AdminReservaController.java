@@ -22,6 +22,9 @@ public class AdminReservaController {
     @GetMapping("/pendientes")
     public List<ReservaResponse> pendientes() { return reservaService.pendientes(); }
 
+    @GetMapping
+    public List<ReservaResponse> todas() { return reservaService.todas(); }
+
     @PatchMapping("/{id}/aprobar")
     public ReservaResponse aprobar(@PathVariable Long id) { return reservaService.cambiarEstado(id, EstadoReserva.APROBADA); }
 
