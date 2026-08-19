@@ -12,7 +12,7 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 | RF-06 | Editar espacio | Implementado | Datos, estado e imagen |
 | RF-07 | Eliminar espacio | Implementado | Desactivación lógica para conservar historial |
 | RF-08 | Consultar espacios disponibles | Implementado | Catálogo público y consulta de disponibilidad |
-| RF-09 | Filtrar por fecha, hora y tipo | Parcial | Fecha, hora, lugar y capacidad; falta selector de tipo en interfaz |
+| RF-09 | Filtrar por fecha, hora y tipo | Implementado | Fecha, horario, lugar, tipo y capacidad en catálogo público |
 | RF-10 | Realizar reserva | Implementado | Validación de horario, capacidad y solapamiento |
 | RF-11 | Consultar reservas | Implementado | Historial personal y listado administrativo |
 | RF-12 | Modificar reserva | Implementado | Solo reservas pendientes o aprobadas |

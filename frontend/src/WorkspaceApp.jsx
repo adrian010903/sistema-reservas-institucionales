@@ -43,6 +43,7 @@ function WorkspaceApp() {
   const [editingReservation, setEditingReservation] = useState(null)
   const [savingReservation, setSavingReservation] = useState(false)
   const [availabilityForm, setAvailabilityForm] = useState({ fecha: '', horaInicio: '08:00', horaFin: '09:00', cantidadPersonas: 1 })
+  const [availabilityTypeId, setAvailabilityTypeId] = useState('')
   const [availableSpaceIds, setAvailableSpaceIds] = useState(null)
   const [adminTab, setAdminTab] = useState('reservas')
   const [adminUsers, setAdminUsers] = useState([])
@@ -68,7 +69,10 @@ function WorkspaceApp() {
   }, [token, auth])
 
   useEffect(() => {
-    fetch(`${API}/espacios`).then(r => r.ok ? r.json() : Promise.reject()).then(setSpaces).catch(() => setSpaces([]))
+    fetch(`${API}/espacios`).then(r => r.ok ? r.json() : Promise.reject()).then(data => {
+      setSpaces(data)
+      setTypes([...new Map(data.map(space => [space.tipoId, { id:space.tipoId, nombre:space.tipo }])).values()])
+    }).catch(() => setSpaces([]))
     fetch(`${API}/lugares`).then(r => r.ok ? r.json() : Promise.reject()).then(data => { setPlaces(data); if (data.length) setSelectedPlaceId(current => current || data[0].id) }).catch(() => setPlaces([]))
   }, [])
 
@@ -264,6 +268,7 @@ function WorkspaceApp() {
   async function checkAvailability(event) {
     event.preventDefault(); setMessage('')
     const params = new URLSearchParams({ fecha: availabilityForm.fecha, horaInicio: availabilityForm.horaInicio, horaFin: availabilityForm.horaFin, personas: availabilityForm.cantidadPersonas, lugarId: selectedPlaceId })
+    if (availabilityTypeId) params.set('tipoId', availabilityTypeId)
     const response = await fetch(`${API}/reservas/disponibilidad?${params}`)
     const body = await response.json().catch(() => ({}))
     if (!response.ok) return setMessage(body.detail || body.message || `Error ${response.status} al consultar disponibilidad`)
@@ -343,7 +348,7 @@ function WorkspaceApp() {
         {isAdmin && spaces.some(space => !space.lugarId) && <article className={`place-card unassigned ${selectedPlaceId === 'sin-lugar' ? 'selected' : ''}`}><button className="place-select-button" onClick={() => setSelectedPlaceId('sin-lugar')}><span>!</span><strong>Sin lugar asignado</strong><small>Espacios que debes organizar</small><b>{spaces.filter(space => !space.lugarId).length} espacios</b></button></article>}
       </div>
       {places.length === 0 && !(isAdmin && spaces.some(space => !space.lugarId)) ? <div className="catalog-empty"><strong>Aún no hay lugares registrados</strong><span>Un administrador debe crear primero Sede Nacional, Campo Escuela, Hostel u otro lugar.</span></div> : <section className="place-section"><div className="place-heading"><div className="place-symbol">⌂</div><div><h2>{selectedPlaceId === 'sin-lugar' ? 'Sin lugar asignado' : currentPlace?.nombre || 'Selecciona un lugar'}</h2><span>{visibleSpaces.length} espacio(s)</span></div>{isAdmin && currentPlace && <div className="place-heading-actions"><button onClick={() => openPlaceEditor(currentPlace)}>Editar lugar</button><button className="danger" disabled={currentPlace.estado === 'INACTIVO'} onClick={() => deletePlace(currentPlace)}>Eliminar lugar</button></div>}</div>
-        {selectedPlaceId !== 'sin-lugar' && <form className="availability-bar" onSubmit={checkAvailability}><label>Fecha<input type="date" required value={availabilityForm.fecha} onChange={e => setAvailabilityForm({...availabilityForm, fecha:e.target.value})}/></label><label>Desde<input type="time" min="08:00" max="17:00" required value={availabilityForm.horaInicio} onChange={e => setAvailabilityForm({...availabilityForm, horaInicio:e.target.value})}/></label><label>Hasta<input type="time" min="08:00" max="17:00" required value={availabilityForm.horaFin} onChange={e => setAvailabilityForm({...availabilityForm, horaFin:e.target.value})}/></label><label>Personas<input type="number" min="1" required value={availabilityForm.cantidadPersonas} onChange={e => setAvailabilityForm({...availabilityForm, cantidadPersonas:e.target.value})}/></label><button className="primary-button">Consultar disponibilidad</button>{availableSpaceIds !== null && <button type="button" className="secondary-button" onClick={() => setAvailableSpaceIds(null)}>Limpiar</button>}</form>}
+        {selectedPlaceId !== 'sin-lugar' && <form className="availability-bar" onSubmit={checkAvailability}><label>Fecha<input type="date" required value={availabilityForm.fecha} onChange={e => setAvailabilityForm({...availabilityForm, fecha:e.target.value})}/></label><label>Desde<input type="time" min="08:00" max="17:00" required value={availabilityForm.horaInicio} onChange={e => setAvailabilityForm({...availabilityForm, horaInicio:e.target.value})}/></label><label>Hasta<input type="time" min="08:00" max="17:00" required value={availabilityForm.horaFin} onChange={e => setAvailabilityForm({...availabilityForm, horaFin:e.target.value})}/></label><label>Tipo<select value={availabilityTypeId} onChange={e => setAvailabilityTypeId(e.target.value)}><option value="">Todos</option>{types.map(type => <option key={type.id} value={type.id}>{type.nombre}</option>)}</select></label><label>Personas<input type="number" min="1" required value={availabilityForm.cantidadPersonas} onChange={e => setAvailabilityForm({...availabilityForm, cantidadPersonas:e.target.value})}/></label><button className="primary-button">Consultar disponibilidad</button>{availableSpaceIds !== null && <button type="button" className="secondary-button" onClick={() => { setAvailableSpaceIds(null); setAvailabilityTypeId('') }}>Limpiar</button>}</form>}
         {visibleSpaces.length === 0 ? <div className="catalog-empty"><strong>{availableSpaceIds === null ? 'Este lugar todavía no tiene espacios' : 'No hay espacios disponibles'}</strong><span>{availableSpaceIds === null ? (isAdmin ? 'Usa “Crear espacio” para agregar el primero.' : 'Pronto se agregarán espacios reservables.') : 'Prueba otra fecha, horario o cantidad de personas.'}</span></div> : <div className="space-list">{visibleSpaces.map((space, index) => <article className={`space-card space-tone-${index % 3} ${space.estado === 'INACTIVO' ? 'inactive' : ''}`} key={space.id}><div className="space-image" style={space.imagenUrl ? { backgroundImage: `linear-gradient(0deg, rgba(19,24,43,.5), rgba(19,24,43,.08)), url(${BACKEND}${space.imagenUrl})` } : undefined}><span>{space.tipo}</span>{space.estado !== 'DISPONIBLE' && <b>{space.estado}</b>}</div><div className="space-info"><h3>{space.nombre}</h3><p>{space.descripcion}</p><small>Capacidad: {space.capacidad} · {space.categoria}</small><div className="space-actions"><button className="primary-button" disabled={space.estado !== 'DISPONIBLE'} onClick={() => { setSelectedSpace(space); setForm({...form, ...availabilityForm}); user ? navigate('reserve') : navigate('login', 'reserve') }}>{space.estado === 'DISPONIBLE' ? 'Reservar' : 'No disponible'}</button>{isAdmin && <><button className="edit-space-button" onClick={() => openSpaceEditor(space)}>Editar</button><button className="delete-space-button" disabled={space.estado === 'INACTIVO'} onClick={() => deleteSpace(space)}>Eliminar</button></>}</div></div></article>)}</div>}
       </section>}
     </main>
