@@ -27,7 +27,7 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 | RF-21 | Generar reportes | Implementado | Indicadores y exportación CSV filtrable de reservas |
 | RF-22 | Gestionar pagos | Implementado (mock) | Validación administrativa de pagos pendientes |
 | RF-23 | Enviar notificaciones | Parcial | Centro interno persistente y avisos automáticos; falta proveedor de correo |
-| RF-24 | Mostrar validaciones | Implementado | Mensajes del backend presentados en frontend |
+| RF-24 | Mostrar validaciones | Implementado | Respuestas Problem Details uniformes y mensajes presentados en frontend |
 | RF-25 | Controlar permisos por rol | Implementado | Spring Security y controles visuales por rol |
 
 ## Reglas de negocio destacadas
@@ -41,6 +41,7 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 - La tarifa demostrativa tiene una única fuente configurable en el backend y se publica al frontend en colones costarricenses.
 - Las operaciones administrativas requieren rol `ADMIN` o `SUPERADMIN`.
 - Las modificaciones sensibles de catálogo, usuarios, reservas y pagos dejan una entrada inmutable en la bitácora administrativa.
+- Los orígenes web permitidos se configuran por entorno para soportar desarrollo local y dominio institucional.
 
 ## Próximos bloques
 

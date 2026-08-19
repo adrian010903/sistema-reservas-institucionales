@@ -6,3 +6,5 @@ app.jwt.secret=CAMBIA_ESTA_CLAVE_POR_UNA_CLAVE_SEGURA_DE_AL_MENOS_32_CARACTERES
 app.recovery.expose-token=true
 # Tarifa demostrativa por hora en colones; cámbiala cuando se defina el precio institucional.
 app.reservas.tarifa-hora=25000
+# Separa varios orígenes con coma, sin barra final.
+app.cors.allowed-origins=http://localhost:5173

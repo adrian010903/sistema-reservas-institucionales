@@ -25,6 +25,17 @@ npm run dev
 
 El backend utiliza `http://localhost:8081/api/v1` como URL base. El puerto puede cambiarse con la variable de entorno `SERVER_PORT`; en ese caso también debe configurarse `VITE_API_URL` en el frontend.
 
+## Configuración por entorno
+
+Para publicar el sistema en un dominio no es necesario modificar el código. Configura:
+
+- `SERVER_PORT`: puerto del backend.
+- `CORS_ALLOWED_ORIGINS`: dominio del frontend; admite varios valores separados por coma.
+- `TARIFA_HORA`: tarifa institucional en colones.
+- `VITE_API_URL`: URL pública del backend terminada en `/api/v1`, definida al construir el frontend.
+
+El archivo `frontend/.env.example` muestra la configuración local. Los archivos `.env.local` y `application-local.properties` permanecen fuera de Git.
+
 ## Funciones actuales
 
 - Registro e inicio de sesión con roles.
