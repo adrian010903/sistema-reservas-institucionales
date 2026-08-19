@@ -41,6 +41,7 @@ El backend utiliza `http://localhost:8081/api/v1` como URL base. El puerto puede
 - Centro de notificaciones internas para reservas y pagos.
 - Indicadores administrativos y reportes de reservas exportables a CSV.
 - Comprobantes PDF descargables para pagos aprobados.
+- Bitácora administrativa de cambios sensibles con actor y fecha.
 
 El avance detallado de los requerimientos se encuentra en [docs/ESTADO_REQUERIMIENTOS.md](docs/ESTADO_REQUERIMIENTOS.md).
 

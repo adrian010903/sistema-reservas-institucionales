@@ -18,6 +18,8 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import cr.or.guiasyscouts.reservas.service.AuditoriaService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -47,13 +49,16 @@ public class AdminCatalogoController {
     private final CategoriaEspacioRepository categoriaRepository;
     private final EspacioRepository espacioRepository;
     private final LugarRepository lugarRepository;
+    private final AuditoriaService auditoriaService;
 
     public AdminCatalogoController(TipoEspacioRepository tipoRepository, CategoriaEspacioRepository categoriaRepository,
-                                   EspacioRepository espacioRepository, LugarRepository lugarRepository) {
+                                   EspacioRepository espacioRepository, LugarRepository lugarRepository,
+                                   AuditoriaService auditoriaService) {
         this.tipoRepository = tipoRepository;
         this.categoriaRepository = categoriaRepository;
         this.espacioRepository = espacioRepository;
         this.lugarRepository = lugarRepository;
+        this.auditoriaService = auditoriaService;
     }
 
     @GetMapping("/tipos")
@@ -80,18 +85,20 @@ public class AdminCatalogoController {
     public List<EspacioResponse> listarEspacios() { return espacioRepository.findAll().stream().map(EspacioResponse::desde).toList(); }
 
     @PostMapping("/espacios")
-    public EspacioResponse crearEspacio(@Valid @RequestBody EspacioRequest request) {
+    public EspacioResponse crearEspacio(Authentication auth, @Valid @RequestBody EspacioRequest request) {
         TipoEspacio tipo = tipoRepository.findById(request.tipoId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Tipo no encontrado"));
         CategoriaEspacio categoria = categoriaRepository.findById(request.categoriaId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Categoria no encontrada"));
         Espacio espacio = new Espacio(); espacio.setNombre(request.nombre().trim()); espacio.setDescripcion(request.descripcion());
         espacio.setCapacidad(request.capacidad()); espacio.setTipo(tipo); espacio.setCategoria(categoria);
         if (request.lugarId() != null) espacio.setLugar(lugarRepository.findById(request.lugarId()).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lugar no encontrado")));
         if (request.estado() != null) espacio.setEstado(request.estado());
-        return EspacioResponse.desde(espacioRepository.save(espacio));
+        Espacio guardado = espacioRepository.save(espacio);
+        auditoriaService.registrar(auth.getName(), "CREAR", "ESPACIO", guardado.getId(), guardado.getNombre());
+        return EspacioResponse.desde(guardado);
     }
 
     @PutMapping("/espacios/{id}")
-    public EspacioResponse editarEspacio(@PathVariable Long id, @Valid @RequestBody EspacioRequest request) {
+    public EspacioResponse editarEspacio(Authentication auth, @PathVariable Long id, @Valid @RequestBody EspacioRequest request) {
         Espacio espacio = espacioRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Espacio no encontrado"));
         TipoEspacio tipo = tipoRepository.findById(request.tipoId())
@@ -106,7 +113,9 @@ public class AdminCatalogoController {
         espacio.setLugar(request.lugarId() == null ? null : lugarRepository.findById(request.lugarId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lugar no encontrado")));
         if (request.estado() != null) espacio.setEstado(request.estado());
-        return EspacioResponse.desde(espacioRepository.save(espacio));
+        Espacio guardado = espacioRepository.save(espacio);
+        auditoriaService.registrar(auth.getName(), "ACTUALIZAR", "ESPACIO", id, guardado.getNombre());
+        return EspacioResponse.desde(guardado);
     }
 
     @GetMapping("/lugares")
@@ -115,7 +124,7 @@ public class AdminCatalogoController {
     }
 
     @PostMapping("/lugares")
-    public LugarResponse crearLugar(@Valid @RequestBody LugarRequest request) {
+    public LugarResponse crearLugar(Authentication auth, @Valid @RequestBody LugarRequest request) {
         if (lugarRepository.existsByNombreIgnoreCase(request.nombre().trim()))
             throw new ResponseStatusException(HttpStatus.CONFLICT, "El lugar ya existe");
         Lugar lugar = new Lugar();
@@ -123,37 +132,43 @@ public class AdminCatalogoController {
         lugar.setDescripcion(request.descripcion());
         lugar.setDireccion(request.direccion());
         if (request.estado() != null) lugar.setEstado(request.estado());
-        return LugarResponse.desde(lugarRepository.save(lugar));
+        Lugar guardado = lugarRepository.save(lugar);
+        auditoriaService.registrar(auth.getName(), "CREAR", "LUGAR", guardado.getId(), guardado.getNombre());
+        return LugarResponse.desde(guardado);
     }
 
     @PutMapping("/lugares/{id}")
-    public LugarResponse editarLugar(@PathVariable Long id, @Valid @RequestBody LugarRequest request) {
+    public LugarResponse editarLugar(Authentication auth, @PathVariable Long id, @Valid @RequestBody LugarRequest request) {
         Lugar lugar = lugarRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lugar no encontrado"));
         lugar.setNombre(request.nombre().trim());
         lugar.setDescripcion(request.descripcion());
         lugar.setDireccion(request.direccion());
         if (request.estado() != null) lugar.setEstado(request.estado());
-        return LugarResponse.desde(lugarRepository.save(lugar));
+        Lugar guardado = lugarRepository.save(lugar);
+        auditoriaService.registrar(auth.getName(), "ACTUALIZAR", "LUGAR", id, guardado.getNombre());
+        return LugarResponse.desde(guardado);
     }
 
     @DeleteMapping("/lugares/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void eliminarLugar(@PathVariable Long id) {
+    public void eliminarLugar(Authentication auth, @PathVariable Long id) {
         Lugar lugar = lugarRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lugar no encontrado"));
         lugar.setEstado(cr.or.guiasyscouts.reservas.model.EstadoLugar.INACTIVO);
         lugarRepository.save(lugar);
+        auditoriaService.registrar(auth.getName(), "DESACTIVAR", "LUGAR", id, lugar.getNombre());
     }
 
     @DeleteMapping("/espacios/{id}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void eliminarEspacio(@PathVariable Long id) {
+    public void eliminarEspacio(Authentication auth, @PathVariable Long id) {
         Espacio espacio = espacioRepository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Espacio no encontrado"));
         espacio.setEstado(cr.or.guiasyscouts.reservas.model.EstadoEspacio.INACTIVO);
         espacioRepository.save(espacio);
+        auditoriaService.registrar(auth.getName(), "DESACTIVAR", "ESPACIO", id, espacio.getNombre());
     }
 
     @PostMapping(value = "/espacios/{id}/imagen", consumes = "multipart/form-data")
-    public EspacioResponse subirImagen(@PathVariable Long id, @RequestPart("imagen") MultipartFile imagen) {
+    public EspacioResponse subirImagen(Authentication auth, @PathVariable Long id, @RequestPart("imagen") MultipartFile imagen) {
         Espacio espacio = espacioRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Espacio no encontrado"));
         if (imagen.isEmpty() || imagen.getContentType() == null || !Set.of("image/jpeg", "image/png", "image/webp").contains(imagen.getContentType()))
@@ -170,6 +185,8 @@ public class AdminCatalogoController {
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo guardar la imagen");
         }
         espacio.setImagenUrl("/uploads/espacios/" + nombre);
-        return EspacioResponse.desde(espacioRepository.save(espacio));
+        Espacio guardado = espacioRepository.save(espacio);
+        auditoriaService.registrar(auth.getName(), "ACTUALIZAR_IMAGEN", "ESPACIO", id, guardado.getNombre());
+        return EspacioResponse.desde(guardado);
     }
 }

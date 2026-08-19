@@ -39,10 +39,11 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 - Una reserva cancelada libera automáticamente el intervalo.
 - Los pagos rechazados pueden intentarse nuevamente.
 - Las operaciones administrativas requieren rol `ADMIN` o `SUPERADMIN`.
+- Las modificaciones sensibles de catálogo, usuarios, reservas y pagos dejan una entrada inmutable en la bitácora administrativa.
 
 ## Próximos bloques
 
 1. Integrar correo para recuperación y notificaciones.
-2. Verificación visual final del comprobante con backend ejecutándose.
+2. Verificación visual final del comprobante y la bitácora con backend ejecutándose.
 3. Ampliar reportes con gráficos y PDF.
 4. Pruebas automatizadas de servicios y controladores.

@@ -48,6 +48,7 @@ function WorkspaceApp() {
   const [adminUsers, setAdminUsers] = useState([])
   const [adminReservations, setAdminReservations] = useState([])
   const [adminPayments, setAdminPayments] = useState([])
+  const [auditEntries, setAuditEntries] = useState([])
   const [authMode, setAuthMode] = useState('login')
   const [recoveryToken, setRecoveryToken] = useState('')
   const [notifications, setNotifications] = useState([])
@@ -94,9 +95,18 @@ function WorkspaceApp() {
       fetch(`${API}/admin/usuarios`, { headers: auth }).then(r => r.json()),
       fetch(`${API}/admin/reservas`, { headers: auth }).then(r => r.json()),
       fetch(`${API}/admin/pagos`, { headers: auth }).then(r => r.json()),
-      fetch(`${API}/admin/reportes/resumen`, { headers: auth }).then(r => r.json())
-    ]).then(([usersData, reservationsData, paymentsData, summaryData]) => { setAdminUsers(usersData); setAdminReservations(reservationsData); setAdminPayments(paymentsData); setReportSummary(summaryData) }).catch(() => setMessage('No se pudo cargar la administración'))
+      fetch(`${API}/admin/reportes/resumen`, { headers: auth }).then(r => r.json()),
+      fetch(`${API}/admin/auditoria?limite=100`, { headers: auth }).then(r => r.json())
+    ]).then(([usersData, reservationsData, paymentsData, summaryData, auditData]) => { setAdminUsers(usersData); setAdminReservations(reservationsData); setAdminPayments(paymentsData); setReportSummary(summaryData); setAuditEntries(auditData) }).catch(() => setMessage('No se pudo cargar la administración'))
   }, [page, user, token, auth])
+
+  useEffect(() => {
+    if (page !== 'admin' || adminTab !== 'auditoria' || !user || !['ADMIN', 'SUPERADMIN'].includes(user.rol)) return
+    fetch(`${API}/admin/auditoria?limite=100`, { headers: auth })
+      .then(response => response.ok ? response.json() : Promise.reject())
+      .then(setAuditEntries)
+      .catch(() => setMessage('No se pudo actualizar la bitácora'))
+  }, [page, adminTab, user, auth])
 
   const hours = useMemo(() => {
     if (!form.horaInicio || !form.horaFin) return 0
@@ -340,11 +350,12 @@ function WorkspaceApp() {
   }
 
   function renderAdminPage() {
-    return <main className="page-container admin-page"><p className="eyebrow">Acceso administrativo</p><h1>Administración</h1><div className="admin-tabs">{[['reservas','Reservas'],['pagos','Pagos'],['usuarios','Usuarios'],['reportes','Reportes']].map(([key,label]) => <button className={adminTab === key ? 'active' : ''} key={key} onClick={() => { setAdminTab(key); setMessage('') }}>{label}</button>)}</div>{message && <p className="form-message">{message}</p>}
+    return <main className="page-container admin-page"><p className="eyebrow">Acceso administrativo</p><h1>Administración</h1><div className="admin-tabs">{[['reservas','Reservas'],['pagos','Pagos'],['usuarios','Usuarios'],['reportes','Reportes'],['auditoria','Bitácora']].map(([key,label]) => <button className={adminTab === key ? 'active' : ''} key={key} onClick={() => { setAdminTab(key); setMessage('') }}>{label}</button>)}</div>{message && <p className="form-message">{message}</p>}
       {adminTab === 'reservas' && <div className="admin-table"><div className="admin-table-head"><span>Reserva</span><span>Usuario</span><span>Fecha</span><span>Estado / Acciones</span></div>{adminReservations.length === 0 ? <p className="admin-empty">No hay reservas registradas.</p> : adminReservations.map(reservation => <article key={reservation.id}><div><strong>#{reservation.id} · {reservation.espacio}</strong><small>{reservation.cantidadPersonas} persona(s)</small></div><span>{reservation.correoUsuario}</span><span>{reservation.fecha}<small>{reservation.horaInicio} - {reservation.horaFin}</small></span><div className="admin-row-actions"><b className={`reservation-status ${reservation.estado.toLowerCase()}`}>{reservation.estado}</b>{reservation.estado === 'PENDIENTE' && <><button onClick={() => reviewAdminReservation(reservation,'aprobar')}>Aprobar</button><button className="danger" onClick={() => reviewAdminReservation(reservation,'rechazar')}>Rechazar</button></>}</div></article>)}</div>}
       {adminTab === 'pagos' && <div className="admin-table payments-admin"><div className="admin-table-head"><span>Referencia</span><span>Reserva</span><span>Monto</span><span>Estado / Acciones</span></div>{adminPayments.length === 0 ? <p className="admin-empty">No hay pagos registrados.</p> : adminPayments.map(payment => <article key={payment.id}><div><strong>{payment.referencia}</strong><small>{payment.metodo.replaceAll('_',' ')}</small></div><span>Reserva #{payment.reservaId}</span><strong>₡{Number(payment.monto).toLocaleString('es-CR')}</strong><div className="admin-row-actions"><b className={`payment-status ${payment.estado.toLowerCase()}`}>{payment.estado.replaceAll('_',' ')}</b>{payment.estado === 'PENDIENTE_VERIFICACION' && <><button onClick={() => reviewAdminPayment(payment,'aprobar')}>Aprobar</button><button className="danger" onClick={() => reviewAdminPayment(payment,'rechazar')}>Rechazar</button></>}</div></article>)}</div>}
       {adminTab === 'usuarios' && <div className="admin-table users-admin"><div className="admin-table-head"><span>Usuario</span><span>Correo</span><span>Rol</span><span>Estado</span></div>{adminUsers.map(target => <article key={target.id}><strong>{target.nombre}</strong><span>{target.correo}</span><select value={target.rol} disabled={user?.rol !== 'SUPERADMIN' && target.rol === 'SUPERADMIN'} onChange={e => updateAdminUser(target,{rol:e.target.value})}><option value="USUARIO">Usuario</option><option value="ADMIN">Administrador</option>{user?.rol === 'SUPERADMIN' && <option value="SUPERADMIN">Superadministrador</option>}</select><select value={target.estado} onChange={e => updateAdminUser(target,{estado:e.target.value})}><option value="ACTIVO">Activo</option><option value="BLOQUEADO">Bloqueado</option><option value="INACTIVO">Inactivo</option></select></article>)}</div>}
       {adminTab === 'reportes' && <div className="reports-panel"><div className="report-metrics"><article><span>Total de reservas</span><strong>{reportSummary.total}</strong></article><article><span>Reservas próximas</span><strong>{reportSummary.proximas}</strong></article><article><span>Confirmadas</span><strong>{reportSummary.porEstado?.CONFIRMADA || 0}</strong></article><article><span>Pendientes</span><strong>{reportSummary.porEstado?.PENDIENTE || 0}</strong></article></div><form className="report-form" onSubmit={downloadReservationsReport}><h2>Exportar reservas</h2><p>Genera un archivo CSV compatible con Excel usando filtros opcionales.</p><div><label>Desde<input type="date" value={reportFilters.desde} onChange={e => setReportFilters({...reportFilters,desde:e.target.value})}/></label><label>Hasta<input type="date" value={reportFilters.hasta} onChange={e => setReportFilters({...reportFilters,hasta:e.target.value})}/></label><label>Estado<select value={reportFilters.estado} onChange={e => setReportFilters({...reportFilters,estado:e.target.value})}><option value="">Todos</option>{['PENDIENTE','APROBADA','CONFIRMADA','CANCELADA','RECHAZADA'].map(value => <option key={value}>{value}</option>)}</select></label></div><button className="primary-button">Descargar CSV</button></form></div>}
+      {adminTab === 'auditoria' && <div className="admin-table audit-table"><div className="admin-table-head"><span>Fecha</span><span>Actor</span><span>Acción</span><span>Recurso / Detalle</span></div>{auditEntries.length === 0 ? <p className="admin-empty">Aún no hay operaciones registradas en la bitácora.</p> : auditEntries.map(entry => <article key={entry.id}><span>{new Date(entry.creadaEn).toLocaleString('es-CR')}</span><span>{entry.actor}</span><b>{entry.accion}</b><div><strong>{entry.recurso}{entry.recursoId ? ` #${entry.recursoId}` : ''}</strong><small>{entry.detalle}</small></div></article>)}</div>}
     </main>
   }
 

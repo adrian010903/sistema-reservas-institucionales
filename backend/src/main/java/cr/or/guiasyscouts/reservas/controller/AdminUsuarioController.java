@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.server.ResponseStatusException;
 import cr.or.guiasyscouts.reservas.repository.UsuarioRepository;
+import cr.or.guiasyscouts.reservas.service.AuditoriaService;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,9 +24,11 @@ import java.util.List;
 @RequestMapping("/api/v1/admin/usuarios")
 public class AdminUsuarioController {
     private final UsuarioRepository usuarioRepository;
+    private final AuditoriaService auditoriaService;
 
-    public AdminUsuarioController(UsuarioRepository usuarioRepository) {
+    public AdminUsuarioController(UsuarioRepository usuarioRepository, AuditoriaService auditoriaService) {
         this.usuarioRepository = usuarioRepository;
+        this.auditoriaService = auditoriaService;
     }
 
     @GetMapping
@@ -47,6 +50,9 @@ public class AdminUsuarioController {
         if (actor.getId().equals(usuario.getId()) && request.estado() != usuario.getEstado())
             throw new ResponseStatusException(HttpStatus.CONFLICT, "No puedes bloquear tu propia cuenta");
         usuario.setEstado(request.estado()); usuario.setRol(request.rol());
-        return UsuarioResponse.desde(usuarioRepository.save(usuario));
+        Usuario guardado = usuarioRepository.save(usuario);
+        auditoriaService.registrar(actor.getCorreo(), "ACTUALIZAR", "USUARIO", guardado.getId(),
+                "Rol=" + guardado.getRol() + ", estado=" + guardado.getEstado());
+        return UsuarioResponse.desde(guardado);
     }
 }
