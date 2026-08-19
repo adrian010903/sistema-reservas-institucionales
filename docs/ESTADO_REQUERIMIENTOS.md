@@ -20,7 +20,7 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 | RF-14 | Validar disponibilidad | Implementado | Endpoint y formulario en catálogo |
 | RF-15 | Evitar reservas duplicadas | Implementado | Validación de intervalos solapados |
 | RF-16 | Registrar pago | Implementado (mock) | Tarjeta simulada, transferencia y efectivo |
-| RF-17 | Generar comprobante | Pendiente | Falta comprobante PDF para pagos aprobados |
+| RF-17 | Generar comprobante | Implementado | PDF descargable únicamente para pagos aprobados |
 | RF-18 | Gestionar usuarios | Implementado | Listado, estado y rol |
 | RF-19 | Asignar roles | Implementado | Restricción especial para SUPERADMIN |
 | RF-20 | Gestionar reservas | Implementado | Aprobar y rechazar solicitudes pendientes |
@@ -43,7 +43,6 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 ## Próximos bloques
 
 1. Integrar correo para recuperación y notificaciones.
-2. Comprobante PDF para pagos aprobados.
-3. Notificaciones internas.
-4. Ampliar reportes con gráficos y PDF.
-5. Pruebas automatizadas de servicios y controladores.
+2. Verificación visual final del comprobante con backend ejecutándose.
+3. Ampliar reportes con gráficos y PDF.
+4. Pruebas automatizadas de servicios y controladores.
