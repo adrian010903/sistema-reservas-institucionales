@@ -24,7 +24,7 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 | RF-18 | Gestionar usuarios | Implementado | Listado, estado y rol |
 | RF-19 | Asignar roles | Implementado | Restricción especial para SUPERADMIN |
 | RF-20 | Gestionar reservas | Implementado | Aprobar y rechazar solicitudes pendientes |
-| RF-21 | Generar reportes | Pendiente | Falta módulo y exportación |
+| RF-21 | Generar reportes | Implementado | Indicadores y exportación CSV filtrable de reservas |
 | RF-22 | Gestionar pagos | Implementado (mock) | Validación administrativa de pagos pendientes |
 | RF-23 | Enviar notificaciones | Parcial | Centro interno persistente y avisos automáticos; falta proveedor de correo |
 | RF-24 | Mostrar validaciones | Implementado | Mensajes del backend presentados en frontend |
@@ -45,5 +45,5 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 1. Integrar correo para recuperación y notificaciones.
 2. Comprobante PDF para pagos aprobados.
 3. Notificaciones internas.
-4. Reportes con filtros y exportación.
+4. Ampliar reportes con gráficos y PDF.
 5. Pruebas automatizadas de servicios y controladores.

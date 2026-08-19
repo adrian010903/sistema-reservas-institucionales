@@ -39,6 +39,7 @@ El backend utiliza `http://localhost:8081/api/v1` como URL base. El puerto puede
 - Registro, edición del perfil y cambio de contraseña.
 - Recuperación local mediante token temporal de un solo uso.
 - Centro de notificaciones internas para reservas y pagos.
+- Indicadores administrativos y reportes de reservas exportables a CSV.
 
 El avance detallado de los requerimientos se encuentra en [docs/ESTADO_REQUERIMIENTOS.md](docs/ESTADO_REQUERIMIENTOS.md).
 

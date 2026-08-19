@@ -46,6 +46,8 @@ function WorkspaceApp() {
   const [authMode, setAuthMode] = useState('login')
   const [recoveryToken, setRecoveryToken] = useState('')
   const [notifications, setNotifications] = useState([])
+  const [reportSummary, setReportSummary] = useState({ total: 0, proximas: 0, porEstado: {} })
+  const [reportFilters, setReportFilters] = useState({ desde: '', hasta: '', estado: '' })
   const [selectedSpace, setSelectedSpace] = useState(null)
   const [form, setForm] = useState({ fecha: '', horaInicio: '', horaFin: '', cantidadPersonas: 1 })
   const [message, setMessage] = useState('')
@@ -86,8 +88,9 @@ function WorkspaceApp() {
     Promise.all([
       fetch(`${API}/admin/usuarios`, { headers: auth }).then(r => r.json()),
       fetch(`${API}/admin/reservas`, { headers: auth }).then(r => r.json()),
-      fetch(`${API}/admin/pagos`, { headers: auth }).then(r => r.json())
-    ]).then(([usersData, reservationsData, paymentsData]) => { setAdminUsers(usersData); setAdminReservations(reservationsData); setAdminPayments(paymentsData) }).catch(() => setMessage('No se pudo cargar la administración'))
+      fetch(`${API}/admin/pagos`, { headers: auth }).then(r => r.json()),
+      fetch(`${API}/admin/reportes/resumen`, { headers: auth }).then(r => r.json())
+    ]).then(([usersData, reservationsData, paymentsData, summaryData]) => { setAdminUsers(usersData); setAdminReservations(reservationsData); setAdminPayments(paymentsData); setReportSummary(summaryData) }).catch(() => setMessage('No se pudo cargar la administración'))
   }, [page, user, token, auth])
 
   const hours = useMemo(() => {
@@ -288,6 +291,14 @@ function WorkspaceApp() {
     const body = await response.json(); setNotifications(current => current.map(item => item.id === body.id ? body : item))
   }
 
+  async function downloadReservationsReport(event) {
+    event.preventDefault(); setMessage(''); const params = new URLSearchParams()
+    Object.entries(reportFilters).forEach(([key,value]) => { if (value) params.set(key,value) })
+    const response = await fetch(`${API}/admin/reportes/reservas.csv?${params}`, { headers:auth })
+    if (!response.ok) return setMessage(`No se pudo generar el reporte (error ${response.status})`)
+    const blob = await response.blob(); const url = URL.createObjectURL(blob); const link = document.createElement('a'); link.href = url; link.download = `reservas-${new Date().toISOString().slice(0,10)}.csv`; link.click(); URL.revokeObjectURL(url); setMessage('Reporte generado correctamente')
+  }
+
   async function changePassword(event) {
     event.preventDefault(); setMessage(''); const formElement = event.currentTarget; const data = Object.fromEntries(new FormData(formElement))
     if (data.passwordNuevo !== data.confirmacion) return setMessage('La confirmación de la contraseña no coincide')
@@ -315,10 +326,11 @@ function WorkspaceApp() {
   }
 
   function renderAdminPage() {
-    return <main className="page-container admin-page"><p className="eyebrow">Acceso administrativo</p><h1>Administración</h1><div className="admin-tabs">{[['reservas','Reservas'],['pagos','Pagos'],['usuarios','Usuarios']].map(([key,label]) => <button className={adminTab === key ? 'active' : ''} key={key} onClick={() => { setAdminTab(key); setMessage('') }}>{label}</button>)}</div>{message && <p className="form-message">{message}</p>}
+    return <main className="page-container admin-page"><p className="eyebrow">Acceso administrativo</p><h1>Administración</h1><div className="admin-tabs">{[['reservas','Reservas'],['pagos','Pagos'],['usuarios','Usuarios'],['reportes','Reportes']].map(([key,label]) => <button className={adminTab === key ? 'active' : ''} key={key} onClick={() => { setAdminTab(key); setMessage('') }}>{label}</button>)}</div>{message && <p className="form-message">{message}</p>}
       {adminTab === 'reservas' && <div className="admin-table"><div className="admin-table-head"><span>Reserva</span><span>Usuario</span><span>Fecha</span><span>Estado / Acciones</span></div>{adminReservations.length === 0 ? <p className="admin-empty">No hay reservas registradas.</p> : adminReservations.map(reservation => <article key={reservation.id}><div><strong>#{reservation.id} · {reservation.espacio}</strong><small>{reservation.cantidadPersonas} persona(s)</small></div><span>{reservation.correoUsuario}</span><span>{reservation.fecha}<small>{reservation.horaInicio} - {reservation.horaFin}</small></span><div className="admin-row-actions"><b className={`reservation-status ${reservation.estado.toLowerCase()}`}>{reservation.estado}</b>{reservation.estado === 'PENDIENTE' && <><button onClick={() => reviewAdminReservation(reservation,'aprobar')}>Aprobar</button><button className="danger" onClick={() => reviewAdminReservation(reservation,'rechazar')}>Rechazar</button></>}</div></article>)}</div>}
       {adminTab === 'pagos' && <div className="admin-table payments-admin"><div className="admin-table-head"><span>Referencia</span><span>Reserva</span><span>Monto</span><span>Estado / Acciones</span></div>{adminPayments.length === 0 ? <p className="admin-empty">No hay pagos registrados.</p> : adminPayments.map(payment => <article key={payment.id}><div><strong>{payment.referencia}</strong><small>{payment.metodo.replaceAll('_',' ')}</small></div><span>Reserva #{payment.reservaId}</span><strong>₡{Number(payment.monto).toLocaleString('es-CR')}</strong><div className="admin-row-actions"><b className={`payment-status ${payment.estado.toLowerCase()}`}>{payment.estado.replaceAll('_',' ')}</b>{payment.estado === 'PENDIENTE_VERIFICACION' && <><button onClick={() => reviewAdminPayment(payment,'aprobar')}>Aprobar</button><button className="danger" onClick={() => reviewAdminPayment(payment,'rechazar')}>Rechazar</button></>}</div></article>)}</div>}
       {adminTab === 'usuarios' && <div className="admin-table users-admin"><div className="admin-table-head"><span>Usuario</span><span>Correo</span><span>Rol</span><span>Estado</span></div>{adminUsers.map(target => <article key={target.id}><strong>{target.nombre}</strong><span>{target.correo}</span><select value={target.rol} disabled={user?.rol !== 'SUPERADMIN' && target.rol === 'SUPERADMIN'} onChange={e => updateAdminUser(target,{rol:e.target.value})}><option value="USUARIO">Usuario</option><option value="ADMIN">Administrador</option>{user?.rol === 'SUPERADMIN' && <option value="SUPERADMIN">Superadministrador</option>}</select><select value={target.estado} onChange={e => updateAdminUser(target,{estado:e.target.value})}><option value="ACTIVO">Activo</option><option value="BLOQUEADO">Bloqueado</option><option value="INACTIVO">Inactivo</option></select></article>)}</div>}
+      {adminTab === 'reportes' && <div className="reports-panel"><div className="report-metrics"><article><span>Total de reservas</span><strong>{reportSummary.total}</strong></article><article><span>Reservas próximas</span><strong>{reportSummary.proximas}</strong></article><article><span>Confirmadas</span><strong>{reportSummary.porEstado?.CONFIRMADA || 0}</strong></article><article><span>Pendientes</span><strong>{reportSummary.porEstado?.PENDIENTE || 0}</strong></article></div><form className="report-form" onSubmit={downloadReservationsReport}><h2>Exportar reservas</h2><p>Genera un archivo CSV compatible con Excel usando filtros opcionales.</p><div><label>Desde<input type="date" value={reportFilters.desde} onChange={e => setReportFilters({...reportFilters,desde:e.target.value})}/></label><label>Hasta<input type="date" value={reportFilters.hasta} onChange={e => setReportFilters({...reportFilters,hasta:e.target.value})}/></label><label>Estado<select value={reportFilters.estado} onChange={e => setReportFilters({...reportFilters,estado:e.target.value})}><option value="">Todos</option>{['PENDIENTE','APROBADA','CONFIRMADA','CANCELADA','RECHAZADA'].map(value => <option key={value}>{value}</option>)}</select></label></div><button className="primary-button">Descargar CSV</button></form></div>}
     </main>
   }
 
