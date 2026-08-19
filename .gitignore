@@ -1,0 +1,22 @@
+# IntelliJ IDEA y editores
+.idea/
+*.iml
+.vscode/
+
+# Java / Maven
+**/target/
+*.class
+
+# React / Node / Vite
+**/node_modules/
+**/dist/
+*.local
+*.log
+
+# Configuración local con secretos
+backend/src/main/resources/application-local.properties
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+

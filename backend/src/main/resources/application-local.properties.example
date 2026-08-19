@@ -1,0 +1,5 @@
+# Copia este archivo como application-local.properties y completa tus valores locales.
+spring.datasource.username=root
+spring.datasource.password=TU_PASSWORD_MYSQL
+app.jwt.secret=CAMBIA_ESTA_CLAVE_POR_UNA_CLAVE_SEGURA_DE_AL_MENOS_32_CARACTERES
+

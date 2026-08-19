@@ -1,0 +1,46 @@
+# Sistema de Reservas Institucionales
+
+Aplicación web para administrar espacios y reservas institucionales de Guías y Scouts de Costa Rica.
+
+## Tecnologías
+
+- Backend: Java 17, Spring Boot, Spring Security, JWT, JPA y MySQL.
+- Frontend: React y Vite.
+- Base de datos: MySQL 8.
+
+## Preparación local
+
+1. Crea en MySQL la base de datos `reservas_institucionales`.
+2. Copia `backend/src/main/resources/application-local.properties.example` como `application-local.properties`.
+3. Configura en ese archivo tu usuario y contraseña de MySQL y una clave JWT local.
+4. Ejecuta `ReservasBackendApplication` desde IntelliJ IDEA.
+5. En una terminal dentro de `frontend`, ejecuta:
+
+```bash
+npm install
+npm run dev
+```
+
+6. Abre `http://localhost:5173`.
+
+El backend utiliza `http://localhost:8080/api/v1` como URL base.
+
+## Funciones actuales
+
+- Registro e inicio de sesión con roles.
+- Catálogo público de espacios.
+- Creación y seguimiento de reservas.
+- Validación del horario institucional de 08:00 a 17:00.
+- Flujo de pagos demostrativo en colones costarricenses.
+- Administración inicial de usuarios, espacios y reservas.
+
+> Los pagos con tarjeta son una simulación. El sistema no solicita ni almacena información bancaria real.
+
+## Seguridad
+
+No se deben subir contraseñas, secretos JWT ni archivos `application-local.properties`. Cada integrante debe mantener su propia configuración local.
+
+## Licencia
+
+Este proyecto se distribuye bajo la licencia MIT. Consulta [LICENSE](LICENSE).
+
