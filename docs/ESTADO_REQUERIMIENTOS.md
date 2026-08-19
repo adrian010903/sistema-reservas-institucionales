@@ -6,8 +6,8 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 |---|---|---|---|
 | RF-01 | Registrar usuario | Implementado | `POST /api/v1/auth/registro` |
 | RF-02 | Iniciar sesión | Implementado | JWT, control de estado y roles |
-| RF-03 | Recuperar contraseña | Pendiente | Requiere token temporal y envío de correo |
-| RF-04 | Gestionar perfil | Pendiente | Existe consulta `/usuarios/me`, falta actualización |
+| RF-03 | Recuperar contraseña | Parcial | Token seguro de un solo uso y 30 minutos; falta proveedor de correo |
+| RF-04 | Gestionar perfil | Implementado | Actualización de nombre, correo y contraseña |
 | RF-05 | Registrar espacio | Implementado | Administración por lugar, tipo y categoría |
 | RF-06 | Editar espacio | Implementado | Datos, estado e imagen |
 | RF-07 | Eliminar espacio | Implementado | Desactivación lógica para conservar historial |
@@ -42,9 +42,8 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 
 ## Próximos bloques
 
-1. Recuperación de contraseña y gestión del perfil.
+1. Integrar correo para recuperación y notificaciones.
 2. Comprobante PDF para pagos aprobados.
-3. Notificaciones internas y por correo.
+3. Notificaciones internas.
 4. Reportes con filtros y exportación.
 5. Pruebas automatizadas de servicios y controladores.
-

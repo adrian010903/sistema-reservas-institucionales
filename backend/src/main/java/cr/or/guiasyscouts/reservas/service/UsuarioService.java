@@ -4,6 +4,8 @@ import cr.or.guiasyscouts.reservas.dto.RegistroUsuarioRequest;
 import cr.or.guiasyscouts.reservas.dto.AuthResponse;
 import cr.or.guiasyscouts.reservas.dto.LoginRequest;
 import cr.or.guiasyscouts.reservas.dto.UsuarioResponse;
+import cr.or.guiasyscouts.reservas.dto.PerfilUpdateRequest;
+import cr.or.guiasyscouts.reservas.dto.CambioPasswordRequest;
 import cr.or.guiasyscouts.reservas.model.Usuario;
 import cr.or.guiasyscouts.reservas.model.EstadoUsuario;
 import cr.or.guiasyscouts.reservas.repository.UsuarioRepository;
@@ -54,5 +56,27 @@ public class UsuarioService {
         }
 
         return new AuthResponse(jwtService.generarToken(usuario.getCorreo()), "Bearer", UsuarioResponse.desde(usuario));
+    }
+
+    @Transactional
+    public UsuarioResponse actualizarPerfil(String correoActual, PerfilUpdateRequest request) {
+        Usuario usuario = usuarioRepository.findByCorreoIgnoreCase(correoActual)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+        String nuevoCorreo = request.correo().trim().toLowerCase();
+        usuarioRepository.findByCorreoIgnoreCase(nuevoCorreo).filter(otro -> !otro.getId().equals(usuario.getId()))
+                .ifPresent(otro -> { throw new ResponseStatusException(HttpStatus.CONFLICT, "El correo ya esta registrado"); });
+        usuario.setNombre(request.nombre().trim()); usuario.setCorreo(nuevoCorreo);
+        return UsuarioResponse.desde(usuarioRepository.save(usuario));
+    }
+
+    @Transactional
+    public void cambiarPassword(String correo, CambioPasswordRequest request) {
+        Usuario usuario = usuarioRepository.findByCorreoIgnoreCase(correo)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+        if (!passwordEncoder.matches(request.passwordActual(), usuario.getPasswordHash()))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La contraseña actual es incorrecta");
+        if (passwordEncoder.matches(request.passwordNuevo(), usuario.getPasswordHash()))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La contraseña nueva debe ser diferente");
+        usuario.setPasswordHash(passwordEncoder.encode(request.passwordNuevo())); usuarioRepository.save(usuario);
     }
 }
