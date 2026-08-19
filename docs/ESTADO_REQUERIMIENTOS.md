@@ -6,7 +6,7 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 |---|---|---|---|
 | RF-01 | Registrar usuario | Implementado | `POST /api/v1/auth/registro` |
 | RF-02 | Iniciar sesión | Implementado | JWT, control de estado y roles |
-| RF-03 | Recuperar contraseña | Parcial | Token seguro de un solo uso y 30 minutos; falta proveedor de correo |
+| RF-03 | Recuperar contraseña | Implementado (configurable) | Token seguro de un solo uso, 30 minutos y enlace por SMTP opcional |
 | RF-04 | Gestionar perfil | Implementado | Actualización de nombre, correo y contraseña |
 | RF-05 | Registrar espacio | Implementado | Administración por lugar, tipo y categoría |
 | RF-06 | Editar espacio | Implementado | Datos, estado e imagen |
@@ -26,7 +26,7 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 | RF-20 | Gestionar reservas | Implementado | Aprobar y rechazar solicitudes pendientes |
 | RF-21 | Generar reportes | Implementado | Indicadores y exportación CSV filtrable de reservas |
 | RF-22 | Gestionar pagos | Implementado (mock) | Validación administrativa de pagos pendientes |
-| RF-23 | Enviar notificaciones | Parcial | Centro interno persistente y avisos automáticos; falta proveedor de correo |
+| RF-23 | Enviar notificaciones | Implementado (configurable) | Centro interno persistente y envío SMTP opcional para eventos automáticos |
 | RF-24 | Mostrar validaciones | Implementado | Respuestas Problem Details uniformes y mensajes presentados en frontend |
 | RF-25 | Controlar permisos por rol | Implementado | Spring Security y controles visuales por rol |
 
@@ -45,7 +45,7 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 
 ## Próximos bloques
 
-1. Integrar correo para recuperación y notificaciones.
+1. Configurar y verificar una cuenta SMTP institucional real.
 2. Verificación visual final del comprobante y la bitácora con backend ejecutándose.
 3. Ampliar reportes con gráficos y PDF.
 4. Ampliar las pruebas automatizadas existentes hacia controladores y seguridad HTTP.

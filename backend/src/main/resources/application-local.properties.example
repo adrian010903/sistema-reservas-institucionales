@@ -8,3 +8,11 @@ app.recovery.expose-token=true
 app.reservas.tarifa-hora=25000
 # Separa varios orígenes con coma, sin barra final.
 app.cors.allowed-origins=http://localhost:5173
+# Correo opcional. Mantén false hasta contar con un SMTP institucional.
+app.frontend.url=http://localhost:5173
+app.mail.enabled=false
+app.mail.from=no-reply@ejemplo.cr
+spring.mail.host=smtp.ejemplo.cr
+spring.mail.port=587
+spring.mail.username=TU_USUARIO_SMTP
+spring.mail.password=TU_PASSWORD_SMTP

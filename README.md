@@ -33,6 +33,8 @@ Para publicar el sistema en un dominio no es necesario modificar el código. Con
 - `CORS_ALLOWED_ORIGINS`: dominio del frontend; admite varios valores separados por coma.
 - `TARIFA_HORA`: tarifa institucional en colones.
 - `VITE_API_URL`: URL pública del backend terminada en `/api/v1`, definida al construir el frontend.
+- `FRONTEND_URL`: URL usada para construir enlaces de recuperación.
+- `MAIL_ENABLED`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD` y `MAIL_FROM`: integración SMTP opcional.
 
 El archivo `frontend/.env.example` muestra la configuración local. Los archivos `.env.local` y `application-local.properties` permanecen fuera de Git.
 
@@ -51,6 +53,7 @@ El archivo `frontend/.env.example` muestra la configuración local. Los archivos
 - Registro, edición del perfil y cambio de contraseña con política de seguridad uniforme.
 - Recuperación local mediante token temporal de un solo uso.
 - Centro de notificaciones internas para reservas y pagos.
+- Notificaciones y recuperación por correo mediante SMTP configurable.
 - Indicadores administrativos y reportes de reservas exportables a CSV.
 - Comprobantes PDF descargables para pagos aprobados.
 - Bitácora administrativa de cambios sensibles con actor y fecha.

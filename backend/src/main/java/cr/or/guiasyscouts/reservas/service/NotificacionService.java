@@ -16,11 +16,15 @@ import java.util.List;
 public class NotificacionService {
     private final NotificacionRepository repository;
     private final UsuarioRepository usuarioRepository;
-    public NotificacionService(NotificacionRepository repository, UsuarioRepository usuarioRepository) { this.repository = repository; this.usuarioRepository = usuarioRepository; }
+    private final CorreoService correoService;
+    public NotificacionService(NotificacionRepository repository, UsuarioRepository usuarioRepository, CorreoService correoService) {
+        this.repository = repository; this.usuarioRepository = usuarioRepository; this.correoService = correoService;
+    }
 
     @Transactional
     public void crear(Usuario usuario, TipoNotificacion tipo, String titulo, String mensaje) {
         Notificacion value = new Notificacion(); value.setUsuario(usuario); value.setTipo(tipo); value.setTitulo(titulo); value.setMensaje(mensaje); repository.save(value);
+        correoService.enviar(usuario.getCorreo(), titulo, mensaje);
     }
 
     @Transactional

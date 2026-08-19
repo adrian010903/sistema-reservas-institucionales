@@ -3,6 +3,7 @@ import './App.css'
 
 const API = import.meta.env.VITE_API_URL || 'http://localhost:8081/api/v1'
 const BACKEND = API.replace(/\/api\/v1\/?$/, '')
+const INITIAL_RESET_TOKEN = new URLSearchParams(window.location.search).get('resetToken') || ''
 const PASSWORD_MESSAGE = 'La contraseña debe tener entre 8 y 72 caracteres e incluir mayúscula, minúscula y número'
 
 function isStrongPassword(password) {
@@ -18,7 +19,7 @@ function Header({ user, page, navigate, logout, unreadCount }) {
 }
 
 function WorkspaceApp() {
-  const [page, setPage] = useState('home')
+  const [page, setPage] = useState(INITIAL_RESET_TOKEN ? 'login' : 'home')
   const [returnPage, setReturnPage] = useState('home')
   const [user, setUser] = useState(null)
   const [token, setToken] = useState(() => localStorage.getItem('reservas_token'))
@@ -49,8 +50,8 @@ function WorkspaceApp() {
   const [adminReservations, setAdminReservations] = useState([])
   const [adminPayments, setAdminPayments] = useState([])
   const [auditEntries, setAuditEntries] = useState([])
-  const [authMode, setAuthMode] = useState('login')
-  const [recoveryToken, setRecoveryToken] = useState('')
+  const [authMode, setAuthMode] = useState(INITIAL_RESET_TOKEN ? 'reset' : 'login')
+  const [recoveryToken, setRecoveryToken] = useState(INITIAL_RESET_TOKEN)
   const [notifications, setNotifications] = useState([])
   const [reportSummary, setReportSummary] = useState({ total: 0, proximas: 0, porEstado: {} })
   const [reportFilters, setReportFilters] = useState({ desde: '', hasta: '', estado: '' })
@@ -62,6 +63,11 @@ function WorkspaceApp() {
 
   const auth = useMemo(() => token ? { Authorization: `Bearer ${token}` } : {}, [token])
   const navigate = (next, origin) => { if (next === 'login') setReturnPage(origin || page); setPage(next); setMessage('') }
+
+  useEffect(() => {
+    if (!INITIAL_RESET_TOKEN) return
+    window.history.replaceState({}, document.title, window.location.pathname)
+  }, [])
 
   useEffect(() => {
     if (!token) return

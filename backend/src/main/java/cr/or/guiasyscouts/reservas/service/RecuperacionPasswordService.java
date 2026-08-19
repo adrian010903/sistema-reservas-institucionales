@@ -26,12 +26,17 @@ public class RecuperacionPasswordService {
     private final PasswordResetTokenRepository tokenRepository;
     private final PasswordEncoder passwordEncoder;
     private final boolean mostrarTokenDesarrollo;
+    private final CorreoService correoService;
+    private final String frontendUrl;
 
     public RecuperacionPasswordService(UsuarioRepository usuarioRepository, PasswordResetTokenRepository tokenRepository,
                                        PasswordEncoder passwordEncoder,
-                                       @Value("${app.recovery.expose-token:false}") boolean mostrarTokenDesarrollo) {
+                                       CorreoService correoService,
+                                       @Value("${app.recovery.expose-token:false}") boolean mostrarTokenDesarrollo,
+                                       @Value("${app.frontend.url:http://localhost:5173}") String frontendUrl) {
         this.usuarioRepository = usuarioRepository; this.tokenRepository = tokenRepository;
-        this.passwordEncoder = passwordEncoder; this.mostrarTokenDesarrollo = mostrarTokenDesarrollo;
+        this.passwordEncoder = passwordEncoder; this.correoService = correoService;
+        this.mostrarTokenDesarrollo = mostrarTokenDesarrollo; this.frontendUrl = frontendUrl;
     }
 
     @Transactional
@@ -42,6 +47,10 @@ public class RecuperacionPasswordService {
         String tokenPlano = UUID.randomUUID() + "-" + UUID.randomUUID();
         PasswordResetToken token = new PasswordResetToken(); token.setTokenHash(hash(tokenPlano)); token.setUsuario(usuario);
         token.setExpiraEn(Instant.now().plus(30, ChronoUnit.MINUTES)); tokenRepository.save(token);
+        String enlace = frontendUrl.replaceAll("/+$", "") + "/?resetToken=" + tokenPlano;
+        correoService.enviar(usuario.getCorreo(), "Recuperación de acceso",
+                "Se solicitó restablecer tu contraseña. Usa este enlace durante los próximos 30 minutos:\n\n" + enlace
+                        + "\n\nSi no realizaste la solicitud, ignora este mensaje.");
         return new Respuesta(mensaje, mostrarTokenDesarrollo ? tokenPlano : null);
     }
 
