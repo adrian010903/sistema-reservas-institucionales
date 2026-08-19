@@ -36,7 +36,7 @@ El backend utiliza `http://localhost:8081/api/v1` como URL base. El puerto puede
 - Flujo de pagos demostrativo en colones costarricenses.
 - Administración de lugares, espacios, usuarios, reservas y pagos.
 - Control de roles `USUARIO`, `ADMIN` y `SUPERADMIN`.
-- Registro, edición del perfil y cambio de contraseña.
+- Registro, edición del perfil y cambio de contraseña con política de seguridad uniforme.
 - Recuperación local mediante token temporal de un solo uso.
 - Centro de notificaciones internas para reservas y pagos.
 - Indicadores administrativos y reportes de reservas exportables a CSV.

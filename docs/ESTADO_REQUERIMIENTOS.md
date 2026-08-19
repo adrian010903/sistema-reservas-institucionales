@@ -32,7 +32,7 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 
 ## Reglas de negocio destacadas
 
-- Las contraseñas se almacenan con BCrypt y los correos son únicos.
+- Las contraseñas se almacenan con BCrypt, deben tener entre 8 y 72 caracteres e incluir mayúscula, minúscula y número; los correos son únicos.
 - Los usuarios bloqueados o inactivos no pueden iniciar sesión.
 - Los lugares y espacios se desactivan sin borrar información histórica.
 - Las reservas ocupan un horario mientras estén pendientes, aprobadas o confirmadas.

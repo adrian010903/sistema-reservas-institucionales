@@ -4,6 +4,11 @@ import './App.css'
 const API = import.meta.env.VITE_API_URL || 'http://localhost:8081/api/v1'
 const BACKEND = API.replace(/\/api\/v1\/?$/, '')
 const RATE = 25000
+const PASSWORD_MESSAGE = 'La contraseña debe tener entre 8 y 72 caracteres e incluir mayúscula, minúscula y número'
+
+function isStrongPassword(password) {
+  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,72}$/.test(password)
+}
 
 function Header({ user, page, navigate, logout, unreadCount }) {
   const items = user
@@ -114,6 +119,7 @@ function WorkspaceApp() {
   async function register(event) {
     event.preventDefault(); setMessage(''); const data = Object.fromEntries(new FormData(event.currentTarget))
     if (data.password !== data.confirmacion) return setMessage('Las contraseñas no coinciden')
+    if (!isStrongPassword(data.password)) return setMessage(PASSWORD_MESSAGE)
     const response = await fetch(`${API}/auth/registro`, { method: 'POST', headers: { 'Content-Type':'application/json' }, body: JSON.stringify({ nombre:data.nombre, correo:data.correo, password:data.password }) })
     const body = await response.json().catch(() => ({}))
     if (!response.ok) return setMessage(body.detail || body.message || `Error ${response.status}`)
@@ -131,6 +137,7 @@ function WorkspaceApp() {
   async function confirmRecovery(event) {
     event.preventDefault(); setMessage(''); const data = Object.fromEntries(new FormData(event.currentTarget))
     if (data.passwordNuevo !== data.confirmacion) return setMessage('Las contraseñas no coinciden')
+    if (!isStrongPassword(data.passwordNuevo)) return setMessage(PASSWORD_MESSAGE)
     const response = await fetch(`${API}/auth/recuperacion/confirmar`, { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({token:data.token,passwordNuevo:data.passwordNuevo}) })
     if (!response.ok) { const body = await response.json().catch(() => ({})); return setMessage(body.detail || body.message || `Error ${response.status}`) }
     setAuthMode('login'); setRecoveryToken(''); setMessage('Contraseña restablecida. Ya puedes iniciar sesión.')
@@ -308,6 +315,7 @@ function WorkspaceApp() {
   async function changePassword(event) {
     event.preventDefault(); setMessage(''); const formElement = event.currentTarget; const data = Object.fromEntries(new FormData(formElement))
     if (data.passwordNuevo !== data.confirmacion) return setMessage('La confirmación de la contraseña no coincide')
+    if (!isStrongPassword(data.passwordNuevo)) return setMessage(PASSWORD_MESSAGE)
     const response = await fetch(`${API}/usuarios/me/password`, { method: 'PATCH', headers: { ...auth, 'Content-Type': 'application/json' }, body: JSON.stringify({ passwordActual:data.passwordActual, passwordNuevo:data.passwordNuevo }) })
     if (!response.ok) { const body = await response.json().catch(() => ({})); return setMessage(body.detail || body.message || `Error ${response.status}`) }
     formElement.reset(); setMessage('Contraseña actualizada correctamente')
