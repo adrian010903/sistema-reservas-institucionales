@@ -23,6 +23,8 @@ npm run dev
 
 6. Abre `http://localhost:5173`.
 
+Para cargar el catálogo local de demostración (Hostel y Campo Escuela), ejecuta `docs/DATOS_DEMO.sql` sobre la base `reservas_institucionales` desde MySQL Workbench. El script puede ejecutarse varias veces sin duplicar registros.
+
 El backend utiliza `http://localhost:8081/api/v1` como URL base. El puerto puede cambiarse con la variable de entorno `SERVER_PORT`; en ese caso también debe configurarse `VITE_API_URL` en el frontend.
 
 ## Configuración por entorno
