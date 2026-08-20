@@ -8,6 +8,7 @@ import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
 import java.util.LinkedHashMap;
@@ -37,6 +38,26 @@ public class ApiExceptionHandler {
     ProblemDetail cuerpoInvalido(HttpMessageNotReadableException exception, HttpServletRequest request) {
         return problema(HttpStatus.BAD_REQUEST, "Solicitud inválida",
                 "El cuerpo de la solicitud está incompleto o contiene valores no reconocidos", request);
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    ProblemDetail estadoRespuesta(ResponseStatusException exception, HttpServletRequest request) {
+        HttpStatus status = HttpStatus.valueOf(exception.getStatusCode().value());
+        String detalle = exception.getReason() == null || exception.getReason().isBlank()
+                ? "No fue posible completar la solicitud"
+                : exception.getReason();
+        return problema(status, titulo(status), detalle, request);
+    }
+
+    private String titulo(HttpStatus status) {
+        return switch (status) {
+            case BAD_REQUEST -> "Solicitud inválida";
+            case UNAUTHORIZED -> "No autenticado";
+            case FORBIDDEN -> "Acceso denegado";
+            case NOT_FOUND -> "Recurso no encontrado";
+            case CONFLICT -> "Conflicto";
+            default -> "Solicitud rechazada";
+        };
     }
 
     private ProblemDetail problema(HttpStatus status, String titulo, String detalle, HttpServletRequest request) {
