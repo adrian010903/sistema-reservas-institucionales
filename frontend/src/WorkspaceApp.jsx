@@ -345,7 +345,9 @@ function WorkspaceApp() {
     if (!isStrongPassword(data.passwordNuevo)) return setMessage(PASSWORD_MESSAGE)
     const response = await fetch(`${API}/usuarios/me/password`, { method: 'PATCH', headers: { ...auth, 'Content-Type': 'application/json' }, body: JSON.stringify({ passwordActual:data.passwordActual, passwordNuevo:data.passwordNuevo }) })
     if (!response.ok) { const body = await response.json().catch(() => ({})); return setMessage(body.detail || body.message || `Error ${response.status}`) }
-    formElement.reset(); setMessage('Contraseña actualizada correctamente')
+    formElement.reset(); localStorage.removeItem('reservas_token'); setToken(null); setUser(null)
+    setReservations([]); setPayments([]); setAuthMode('login'); setPage('login')
+    setMessage('Contraseña restablecida. Inicia sesión nuevamente con tu nueva contraseña.')
   }
 
   function renderSpacesPage() {

@@ -26,7 +26,7 @@ class JwtAuthenticationFilterTest {
         var details = User.withUsername("activo@ejemplo.cr").password("hash").roles("USUARIO").build();
         when(jwtService.extraerCorreo("token-valido")).thenReturn(details.getUsername());
         when(userDetailsService.loadUserByUsername(details.getUsername())).thenReturn(details);
-        when(jwtService.esTokenValido("token-valido", details.getUsername())).thenReturn(true);
+        when(jwtService.esTokenValido("token-valido", details.getUsername(), 0)).thenReturn(true);
 
         ejecutar("token-valido");
 
@@ -43,7 +43,7 @@ class JwtAuthenticationFilterTest {
         ejecutar("token-anterior");
 
         assertNull(SecurityContextHolder.getContext().getAuthentication());
-        verify(jwtService, never()).esTokenValido(anyString(), anyString());
+        verify(jwtService, never()).esTokenValido(anyString(), anyString(), anyInt());
     }
 
     private void ejecutar(String token) throws Exception {

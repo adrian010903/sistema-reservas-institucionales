@@ -35,6 +35,7 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 - Las contraseñas se almacenan con BCrypt, deben tener entre 8 y 72 caracteres e incluir mayúscula, minúscula y número; los correos son únicos.
 - Los usuarios bloqueados o inactivos no pueden iniciar sesión.
 - Los tokens emitidos previamente dejan de autorizar peticiones tan pronto la cuenta se bloquea o desactiva.
+- Cambiar o recuperar la contraseña incrementa la versión de credenciales e invalida todos los JWT anteriores.
 - Los errores de autenticación y permisos usan respuestas JSON Problem Details con códigos 401/403.
 - Los lugares y espacios se desactivan sin borrar información histórica.
 - Las reservas ocupan un horario mientras estén pendientes, aprobadas o confirmadas.

@@ -55,7 +55,7 @@ public class UsuarioService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciales invalidas");
         }
 
-        return new AuthResponse(jwtService.generarToken(usuario.getCorreo()), "Bearer", UsuarioResponse.desde(usuario));
+        return new AuthResponse(jwtService.generarToken(usuario.getCorreo(), usuario.getTokenVersion()), "Bearer", UsuarioResponse.desde(usuario));
     }
 
     @Transactional
@@ -77,6 +77,7 @@ public class UsuarioService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La contraseña actual es incorrecta");
         if (passwordEncoder.matches(request.passwordNuevo(), usuario.getPasswordHash()))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La contraseña nueva debe ser diferente");
-        usuario.setPasswordHash(passwordEncoder.encode(request.passwordNuevo())); usuarioRepository.save(usuario);
+        usuario.setPasswordHash(passwordEncoder.encode(request.passwordNuevo()));
+        usuario.incrementarTokenVersion(); usuarioRepository.save(usuario);
     }
 }

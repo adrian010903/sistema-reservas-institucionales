@@ -44,6 +44,9 @@ public class Usuario {
     @Column(name = "actualizado_en", nullable = false)
     private Instant actualizadoEn;
 
+    @Column(name = "token_version")
+    private Integer tokenVersion = 0;
+
     @PrePersist
     void alCrear() {
         Instant ahora = Instant.now();
@@ -107,4 +110,7 @@ public class Usuario {
     public Instant getActualizadoEn() {
         return actualizadoEn;
     }
+
+    public int getTokenVersion() { return tokenVersion == null ? 0 : tokenVersion; }
+    public void incrementarTokenVersion() { tokenVersion = getTokenVersion() + 1; }
 }

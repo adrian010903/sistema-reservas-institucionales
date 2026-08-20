@@ -2,6 +2,7 @@ package cr.or.guiasyscouts.reservas.config;
 
 import cr.or.guiasyscouts.reservas.service.CustomUserDetailsService;
 import cr.or.guiasyscouts.reservas.service.JwtService;
+import cr.or.guiasyscouts.reservas.service.UsuarioPrincipal;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,8 +32,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             String correo = jwtService.extraerCorreo(header.substring(7));
             if (SecurityContextHolder.getContext().getAuthentication() == null) {
                 UserDetails details = userDetailsService.loadUserByUsername(correo);
+                int tokenVersion = details instanceof UsuarioPrincipal principal ? principal.tokenVersion() : 0;
                 if (details.isEnabled() && details.isAccountNonLocked()
-                        && jwtService.esTokenValido(header.substring(7), details.getUsername())) {
+                        && jwtService.esTokenValido(header.substring(7), details.getUsername(), tokenVersion)) {
                     var authentication = new UsernamePasswordAuthenticationToken(details, null, details.getAuthorities());
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);

@@ -60,7 +60,8 @@ public class RecuperacionPasswordService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Token inválido o vencido"));
         if (token.isUsado() || token.getExpiraEn().isBefore(Instant.now()))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Token inválido o vencido");
-        token.getUsuario().setPasswordHash(passwordEncoder.encode(passwordNuevo)); token.setUsado(true);
+        token.getUsuario().setPasswordHash(passwordEncoder.encode(passwordNuevo));
+        token.getUsuario().incrementarTokenVersion(); token.setUsado(true);
         usuarioRepository.save(token.getUsuario()); tokenRepository.save(token);
     }
 

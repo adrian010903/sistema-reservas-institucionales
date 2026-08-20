@@ -25,10 +25,11 @@ public class JwtService {
         this.expirationMs = expirationMs;
     }
 
-    public String generarToken(String correo) {
+    public String generarToken(String correo, int tokenVersion) {
         Date ahora = new Date();
         return Jwts.builder()
                 .subject(correo)
+                .claim("ver", tokenVersion)
                 .issuedAt(ahora)
                 .expiration(new Date(ahora.getTime() + expirationMs))
                 .signWith(signingKey)
@@ -39,9 +40,11 @@ public class JwtService {
         return extraerClaims(token).getSubject();
     }
 
-    public boolean esTokenValido(String token, String correo) {
+    public boolean esTokenValido(String token, String correo, int tokenVersion) {
         Claims claims = extraerClaims(token);
-        return correo.equals(claims.getSubject()) && claims.getExpiration().after(new Date());
+        Integer version = claims.get("ver", Integer.class);
+        return correo.equals(claims.getSubject()) && version != null && version == tokenVersion
+                && claims.getExpiration().after(new Date());
     }
 
     private Claims extraerClaims(String token) {

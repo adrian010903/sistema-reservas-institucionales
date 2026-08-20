@@ -52,6 +52,7 @@ El archivo `frontend/.env.example` muestra la configuración local. Los archivos
 - Administración de lugares, espacios, usuarios, reservas y pagos.
 - Control de roles `USUARIO`, `ADMIN` y `SUPERADMIN`.
 - Revocación inmediata de tokens para cuentas bloqueadas o inactivas.
+- Invalidación de sesiones anteriores después de cambiar o recuperar la contraseña.
 - Registro, edición del perfil y cambio de contraseña con política de seguridad uniforme.
 - Recuperación local mediante token temporal de un solo uso.
 - Centro de notificaciones internas para reservas y pagos.
