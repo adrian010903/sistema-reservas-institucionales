@@ -54,7 +54,7 @@ El archivo `frontend/.env.example` muestra la configuración local. Los archivos
 - Recuperación local mediante token temporal de un solo uso.
 - Centro de notificaciones internas para reservas y pagos.
 - Notificaciones y recuperación por correo mediante SMTP configurable.
-- Indicadores administrativos y reportes de reservas exportables a CSV.
+- Indicadores administrativos, gráfico por estados y reportes de reservas exportables a CSV/PDF.
 - Comprobantes PDF descargables para pagos aprobados.
 - Bitácora administrativa de cambios sensibles con actor y fecha.
 

@@ -24,7 +24,7 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 | RF-18 | Gestionar usuarios | Implementado | Listado, estado y rol |
 | RF-19 | Asignar roles | Implementado | Restricción especial para SUPERADMIN |
 | RF-20 | Gestionar reservas | Implementado | Aprobar y rechazar solicitudes pendientes |
-| RF-21 | Generar reportes | Implementado | Indicadores y exportación CSV filtrable de reservas |
+| RF-21 | Generar reportes | Implementado | Indicadores, gráfico por estados y exportación CSV/PDF filtrable |
 | RF-22 | Gestionar pagos | Implementado (mock) | Validación administrativa de pagos pendientes |
 | RF-23 | Enviar notificaciones | Implementado (configurable) | Centro interno persistente y envío SMTP opcional para eventos automáticos |
 | RF-24 | Mostrar validaciones | Implementado | Respuestas Problem Details uniformes y mensajes presentados en frontend |
@@ -47,5 +47,4 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 
 1. Configurar y verificar una cuenta SMTP institucional real.
 2. Verificación visual final del comprobante y la bitácora con backend ejecutándose.
-3. Ampliar reportes con gráficos y PDF.
-4. Ampliar las pruebas automatizadas existentes hacia controladores y seguridad HTTP.
+3. Ampliar las pruebas automatizadas existentes hacia controladores y seguridad HTTP.
