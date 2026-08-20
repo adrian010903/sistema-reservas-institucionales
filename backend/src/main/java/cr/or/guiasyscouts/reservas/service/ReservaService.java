@@ -11,6 +11,8 @@ import cr.or.guiasyscouts.reservas.model.Usuario;
 import cr.or.guiasyscouts.reservas.repository.EspacioRepository;
 import cr.or.guiasyscouts.reservas.repository.ReservaRepository;
 import cr.or.guiasyscouts.reservas.repository.UsuarioRepository;
+import cr.or.guiasyscouts.reservas.repository.PagoRepository;
+import cr.or.guiasyscouts.reservas.model.EstadoPago;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,12 +29,16 @@ public class ReservaService {
     private final UsuarioRepository usuarioRepository;
     private final EspacioRepository espacioRepository;
     private final NotificacionService notificacionService;
+    private final PagoRepository pagoRepository;
 
-    public ReservaService(ReservaRepository reservaRepository, UsuarioRepository usuarioRepository, EspacioRepository espacioRepository, NotificacionService notificacionService) {
+    public ReservaService(ReservaRepository reservaRepository, UsuarioRepository usuarioRepository,
+                          EspacioRepository espacioRepository, NotificacionService notificacionService,
+                          PagoRepository pagoRepository) {
         this.reservaRepository = reservaRepository;
         this.usuarioRepository = usuarioRepository;
         this.espacioRepository = espacioRepository;
         this.notificacionService = notificacionService;
+        this.pagoRepository = pagoRepository;
     }
 
     @Transactional
@@ -61,6 +67,8 @@ public class ReservaService {
         Reserva reserva = obtenerPropia(correo, id);
         if (!EnumSet.of(EstadoReserva.PENDIENTE, EstadoReserva.APROBADA).contains(reserva.getEstado()))
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Solo se pueden modificar reservas pendientes o aprobadas");
+        if (pagoRepository.findByReservaId(id).filter(pago -> pago.getEstado() != EstadoPago.RECHAZADO).isPresent())
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "No se puede modificar una reserva con un pago vigente");
         validarFechaHorario(request.fecha(), request.horaInicio(), request.horaFin());
         Espacio espacio = espacioRepository.findByIdForUpdate(request.espacioId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Espacio no encontrado"));

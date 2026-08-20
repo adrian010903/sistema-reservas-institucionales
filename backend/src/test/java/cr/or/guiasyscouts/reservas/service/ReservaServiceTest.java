@@ -5,6 +5,7 @@ import cr.or.guiasyscouts.reservas.model.*;
 import cr.or.guiasyscouts.reservas.repository.EspacioRepository;
 import cr.or.guiasyscouts.reservas.repository.ReservaRepository;
 import cr.or.guiasyscouts.reservas.repository.UsuarioRepository;
+import cr.or.guiasyscouts.reservas.repository.PagoRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,11 +30,12 @@ class ReservaServiceTest {
     @Mock UsuarioRepository usuarioRepository;
     @Mock EspacioRepository espacioRepository;
     @Mock NotificacionService notificacionService;
+    @Mock PagoRepository pagoRepository;
     private ReservaService service;
 
     @BeforeEach
     void configurar() {
-        service = new ReservaService(reservaRepository, usuarioRepository, espacioRepository, notificacionService);
+        service = new ReservaService(reservaRepository, usuarioRepository, espacioRepository, notificacionService, pagoRepository);
     }
 
     @Test
@@ -99,6 +101,23 @@ class ReservaServiceTest {
         assertEquals(15, response.cantidadPersonas());
         verify(reservaRepository).save(any(Reserva.class));
         verify(notificacionService).crear(any(), eq(TipoNotificacion.RESERVA), anyString(), anyString());
+    }
+
+    @Test
+    void impideModificarReservaConPagoVigente() {
+        Usuario usuario = new Usuario(); usuario.setCorreo("persona@ejemplo.cr");
+        Reserva reserva = new Reserva(); reserva.setUsuario(usuario); reserva.setEstado(EstadoReserva.PENDIENTE);
+        Pago pago = new Pago(); pago.setEstado(EstadoPago.PENDIENTE_VERIFICACION); pago.setReserva(reserva);
+        when(reservaRepository.findByIdForUpdate(12L)).thenReturn(Optional.of(reserva));
+        when(pagoRepository.findByReservaId(12L)).thenReturn(Optional.of(pago));
+
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> service.editarPropia("persona@ejemplo.cr", 12L,
+                        solicitud(LocalTime.of(10, 0), LocalTime.of(12, 0), 10)));
+
+        assertEquals(HttpStatus.CONFLICT, error.getStatusCode());
+        assertTrue(error.getReason().contains("pago vigente"));
+        verifyNoInteractions(espacioRepository);
     }
 
     private ReservaRequest solicitud(LocalTime inicio, LocalTime fin, int personas) {
