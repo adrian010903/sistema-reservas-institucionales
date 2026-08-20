@@ -58,6 +58,7 @@ El archivo `frontend/.env.example` muestra la configuración local. Los archivos
 - Invalidación de sesiones anteriores después de cambiar o recuperar la contraseña.
 - Registro, edición del perfil y cambio de contraseña con política de seguridad uniforme.
 - Recuperación local mediante token temporal de un solo uso.
+- Un único token de recuperación vigente por cuenta, protegido contra reutilización concurrente.
 - Centro de notificaciones internas para reservas y pagos.
 - Notificaciones y recuperación por correo mediante SMTP configurable.
 - Indicadores administrativos, gráfico por estados y reportes de reservas exportables a CSV/PDF.

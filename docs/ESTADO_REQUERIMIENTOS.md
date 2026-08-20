@@ -6,7 +6,7 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 |---|---|---|---|
 | RF-01 | Registrar usuario | Implementado | `POST /api/v1/auth/registro` |
 | RF-02 | Iniciar sesión | Implementado | JWT, control de estado y roles |
-| RF-03 | Recuperar contraseña | Implementado (configurable) | Token seguro de un solo uso, 30 minutos y enlace por SMTP opcional |
+| RF-03 | Recuperar contraseña | Implementado (configurable) | Token único vigente por usuario, uso único, 30 minutos y enlace SMTP |
 | RF-04 | Gestionar perfil | Implementado | Actualización de nombre, correo y contraseña |
 | RF-05 | Registrar espacio | Implementado | Administración por lugar, tipo y categoría |
 | RF-06 | Editar espacio | Implementado | Datos, estado e imagen con validación binaria y limpieza de reemplazos |
@@ -36,6 +36,7 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 - Los usuarios bloqueados o inactivos no pueden iniciar sesión.
 - Los tokens emitidos previamente dejan de autorizar peticiones tan pronto la cuenta se bloquea o desactiva.
 - Cambiar o recuperar la contraseña incrementa la versión de credenciales e invalida todos los JWT anteriores.
+- Solicitar un nuevo enlace invalida los anteriores y la confirmación bloquea el token para impedir reutilización concurrente.
 - Los errores de autenticación y permisos usan respuestas JSON Problem Details con códigos 401/403.
 - Los lugares y espacios se desactivan sin borrar información histórica.
 - Las fotografías se limitan a 5 MB, validan la firma real JPG/PNG/WEBP y no conservan reemplazos huérfanos.
