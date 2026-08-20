@@ -11,7 +11,7 @@ Aplicación web para administrar espacios y reservas institucionales de Guías y
 ## Preparación local
 
 1. Crea en MySQL la base de datos `reservas_institucionales`.
-2. Copia `backend/src/main/resources/application-local.properties.example` como `application-local.properties`.
+2. Copia `backend/src/main/resources/application-local.properties.example` como `backend/src/main/resources/application-local.properties`. El backend lo leerá desde el disco tanto si IntelliJ usa `backend` como el directorio raíz del repositorio.
 3. Configura en ese archivo tu usuario y contraseña de MySQL y una clave JWT local.
 4. Ejecuta `ReservasBackendApplication` desde IntelliJ IDEA.
 5. En una terminal dentro de `frontend`, ejecuta:
