@@ -27,7 +27,7 @@ function Header({ user, page, navigate, logout, unreadCount }) {
     ? [['dashboard', 'Dashboard'], ['spaces', 'Espacios'], ['reserve', 'Reservar'], ['reservations', 'Mis reservas'], ['payments', 'Pagos'], ['notifications', `Avisos${unreadCount ? ` (${unreadCount})` : ''}`], ['profile', 'Mi perfil']]
     : [['home', 'Inicio'], ['spaces', 'Espacios']]
   if (user && ['ADMIN', 'SUPERADMIN'].includes(user.rol)) items.push(['admin', 'Administración'])
-  return <header className="app-nav"><button className="app-brand" onClick={() => navigate(user ? 'dashboard' : 'home')}><span>GS</span><div>SpaceFlow<small>Reservas institucionales</small></div></button><nav>{items.map(([key, label]) => <button className={page === key ? 'active' : ''} key={key} onClick={() => navigate(key)}>{label}</button>)}</nav>{user ? <button className="nav-session" onClick={logout}>Cerrar sesión</button> : <button className="nav-session" onClick={() => navigate('login', page)}>Iniciar sesión</button>}</header>
+  return <header className="app-nav"><button className="app-brand official-brand" aria-label="Ir al inicio" onClick={() => navigate(user ? 'dashboard' : 'home')}><img src="/assets/logo-guias-scouts-cr.png" alt="Guías y Scouts de Costa Rica" /></button><nav>{items.map(([key, label]) => <button className={page === key ? 'active' : ''} key={key} onClick={() => navigate(key)}>{label}</button>)}</nav>{user ? <button className="nav-session" onClick={logout}>Cerrar sesión</button> : <button className="nav-session" onClick={() => navigate('login', page)}>Iniciar sesión</button>}</header>
 }
 
 function WorkspaceApp() {
