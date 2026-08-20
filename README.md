@@ -43,6 +43,7 @@ El archivo `frontend/.env.example` muestra la configuración local. Los archivos
 
 ## Funciones actuales
 
+- Dashboards diferenciados por rol: agenda y avisos para clientes; métricas, gráfico de estados y accesos de gestión para administradores.
 - Registro e inicio de sesión con roles.
 - Catálogo público de espacios.
 - Fotografías de espacios con validación de formato real, límite de tamaño y almacenamiento configurable.
