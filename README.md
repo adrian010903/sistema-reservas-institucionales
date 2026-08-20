@@ -32,6 +32,7 @@ Para publicar el sistema en un dominio no es necesario modificar el código. Con
 - `SERVER_PORT`: puerto del backend.
 - `CORS_ALLOWED_ORIGINS`: dominio del frontend; admite varios valores separados por coma.
 - `TARIFA_HORA`: tarifa institucional en colones.
+- `UPLOAD_DIR`: directorio persistente para fotografías de espacios.
 - `VITE_API_URL`: URL pública del backend terminada en `/api/v1`, definida al construir el frontend.
 - `FRONTEND_URL`: URL usada para construir enlaces de recuperación.
 - `MAIL_ENABLED`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD` y `MAIL_FROM`: integración SMTP opcional.
@@ -42,6 +43,7 @@ El archivo `frontend/.env.example` muestra la configuración local. Los archivos
 
 - Registro e inicio de sesión con roles.
 - Catálogo público de espacios.
+- Fotografías de espacios con validación de formato real, límite de tamaño y almacenamiento configurable.
 - Creación y seguimiento de reservas.
 - Consulta de disponibilidad por lugar, fecha, horario y capacidad.
 - Modificación y cancelación de reservas activas.

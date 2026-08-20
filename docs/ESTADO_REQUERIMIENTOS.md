@@ -9,7 +9,7 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 | RF-03 | Recuperar contraseña | Implementado (configurable) | Token seguro de un solo uso, 30 minutos y enlace por SMTP opcional |
 | RF-04 | Gestionar perfil | Implementado | Actualización de nombre, correo y contraseña |
 | RF-05 | Registrar espacio | Implementado | Administración por lugar, tipo y categoría |
-| RF-06 | Editar espacio | Implementado | Datos, estado e imagen |
+| RF-06 | Editar espacio | Implementado | Datos, estado e imagen con validación binaria y limpieza de reemplazos |
 | RF-07 | Eliminar espacio | Implementado | Desactivación lógica para conservar historial |
 | RF-08 | Consultar espacios disponibles | Implementado | Catálogo público y consulta de disponibilidad |
 | RF-09 | Filtrar por fecha, hora y tipo | Implementado | Fecha, horario, lugar, tipo y capacidad en catálogo público |
@@ -38,6 +38,7 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 - Cambiar o recuperar la contraseña incrementa la versión de credenciales e invalida todos los JWT anteriores.
 - Los errores de autenticación y permisos usan respuestas JSON Problem Details con códigos 401/403.
 - Los lugares y espacios se desactivan sin borrar información histórica.
+- Las fotografías se limitan a 5 MB, validan la firma real JPG/PNG/WEBP y no conservan reemplazos huérfanos.
 - Las reservas ocupan un horario mientras estén pendientes, aprobadas o confirmadas.
 - La creación y modificación bloquean transaccionalmente el espacio para evitar reservas simultáneas duplicadas.
 - Una reserva cancelada libera automáticamente el intervalo.

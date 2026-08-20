@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import cr.or.guiasyscouts.reservas.service.AuditoriaService;
+import cr.or.guiasyscouts.reservas.service.ImagenEspacioService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -32,13 +33,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.Set;
-import java.util.UUID;
-
 import java.util.List;
 
 @RestController
@@ -50,15 +44,17 @@ public class AdminCatalogoController {
     private final EspacioRepository espacioRepository;
     private final LugarRepository lugarRepository;
     private final AuditoriaService auditoriaService;
+    private final ImagenEspacioService imagenEspacioService;
 
     public AdminCatalogoController(TipoEspacioRepository tipoRepository, CategoriaEspacioRepository categoriaRepository,
                                    EspacioRepository espacioRepository, LugarRepository lugarRepository,
-                                   AuditoriaService auditoriaService) {
+                                   AuditoriaService auditoriaService, ImagenEspacioService imagenEspacioService) {
         this.tipoRepository = tipoRepository;
         this.categoriaRepository = categoriaRepository;
         this.espacioRepository = espacioRepository;
         this.lugarRepository = lugarRepository;
         this.auditoriaService = auditoriaService;
+        this.imagenEspacioService = imagenEspacioService;
     }
 
     @GetMapping("/tipos")
@@ -171,20 +167,7 @@ public class AdminCatalogoController {
     public EspacioResponse subirImagen(Authentication auth, @PathVariable Long id, @RequestPart("imagen") MultipartFile imagen) {
         Espacio espacio = espacioRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Espacio no encontrado"));
-        if (imagen.isEmpty() || imagen.getContentType() == null || !Set.of("image/jpeg", "image/png", "image/webp").contains(imagen.getContentType()))
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La imagen debe ser JPG, PNG o WEBP");
-        if (imagen.getSize() > 5 * 1024 * 1024)
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La imagen no puede superar 5 MB");
-        String extension = switch (imagen.getContentType()) { case "image/png" -> ".png"; case "image/webp" -> ".webp"; default -> ".jpg"; };
-        String nombre = UUID.randomUUID() + extension;
-        Path carpeta = Path.of("uploads", "espacios").toAbsolutePath().normalize();
-        try {
-            Files.createDirectories(carpeta);
-            Files.copy(imagen.getInputStream(), carpeta.resolve(nombre), StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException ex) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "No se pudo guardar la imagen");
-        }
-        espacio.setImagenUrl("/uploads/espacios/" + nombre);
+        espacio.setImagenUrl(imagenEspacioService.guardar(imagen, espacio.getImagenUrl()));
         Espacio guardado = espacioRepository.save(espacio);
         auditoriaService.registrar(auth.getName(), "ACTUALIZAR_IMAGEN", "ESPACIO", id, guardado.getNombre());
         return EspacioResponse.desde(guardado);
