@@ -48,7 +48,7 @@ public class SecurityConfig {
                         .authenticationEntryPoint(authenticationEntryPoint)
                         .accessDeniedHandler(accessDeniedHandler))
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/v1/status", "/api/v1/auth/**", "/api/v1/configuracion-publica", "/uploads/**").permitAll()
+                        .requestMatchers("/error", "/api/v1/status", "/api/v1/auth/**", "/api/v1/configuracion-publica", "/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/espacios").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/lugares").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/reservas/disponibilidad").permitAll()

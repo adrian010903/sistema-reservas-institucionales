@@ -38,6 +38,21 @@ class ReservaPagoHttpIntegrationTest {
     @Autowired private EspacioRepository espacios;
 
     @Test
+    void catalogoPublicoIncluyeRelacionesDelEspacioSinAutenticacion() throws Exception {
+        Espacio espacio = crearEspacio();
+
+        mockMvc.perform(get("/api/v1/espacios"))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
+                .andExpect(jsonPath("$[?(@.id == %d)].lugarId".formatted(espacio.getId()))
+                        .value(org.hamcrest.Matchers.contains(espacio.getLugar().getId().intValue())))
+                .andExpect(jsonPath("$[?(@.id == %d)].tipo".formatted(espacio.getId()))
+                        .value(org.hamcrest.Matchers.contains(espacio.getTipo().getNombre())))
+                .andExpect(jsonPath("$[?(@.id == %d)].categoria".formatted(espacio.getId()))
+                        .value(org.hamcrest.Matchers.contains(espacio.getCategoria().getNombre())));
+    }
+
+    @Test
     void tarjetaSimuladaConfirmaReservaYRegistraPagoEnColones() throws Exception {
         Espacio espacio = crearEspacio();
         String token = registrarEIniciarSesion("pago");
