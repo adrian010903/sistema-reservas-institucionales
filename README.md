@@ -50,6 +50,7 @@ El archivo `frontend/.env.example` muestra la configuración local. Los archivos
 - Flujo de pagos demostrativo en colones costarricenses.
 - Tarifa por hora configurable desde el backend mediante `TARIFA_HORA` o la propiedad local correspondiente.
 - Administración de lugares, espacios, usuarios, reservas y pagos.
+- Separación de privilegios: solo `SUPERADMIN` administra roles y otras cuentas administrativas.
 - Control de roles `USUARIO`, `ADMIN` y `SUPERADMIN`.
 - Revocación inmediata de tokens para cuentas bloqueadas o inactivas.
 - Invalidación de sesiones anteriores después de cambiar o recuperar la contraseña.

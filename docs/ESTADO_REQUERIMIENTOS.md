@@ -22,7 +22,7 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 | RF-16 | Registrar pago | Implementado (mock) | Tarjeta simulada, transferencia y efectivo |
 | RF-17 | Generar comprobante | Implementado | PDF descargable únicamente para pagos aprobados |
 | RF-18 | Gestionar usuarios | Implementado | Listado, estado y rol |
-| RF-19 | Asignar roles | Implementado | Restricción especial para SUPERADMIN |
+| RF-19 | Asignar roles | Implementado | Solo SUPERADMIN asigna roles o gestiona cuentas administrativas |
 | RF-20 | Gestionar reservas | Implementado | Aprobar y rechazar solicitudes pendientes |
 | RF-21 | Generar reportes | Implementado | Indicadores, gráfico por estados y exportación CSV/PDF filtrable |
 | RF-22 | Gestionar pagos | Implementado (mock) | Validación administrativa de pagos pendientes |
@@ -46,6 +46,8 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 - El registro y la validación de pagos usan bloqueos transaccionales para impedir decisiones concurrentes inconsistentes.
 - La tarifa demostrativa tiene una única fuente configurable en el backend y se publica al frontend en colones costarricenses.
 - Las operaciones administrativas requieren rol `ADMIN` o `SUPERADMIN`.
+- Los administradores comunes gestionan usuarios estándar; solo SUPERADMIN puede asignar roles o modificar cuentas privilegiadas.
+- Ningún administrador puede cambiar su propio rol o estado desde el panel.
 - Las modificaciones sensibles de catálogo, usuarios, reservas y pagos dejan una entrada inmutable en la bitácora administrativa.
 - Los orígenes web permitidos se configuran por entorno para soportar desarrollo local y dominio institucional.
 

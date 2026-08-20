@@ -45,10 +45,13 @@ public class AdminUsuarioController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuario no encontrado"));
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
-        if (actor.getRol() != RolUsuario.SUPERADMIN && (usuario.getRol() == RolUsuario.SUPERADMIN || request.rol() == RolUsuario.SUPERADMIN))
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Solo un superadministrador puede gestionar ese rol");
-        if (actor.getId().equals(usuario.getId()) && request.estado() != usuario.getEstado())
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "No puedes bloquear tu propia cuenta");
+        if (actor.getRol() != RolUsuario.SUPERADMIN
+                && (usuario.getRol() != RolUsuario.USUARIO || request.rol() != usuario.getRol()))
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Solo un superadministrador puede gestionar roles o cuentas administrativas");
+        if (actor.getId().equals(usuario.getId())
+                && (request.estado() != usuario.getEstado() || request.rol() != usuario.getRol()))
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "No puedes cambiar tu propio rol o estado");
         usuario.setEstado(request.estado()); usuario.setRol(request.rol());
         Usuario guardado = usuarioRepository.save(usuario);
         auditoriaService.registrar(actor.getCorreo(), "ACTUALIZAR", "USUARIO", guardado.getId(),
