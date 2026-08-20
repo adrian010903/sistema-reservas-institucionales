@@ -18,7 +18,7 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 | RF-12 | Modificar reserva | Implementado | Solo reservas pendientes o aprobadas |
 | RF-13 | Cancelar reserva | Implementado | Cancelación lógica y liberación del horario |
 | RF-14 | Validar disponibilidad | Implementado | Endpoint y formulario en catálogo |
-| RF-15 | Evitar reservas duplicadas | Implementado | Validación de intervalos solapados |
+| RF-15 | Evitar reservas duplicadas | Implementado | Validación de solapamientos y bloqueo transaccional por espacio |
 | RF-16 | Registrar pago | Implementado (mock) | Tarjeta simulada, transferencia y efectivo |
 | RF-17 | Generar comprobante | Implementado | PDF descargable únicamente para pagos aprobados |
 | RF-18 | Gestionar usuarios | Implementado | Listado, estado y rol |
@@ -36,8 +36,10 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 - Los usuarios bloqueados o inactivos no pueden iniciar sesión.
 - Los lugares y espacios se desactivan sin borrar información histórica.
 - Las reservas ocupan un horario mientras estén pendientes, aprobadas o confirmadas.
+- La creación y modificación bloquean transaccionalmente el espacio para evitar reservas simultáneas duplicadas.
 - Una reserva cancelada libera automáticamente el intervalo.
 - Los pagos rechazados pueden intentarse nuevamente.
+- El registro y la validación de pagos usan bloqueos transaccionales para impedir decisiones concurrentes inconsistentes.
 - La tarifa demostrativa tiene una única fuente configurable en el backend y se publica al frontend en colones costarricenses.
 - Las operaciones administrativas requieren rol `ADMIN` o `SUPERADMIN`.
 - Las modificaciones sensibles de catálogo, usuarios, reservas y pagos dejan una entrada inmutable en la bitácora administrativa.

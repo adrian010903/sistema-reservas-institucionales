@@ -37,7 +37,7 @@ class PagoServiceTest {
     @Test
     void tarjetaMockApruebaPagoYConfirmaReserva() {
         Reserva reserva = reservaDe("persona@ejemplo.cr", EstadoReserva.APROBADA);
-        when(reservaRepository.findById(5L)).thenReturn(Optional.of(reserva));
+        when(reservaRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(reserva));
         when(pagoRepository.findByReservaId(5L)).thenReturn(Optional.empty());
         when(pagoRepository.save(any(Pago.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -53,7 +53,7 @@ class PagoServiceTest {
     @Test
     void transferenciaQuedaPendienteDeVerificacion() {
         Reserva reserva = reservaDe("persona@ejemplo.cr", EstadoReserva.APROBADA);
-        when(reservaRepository.findById(5L)).thenReturn(Optional.of(reserva));
+        when(reservaRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(reserva));
         when(pagoRepository.findByReservaId(5L)).thenReturn(Optional.empty());
         when(pagoRepository.save(any(Pago.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -66,7 +66,7 @@ class PagoServiceTest {
 
     @Test
     void impidePagarReservaDeOtroUsuario() {
-        when(reservaRepository.findById(5L)).thenReturn(Optional.of(reservaDe("otra@ejemplo.cr", EstadoReserva.APROBADA)));
+        when(reservaRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(reservaDe("otra@ejemplo.cr", EstadoReserva.APROBADA)));
 
         ResponseStatusException error = assertThrows(ResponseStatusException.class,
                 () -> service.pagar("persona@ejemplo.cr", new PagoRequest(5L, MetodoPago.TARJETA_MOCK)));
@@ -79,7 +79,7 @@ class PagoServiceTest {
     void impideSegundoPagoSiElAnteriorNoFueRechazado() {
         Reserva reserva = reservaDe("persona@ejemplo.cr", EstadoReserva.APROBADA);
         Pago existente = new Pago(); existente.setReserva(reserva); existente.setEstado(EstadoPago.APROBADO);
-        when(reservaRepository.findById(5L)).thenReturn(Optional.of(reserva));
+        when(reservaRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(reserva));
         when(pagoRepository.findByReservaId(5L)).thenReturn(Optional.of(existente));
 
         ResponseStatusException error = assertThrows(ResponseStatusException.class,
@@ -87,6 +87,23 @@ class PagoServiceTest {
 
         assertEquals(HttpStatus.CONFLICT, error.getStatusCode());
         assertTrue(error.getReason().contains("pago registrado"));
+        verify(pagoRepository, never()).save(any());
+    }
+
+    @Test
+    void impideAprobarPagoSiLaReservaFueCancelada() {
+        Reserva reserva = reservaDe("persona@ejemplo.cr", EstadoReserva.CANCELADA);
+        Pago pago = new Pago(); pago.setReserva(reserva); pago.setEstado(EstadoPago.PENDIENTE_VERIFICACION);
+        ReflectionTestUtils.setField(pago, "id", 9L);
+        when(pagoRepository.findById(9L)).thenReturn(Optional.of(pago));
+        when(reservaRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(reserva));
+        when(pagoRepository.findByIdForUpdate(9L)).thenReturn(Optional.of(pago));
+
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> service.validar(9L, EstadoPago.APROBADO));
+
+        assertEquals(HttpStatus.CONFLICT, error.getStatusCode());
+        assertEquals(EstadoReserva.CANCELADA, reserva.getEstado());
         verify(pagoRepository, never()).save(any());
     }
 

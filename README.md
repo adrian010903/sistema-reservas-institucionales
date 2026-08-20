@@ -46,6 +46,7 @@ El archivo `frontend/.env.example` muestra la configuración local. Los archivos
 - Consulta de disponibilidad por lugar, fecha, horario y capacidad.
 - Modificación y cancelación de reservas activas.
 - Validación del horario institucional de 08:00 a 17:00.
+- Protección transaccional contra reservas o pagos simultáneos duplicados.
 - Flujo de pagos demostrativo en colones costarricenses.
 - Tarifa por hora configurable desde el backend mediante `TARIFA_HORA` o la propiedad local correspondiente.
 - Administración de lugares, espacios, usuarios, reservas y pagos.

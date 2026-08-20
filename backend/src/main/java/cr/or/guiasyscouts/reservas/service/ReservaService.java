@@ -40,7 +40,7 @@ public class ReservaService {
         validarFechaHorario(request.fecha(), request.horaInicio(), request.horaFin());
         Usuario usuario = usuarioRepository.findByCorreoIgnoreCase(correo)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
-        Espacio espacio = espacioRepository.findById(request.espacioId())
+        Espacio espacio = espacioRepository.findByIdForUpdate(request.espacioId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Espacio no encontrado"));
         validarEspacio(espacio, request.cantidadPersonas());
         if (reservaRepository.existeSolapamiento(request.espacioId(), request.fecha(), request.horaInicio(), request.horaFin(),
@@ -62,7 +62,7 @@ public class ReservaService {
         if (!EnumSet.of(EstadoReserva.PENDIENTE, EstadoReserva.APROBADA).contains(reserva.getEstado()))
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Solo se pueden modificar reservas pendientes o aprobadas");
         validarFechaHorario(request.fecha(), request.horaInicio(), request.horaFin());
-        Espacio espacio = espacioRepository.findById(request.espacioId())
+        Espacio espacio = espacioRepository.findByIdForUpdate(request.espacioId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Espacio no encontrado"));
         validarEspacio(espacio, request.cantidadPersonas());
         if (reservaRepository.existeSolapamientoExcluyendo(id, espacio.getId(), request.fecha(), request.horaInicio(), request.horaFin(), estadosOcupados()))
@@ -120,7 +120,7 @@ public class ReservaService {
 
     @Transactional
     public ReservaResponse cambiarEstado(Long id, EstadoReserva nuevoEstado) {
-        Reserva reserva = reservaRepository.findById(id)
+        Reserva reserva = reservaRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Reserva no encontrada"));
         if (reserva.getEstado() != EstadoReserva.PENDIENTE) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Solo se pueden revisar reservas pendientes");
@@ -133,7 +133,7 @@ public class ReservaService {
     }
 
     private Reserva obtenerPropia(String correo, Long id) {
-        Reserva reserva = reservaRepository.findById(id)
+        Reserva reserva = reservaRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Reserva no encontrada"));
         if (!reserva.getUsuario().getCorreo().equalsIgnoreCase(correo))
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "La reserva no pertenece al usuario");

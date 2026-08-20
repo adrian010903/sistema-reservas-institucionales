@@ -112,6 +112,6 @@ class ReservaServiceTest {
         espacio.setEstado(EstadoEspacio.DISPONIBLE); espacio.setLugar(lugar);
         ReflectionTestUtils.setField(espacio, "id", 7L);
         when(usuarioRepository.findByCorreoIgnoreCase(anyString())).thenReturn(Optional.of(usuario));
-        when(espacioRepository.findById(7L)).thenReturn(Optional.of(espacio));
+        when(espacioRepository.findByIdForUpdate(7L)).thenReturn(Optional.of(espacio));
     }
 }

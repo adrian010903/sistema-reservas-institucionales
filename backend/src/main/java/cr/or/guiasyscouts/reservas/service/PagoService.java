@@ -33,7 +33,7 @@ public class PagoService {
 
     @Transactional
     public PagoResponse pagar(String correo, PagoRequest request) {
-        Reserva reserva = reservaRepository.findById(request.reservaId())
+        Reserva reserva = reservaRepository.findByIdForUpdate(request.reservaId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Reserva no encontrada"));
         if (!reserva.getUsuario().getCorreo().equalsIgnoreCase(correo))
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "La reserva no pertenece al usuario");
@@ -73,13 +73,19 @@ public class PagoService {
 
     @Transactional
     public PagoResponse validar(Long id, EstadoPago estado) {
-        Pago pago = pagoRepository.findById(id)
+        Pago referencia = pagoRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pago no encontrado"));
+        Reserva reserva = reservaRepository.findByIdForUpdate(referencia.getReserva().getId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Reserva no encontrada"));
+        Pago pago = pagoRepository.findByIdForUpdate(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pago no encontrado"));
         if (pago.getEstado() != EstadoPago.PENDIENTE_VERIFICACION)
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Solo se pueden validar pagos pendientes");
+        if (reserva.getEstado() == EstadoReserva.CANCELADA || reserva.getEstado() == EstadoReserva.RECHAZADA)
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "La reserva ya no admite validar pagos");
         pago.setEstado(estado);
-        pago.getReserva().setEstado(estado == EstadoPago.APROBADO ? EstadoReserva.CONFIRMADA : EstadoReserva.PENDIENTE);
-        reservaRepository.save(pago.getReserva());
+        reserva.setEstado(estado == EstadoPago.APROBADO ? EstadoReserva.CONFIRMADA : EstadoReserva.PENDIENTE);
+        reservaRepository.save(reserva);
         Pago guardado = pagoRepository.save(pago);
         notificacionService.crear(pago.getReserva().getUsuario(), TipoNotificacion.PAGO, estado == EstadoPago.APROBADO ? "Pago aprobado" : "Pago rechazado", "El pago " + pago.getReferencia() + " fue " + estado.name().toLowerCase() + ".");
         return PagoResponse.desde(guardado);
