@@ -10,6 +10,18 @@ function isStrongPassword(password) {
   return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,72}$/.test(password)
 }
 
+async function readJson(response) {
+  const body = await response.json().catch(() => ({}))
+  if (!response.ok) throw new Error(body.detail || body.message || `Error ${response.status}`)
+  return body
+}
+
+async function readJsonArray(response) {
+  const body = await readJson(response)
+  if (!Array.isArray(body)) throw new Error('El servidor devolvió una respuesta inesperada')
+  return body
+}
+
 function Header({ user, page, navigate, logout, unreadCount }) {
   const items = user
     ? [['dashboard', 'Dashboard'], ['spaces', 'Espacios'], ['reserve', 'Reservar'], ['reservations', 'Mis reservas'], ['payments', 'Pagos'], ['notifications', `Avisos${unreadCount ? ` (${unreadCount})` : ''}`], ['profile', 'Mi perfil']]
@@ -78,45 +90,45 @@ function WorkspaceApp() {
     fetch(`${API}/configuracion-publica`).then(r => r.ok ? r.json() : Promise.reject())
       .then(data => setHourlyRate(Number(data.tarifaHora)))
       .catch(() => setHourlyRate(25000))
-    fetch(`${API}/espacios`).then(r => r.ok ? r.json() : Promise.reject()).then(data => {
+    fetch(`${API}/espacios`).then(readJsonArray).then(data => {
       setSpaces(data)
       setTypes([...new Map(data.map(space => [space.tipoId, { id:space.tipoId, nombre:space.tipo }])).values()])
     }).catch(() => setSpaces([]))
-    fetch(`${API}/lugares`).then(r => r.ok ? r.json() : Promise.reject()).then(data => { setPlaces(data); if (data.length) setSelectedPlaceId(current => current || data[0].id) }).catch(() => setPlaces([]))
+    fetch(`${API}/lugares`).then(readJsonArray).then(data => { setPlaces(data); if (data.length) setSelectedPlaceId(current => current || data[0].id) }).catch(() => setPlaces([]))
   }, [])
 
   useEffect(() => {
     if (!token) return
-    fetch(`${API}/reservas/mias`, { headers: auth }).then(r => r.json()).then(setReservations).catch(() => setReservations([]))
-    fetch(`${API}/pagos/mios`, { headers: auth }).then(r => r.ok ? r.json() : []).then(setPayments).catch(() => setPayments([]))
-    fetch(`${API}/notificaciones`, { headers: auth }).then(r => r.ok ? r.json() : []).then(setNotifications).catch(() => setNotifications([]))
+    fetch(`${API}/reservas/mias`, { headers: auth }).then(readJsonArray).then(setReservations).catch(() => setReservations([]))
+    fetch(`${API}/pagos/mios`, { headers: auth }).then(readJsonArray).then(setPayments).catch(() => setPayments([]))
+    fetch(`${API}/notificaciones`, { headers: auth }).then(readJsonArray).then(setNotifications).catch(() => setNotifications([]))
   }, [token, page, auth])
 
   useEffect(() => {
     if (!user || !['ADMIN', 'SUPERADMIN'].includes(user.rol)) return
     Promise.all([
-      fetch(`${API}/admin/catalogo/tipos`, { headers: auth }).then(r => r.json()),
-      fetch(`${API}/admin/catalogo/categorias`, { headers: auth }).then(r => r.json()),
-      fetch(`${API}/admin/catalogo/espacios`, { headers: auth }).then(r => r.json()),
-      fetch(`${API}/admin/catalogo/lugares`, { headers: auth }).then(r => r.json())
-    ]).then(([typeData, categoryData, spaceData, placeData]) => { setTypes(typeData); setCategories(categoryData); setSpaces(spaceData); setPlaces(placeData); if (placeData.length) setSelectedPlaceId(current => current || placeData[0].id) }).catch(() => {})
+      fetch(`${API}/admin/catalogo/tipos`, { headers: auth }).then(readJsonArray),
+      fetch(`${API}/admin/catalogo/categorias`, { headers: auth }).then(readJsonArray),
+      fetch(`${API}/admin/catalogo/espacios`, { headers: auth }).then(readJsonArray),
+      fetch(`${API}/admin/catalogo/lugares`, { headers: auth }).then(readJsonArray)
+    ]).then(([typeData, categoryData, spaceData, placeData]) => { setTypes(typeData); setCategories(categoryData); setSpaces(spaceData); setPlaces(placeData); if (placeData.length) setSelectedPlaceId(current => current || placeData[0].id) }).catch(error => setMessage(error.message || 'No se pudo cargar el catálogo administrativo'))
   }, [user, token, auth])
 
   useEffect(() => {
     if (page !== 'admin' || !user || !['ADMIN', 'SUPERADMIN'].includes(user.rol)) return
     Promise.all([
-      fetch(`${API}/admin/usuarios`, { headers: auth }).then(r => r.json()),
-      fetch(`${API}/admin/reservas`, { headers: auth }).then(r => r.json()),
-      fetch(`${API}/admin/pagos`, { headers: auth }).then(r => r.json()),
-      fetch(`${API}/admin/reportes/resumen`, { headers: auth }).then(r => r.json()),
-      fetch(`${API}/admin/auditoria?limite=100`, { headers: auth }).then(r => r.json())
-    ]).then(([usersData, reservationsData, paymentsData, summaryData, auditData]) => { setAdminUsers(usersData); setAdminReservations(reservationsData); setAdminPayments(paymentsData); setReportSummary(summaryData); setAuditEntries(auditData) }).catch(() => setMessage('No se pudo cargar la administración'))
+      fetch(`${API}/admin/usuarios`, { headers: auth }).then(readJsonArray),
+      fetch(`${API}/admin/reservas`, { headers: auth }).then(readJsonArray),
+      fetch(`${API}/admin/pagos`, { headers: auth }).then(readJsonArray),
+      fetch(`${API}/admin/reportes/resumen`, { headers: auth }).then(readJson),
+      fetch(`${API}/admin/auditoria?limite=100`, { headers: auth }).then(readJsonArray)
+    ]).then(([usersData, reservationsData, paymentsData, summaryData, auditData]) => { setAdminUsers(usersData); setAdminReservations(reservationsData); setAdminPayments(paymentsData); setReportSummary(summaryData); setAuditEntries(auditData) }).catch(error => setMessage(error.message || 'No se pudo cargar la administración'))
   }, [page, user, token, auth])
 
   useEffect(() => {
     if (page !== 'admin' || adminTab !== 'auditoria' || !user || !['ADMIN', 'SUPERADMIN'].includes(user.rol)) return
     fetch(`${API}/admin/auditoria?limite=100`, { headers: auth })
-      .then(response => response.ok ? response.json() : Promise.reject())
+      .then(readJsonArray)
       .then(setAuditEntries)
       .catch(() => setMessage('No se pudo actualizar la bitácora'))
   }, [page, adminTab, user, auth])
@@ -378,7 +390,7 @@ function WorkspaceApp() {
     </main>
   }
 
-  function logout() { localStorage.removeItem('reservas_token'); setToken(null); setUser(null); setReservations([]); setPayments([]); fetch(`${API}/espacios`).then(r => r.json()).then(setSpaces).catch(() => setSpaces([])); fetch(`${API}/lugares`).then(r => r.json()).then(data => { setPlaces(data); setSelectedPlaceId(data[0]?.id || null) }).catch(() => setPlaces([])); setPage('home') }
+  function logout() { localStorage.removeItem('reservas_token'); setToken(null); setUser(null); setReservations([]); setPayments([]); fetch(`${API}/espacios`).then(readJsonArray).then(setSpaces).catch(() => setSpaces([])); fetch(`${API}/lugares`).then(readJsonArray).then(data => { setPlaces(data); setSelectedPlaceId(data[0]?.id || null) }).catch(() => setPlaces([])); setPage('home') }
 
   return <div className="workspace-app"><Header user={user} page={page} navigate={navigate} logout={logout} unreadCount={notifications.filter(notification => !notification.leida).length} />
     {page === 'home' && <main className="new-hero"><div><p className="eyebrow">Guías y Scouts de Costa Rica</p><h1>Reserva espacios institucionales con claridad.</h1><p>Consulta disponibilidad, crea solicitudes y da seguimiento desde una sola plataforma.</p><button className="primary-button" onClick={() => navigate('spaces')}>Explorar espacios</button></div></main>}
