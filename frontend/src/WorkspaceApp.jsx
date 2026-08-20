@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
 
-const API = import.meta.env.VITE_API_URL || 'http://localhost:8081/api/v1'
+const API = import.meta.env.VITE_API_URL || '/api/v1'
 const BACKEND = API.replace(/\/api\/v1\/?$/, '')
 const INITIAL_RESET_TOKEN = new URLSearchParams(window.location.search).get('resetToken') || ''
 const PASSWORD_MESSAGE = 'La contraseña debe tener entre 8 y 72 caracteres e incluir mayúscula, minúscula y número'

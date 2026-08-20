@@ -23,6 +23,16 @@ npm run dev
 
 6. Abre `http://localhost:5173`.
 
+## Compartir una demostración sin dominio
+
+El frontend utiliza un proxy local para enviar `/api` y `/uploads` al backend del puerto `8081`, por lo que basta con publicar un único puerto. Con MySQL, backend y frontend encendidos, instala `cloudflared` y ejecuta:
+
+```powershell
+cloudflared tunnel --url http://localhost:5173
+```
+
+Comparte la dirección temporal `https://...trycloudflare.com` que aparece en la terminal. No es necesario configurar un dominio ni modificar CORS. El enlace cambia al reiniciar el túnel y la computadora debe permanecer encendida; esta modalidad es exclusivamente para pruebas.
+
 Para cargar el catálogo local de demostración (Hostel y Campo Escuela), ejecuta `docs/DATOS_DEMO.sql` sobre la base `reservas_institucionales` desde MySQL Workbench. El script puede ejecutarse varias veces sin duplicar registros.
 
 El backend utiliza `http://localhost:8081/api/v1` como URL base. El puerto puede cambiarse con la variable de entorno `SERVER_PORT`; en ese caso también debe configurarse `VITE_API_URL` en el frontend.
