@@ -18,12 +18,22 @@ public class ImagenEspacioService {
     private static final Map<String, String> EXTENSIONES = Map.of(
             "image/jpeg", ".jpg", "image/png", ".png", "image/webp", ".webp");
     private final Path carpeta;
+    private final Path carpetaLugares;
 
     public ImagenEspacioService(@Value("${app.upload.dir:uploads}") String directorio) {
         this.carpeta = Path.of(directorio).toAbsolutePath().normalize().resolve("espacios");
+        this.carpetaLugares = Path.of(directorio).toAbsolutePath().normalize().resolve("lugares");
     }
 
     public String guardar(MultipartFile imagen, String imagenAnterior) {
+        return guardarEn(imagen, imagenAnterior, carpeta, "/uploads/espacios/");
+    }
+
+    public String guardarLugar(MultipartFile imagen, String imagenAnterior) {
+        return guardarEn(imagen, imagenAnterior, carpetaLugares, "/uploads/lugares/");
+    }
+
+    private String guardarEn(MultipartFile imagen, String imagenAnterior, Path destino, String prefijo) {
         String tipo = imagen.getContentType();
         if (imagen.isEmpty() || tipo == null || !EXTENSIONES.containsKey(tipo))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La imagen debe ser JPG, PNG o WEBP");
@@ -33,11 +43,11 @@ public class ImagenEspacioService {
             byte[] contenido = imagen.getBytes();
             if (!firmaValida(tipo, contenido))
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "El contenido no corresponde al formato de imagen indicado");
-            Files.createDirectories(carpeta);
+            Files.createDirectories(destino);
             String nombre = UUID.randomUUID() + EXTENSIONES.get(tipo);
-            Files.write(carpeta.resolve(nombre), contenido);
-            eliminarAnterior(imagenAnterior, nombre);
-            return "/uploads/espacios/" + nombre;
+            Files.write(destino.resolve(nombre), contenido);
+            eliminarAnterior(imagenAnterior, nombre, destino, prefijo);
+            return prefijo + nombre;
         } catch (ResponseStatusException exception) {
             throw exception;
         } catch (IOException exception) {
@@ -62,9 +72,9 @@ public class ImagenEspacioService {
         return true;
     }
 
-    private void eliminarAnterior(String imagenAnterior, String nombreNuevo) throws IOException {
-        if (imagenAnterior == null || !imagenAnterior.startsWith("/uploads/espacios/")) return;
+    private void eliminarAnterior(String imagenAnterior, String nombreNuevo, Path destino, String prefijo) throws IOException {
+        if (imagenAnterior == null || !imagenAnterior.startsWith(prefijo)) return;
         String nombreAnterior = Path.of(imagenAnterior).getFileName().toString();
-        if (!nombreAnterior.equals(nombreNuevo)) Files.deleteIfExists(carpeta.resolve(nombreAnterior).normalize());
+        if (!nombreAnterior.equals(nombreNuevo)) Files.deleteIfExists(destino.resolve(nombreAnterior).normalize());
     }
 }

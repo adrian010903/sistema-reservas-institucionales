@@ -13,8 +13,8 @@ public final class CatalogoResponses {
         public static NombreResponse categoria(CategoriaEspacio value) { return new NombreResponse(value.getId(), value.getNombre(), value.getDescripcion()); }
     }
 
-    public record LugarResponse(Long id, String nombre, String descripcion, String direccion, String estado) {
-        public static LugarResponse desde(Lugar value) { return new LugarResponse(value.getId(), value.getNombre(), value.getDescripcion(), value.getDireccion(), value.getEstado().name()); }
+    public record LugarResponse(Long id, String nombre, String descripcion, String direccion, String imagenUrl, String estado) {
+        public static LugarResponse desde(Lugar value) { return new LugarResponse(value.getId(), value.getNombre(), value.getDescripcion(), value.getDireccion(), value.getImagenUrl(), value.getEstado().name()); }
     }
 
     public record EspacioResponse(Long id, String nombre, String descripcion, Integer capacidad, String imagenUrl,

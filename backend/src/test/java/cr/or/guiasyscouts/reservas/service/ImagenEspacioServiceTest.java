@@ -40,4 +40,16 @@ class ImagenEspacioServiceTest {
         assertFalse(Files.exists(carpeta.resolve("anterior.jpg")));
         assertTrue(Files.exists(carpeta.resolve(Path.of(url).getFileName())));
     }
+
+    @Test
+    void guardaPortadaDeLugarEnCarpetaIndependiente() {
+        ImagenEspacioService service = new ImagenEspacioService(temporal.toString());
+        byte[] webp = new byte[]{'R','I','F','F',0,0,0,0,'W','E','B','P'};
+        var archivo = new MockMultipartFile("imagen", "lugar.webp", "image/webp", webp);
+
+        String url = service.guardarLugar(archivo, null);
+
+        assertTrue(url.matches("/uploads/lugares/[0-9a-f-]+\\.webp"));
+        assertTrue(Files.exists(temporal.resolve("lugares").resolve(Path.of(url).getFileName())));
+    }
 }

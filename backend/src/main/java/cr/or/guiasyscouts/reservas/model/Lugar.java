@@ -13,6 +13,8 @@ public class Lugar {
     private String descripcion;
     @Column(length = 250)
     private String direccion;
+    @Column(name = "imagen_url", length = 500)
+    private String imagenUrl;
     @Enumerated(EnumType.STRING) @Column(nullable = false, length = 20)
     private EstadoLugar estado = EstadoLugar.ACTIVO;
 
@@ -23,6 +25,8 @@ public class Lugar {
     public void setDescripcion(String descripcion) { this.descripcion = descripcion; }
     public String getDireccion() { return direccion; }
     public void setDireccion(String direccion) { this.direccion = direccion; }
+    public String getImagenUrl() { return imagenUrl; }
+    public void setImagenUrl(String imagenUrl) { this.imagenUrl = imagenUrl; }
     public EstadoLugar getEstado() { return estado; }
     public void setEstado(EstadoLugar estado) { this.estado = estado; }
 }

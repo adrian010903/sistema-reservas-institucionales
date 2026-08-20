@@ -57,12 +57,14 @@ El archivo `frontend/.env.example` muestra la configuración local. Los archivos
 - Registro e inicio de sesión con roles.
 - Catálogo público de espacios.
 - Fotografías de espacios con validación de formato real, límite de tamaño y almacenamiento configurable.
+- Portadas propias para lugares y vistas previas de imágenes antes de guardar.
 - Creación y seguimiento de reservas.
 - Consulta de disponibilidad por lugar, fecha, horario y capacidad.
 - Modificación y cancelación de reservas activas.
 - Validación del horario institucional de 08:00 a 17:00.
 - Protección transaccional contra reservas o pagos simultáneos duplicados.
 - Flujo de pagos demostrativo en colones costarricenses.
+- Pago guiado en tres pasos para tarjeta simulada, transferencia o efectivo.
 - Tarifa por hora configurable desde el backend mediante `TARIFA_HORA` o la propiedad local correspondiente.
 - Administración de lugares, espacios, usuarios, reservas y pagos.
 - Separación de privilegios: solo `SUPERADMIN` administra roles y otras cuentas administrativas.
@@ -84,7 +86,7 @@ El avance detallado de los requerimientos se encuentra en [docs/ESTADO_REQUERIMI
 
 El backend incluye pruebas unitarias de reservas, pagos, seguridad, recuperación, imágenes y reportes, además de una prueba de arranque con H2 en memoria. Se ejecutan desde `backend` con `mvn test` o directamente desde IntelliJ IDEA. Las pruebas nunca utilizan la base MySQL local.
 
-Última verificación: 39 pruebas ejecutadas, sin fallos ni errores, con Java 17 y Spring Boot 4.1.0. La suite incluye catálogo público con sus relaciones, registro, login, perfil con JWT, reservas, pagos en CRC, prevención de solapamientos, propiedad de recursos y respuestas 401/403/409.
+Última verificación: 40 pruebas ejecutadas, sin fallos ni errores, con Java 17 y Spring Boot 4.1.0. La suite incluye catálogo público con sus relaciones e imágenes, registro, login, perfil con JWT, reservas, pagos en CRC, prevención de solapamientos, propiedad de recursos y respuestas 401/403/409.
 
 > Los pagos con tarjeta son una simulación. El sistema no solicita ni almacena información bancaria real.
 

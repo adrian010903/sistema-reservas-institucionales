@@ -172,4 +172,14 @@ public class AdminCatalogoController {
         auditoriaService.registrar(auth.getName(), "ACTUALIZAR_IMAGEN", "ESPACIO", id, guardado.getNombre());
         return EspacioResponse.desde(guardado);
     }
+
+    @PostMapping(value = "/lugares/{id}/imagen", consumes = "multipart/form-data")
+    public LugarResponse subirImagenLugar(Authentication auth, @PathVariable Long id, @RequestPart("imagen") MultipartFile imagen) {
+        Lugar lugar = lugarRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Lugar no encontrado"));
+        lugar.setImagenUrl(imagenEspacioService.guardarLugar(imagen, lugar.getImagenUrl()));
+        Lugar guardado = lugarRepository.save(lugar);
+        auditoriaService.registrar(auth.getName(), "ACTUALIZAR_IMAGEN", "LUGAR", id, guardado.getNombre());
+        return LugarResponse.desde(guardado);
+    }
 }
