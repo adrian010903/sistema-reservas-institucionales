@@ -78,6 +78,7 @@ El backend incluye pruebas unitarias de reservas, pagos, seguridad, recuperació
 ## Seguridad
 
 No se deben subir contraseñas, secretos JWT ni archivos `application-local.properties`. Cada integrante debe mantener su propia configuración local.
+El build de Maven excluye explícitamente `application-local.properties` del JAR; para ejecutar un artefacto empaquetado deben utilizarse variables de entorno o un archivo externo.
 
 ## Licencia
 
