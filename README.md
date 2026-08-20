@@ -69,7 +69,9 @@ El avance detallado de los requerimientos se encuentra en [docs/ESTADO_REQUERIMI
 
 ## Pruebas
 
-El backend incluye pruebas unitarias de reservas y pagos, además de una prueba de arranque con H2 en memoria. Se ejecutan desde `backend` con `mvn test` o directamente desde IntelliJ IDEA. Las pruebas nunca utilizan la base MySQL local.
+El backend incluye pruebas unitarias de reservas, pagos, seguridad, recuperación, imágenes y reportes, además de una prueba de arranque con H2 en memoria. Se ejecutan desde `backend` con `mvn test` o directamente desde IntelliJ IDEA. Las pruebas nunca utilizan la base MySQL local.
+
+Última verificación: 28 pruebas ejecutadas, sin fallos ni errores, con Java 17 y Spring Boot 4.1.0.
 
 > Los pagos con tarjeta son una simulación. El sistema no solicita ni almacena información bancaria real.
 
