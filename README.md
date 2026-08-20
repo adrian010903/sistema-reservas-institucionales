@@ -51,6 +51,7 @@ El archivo `frontend/.env.example` muestra la configuración local. Los archivos
 - Tarifa por hora configurable desde el backend mediante `TARIFA_HORA` o la propiedad local correspondiente.
 - Administración de lugares, espacios, usuarios, reservas y pagos.
 - Control de roles `USUARIO`, `ADMIN` y `SUPERADMIN`.
+- Revocación inmediata de tokens para cuentas bloqueadas o inactivas.
 - Registro, edición del perfil y cambio de contraseña con política de seguridad uniforme.
 - Recuperación local mediante token temporal de un solo uso.
 - Centro de notificaciones internas para reservas y pagos.

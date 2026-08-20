@@ -24,12 +24,18 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final List<String> allowedOrigins;
+    private final ApiAuthenticationEntryPoint authenticationEntryPoint;
+    private final ApiAccessDeniedHandler accessDeniedHandler;
 
     public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter,
-                          @Value("${app.cors.allowed-origins:http://localhost:5173}") String allowedOrigins) {
+                          @Value("${app.cors.allowed-origins:http://localhost:5173}") String allowedOrigins,
+                          ApiAuthenticationEntryPoint authenticationEntryPoint,
+                          ApiAccessDeniedHandler accessDeniedHandler) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.allowedOrigins = Arrays.stream(allowedOrigins.split(","))
                 .map(String::trim).filter(value -> !value.isBlank()).toList();
+        this.authenticationEntryPoint = authenticationEntryPoint;
+        this.accessDeniedHandler = accessDeniedHandler;
     }
 
     @Bean
@@ -38,6 +44,9 @@ public class SecurityConfig {
                 .csrf(csrf -> csrf.disable())
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .exceptionHandling(exceptions -> exceptions
+                        .authenticationEntryPoint(authenticationEntryPoint)
+                        .accessDeniedHandler(accessDeniedHandler))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/status", "/api/v1/auth/**", "/api/v1/configuracion-publica", "/uploads/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/espacios").permitAll()

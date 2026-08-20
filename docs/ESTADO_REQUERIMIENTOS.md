@@ -28,12 +28,14 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 | RF-22 | Gestionar pagos | Implementado (mock) | Validación administrativa de pagos pendientes |
 | RF-23 | Enviar notificaciones | Implementado (configurable) | Centro interno persistente y envío SMTP opcional para eventos automáticos |
 | RF-24 | Mostrar validaciones | Implementado | Respuestas Problem Details uniformes y mensajes presentados en frontend |
-| RF-25 | Controlar permisos por rol | Implementado | Spring Security y controles visuales por rol |
+| RF-25 | Controlar permisos por rol | Implementado | Spring Security, revocación inmediata por estado y controles visuales |
 
 ## Reglas de negocio destacadas
 
 - Las contraseñas se almacenan con BCrypt, deben tener entre 8 y 72 caracteres e incluir mayúscula, minúscula y número; los correos son únicos.
 - Los usuarios bloqueados o inactivos no pueden iniciar sesión.
+- Los tokens emitidos previamente dejan de autorizar peticiones tan pronto la cuenta se bloquea o desactiva.
+- Los errores de autenticación y permisos usan respuestas JSON Problem Details con códigos 401/403.
 - Los lugares y espacios se desactivan sin borrar información histórica.
 - Las reservas ocupan un horario mientras estén pendientes, aprobadas o confirmadas.
 - La creación y modificación bloquean transaccionalmente el espacio para evitar reservas simultáneas duplicadas.

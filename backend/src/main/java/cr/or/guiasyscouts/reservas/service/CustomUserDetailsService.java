@@ -1,6 +1,7 @@
 package cr.or.guiasyscouts.reservas.service;
 
 import cr.or.guiasyscouts.reservas.model.Usuario;
+import cr.or.guiasyscouts.reservas.model.EstadoUsuario;
 import cr.or.guiasyscouts.reservas.repository.UsuarioRepository;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -21,6 +22,6 @@ public class CustomUserDetailsService implements UserDetailsService {
                 .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado"));
         return User.withUsername(usuario.getCorreo()).password(usuario.getPasswordHash())
                 .authorities(List.of(new SimpleGrantedAuthority("ROLE_" + usuario.getRol().name())))
-                .disabled(usuario.getEstado().name().equals("BLOQUEADO")).build();
+                .disabled(usuario.getEstado() != EstadoUsuario.ACTIVO).build();
     }
 }
