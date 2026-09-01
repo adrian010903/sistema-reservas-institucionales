@@ -1,4 +1,6 @@
-:root { font-family: Inter, ui-sans-serif, system-ui, sans-serif; color: #17203a; background: #f5f7fb; font-synthesis: none; text-rendering: optimizeLegibility; }
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap');
+
+:root { font-family: Montserrat, sans-serif; color: #17203a; background: #f5f7fb; font-synthesis: none; text-rendering: optimizeLegibility; }
 * { box-sizing: border-box; }
 body { margin: 0; min-width: 320px; }
 button { font: inherit; cursor: pointer; }
@@ -257,6 +259,159 @@ body,.workspace-app,.dashboard-shell { color:var(--gys-ink); background:linear-g
   .new-hero h1 {
     font-size: clamp(44px, 12vw, 62px);
   }
+}
+
+/* Reservar usa el ancho disponible igual que Mis reservas. */
+.page-container.reserve-page,
+.reserve-page:has(.visual-reservation-form) {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  padding-inline: var(--layout-edge);
+}
+
+.reserve-page .visual-reservation-form {
+  width: 100%;
+  max-width: none;
+}
+
+@media (max-width: 620px) {
+  .page-container.reserve-page,
+  .reserve-page:has(.visual-reservation-form) {
+    padding-inline: 18px;
+  }
+}
+
+
+/* Carrusel provisional del inicio: las fotografías podrán sustituirse sin cambiar el componente. */
+.new-hero.home-with-carousel {
+  grid-template-columns: minmax(0, .92fr) minmax(420px, 1.08fr);
+  gap: clamp(36px, 6vw, 82px);
+  min-height: calc(100vh - 88px);
+  padding: clamp(48px, 6vw, 82px) var(--layout-edge);
+}
+
+.new-hero.home-with-carousel > .home-intro {
+  max-width: 620px;
+  align-self: start;
+  padding-top: clamp(10px, 5vh, 52px);
+}
+
+.home-intro h1 { margin-top: 0; }
+.home-intro .primary-button { margin-top: 16px; }
+.home-carousel { width: min(100%, 650px); justify-self: end; }
+
+.home-carousel-stage {
+  position: relative;
+  aspect-ratio: 1.22 / 1;
+  overflow: hidden;
+  border-radius: 26px;
+  background: #29115f;
+  box-shadow: 0 24px 55px rgba(42, 18, 92, .2);
+}
+
+.home-carousel-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .8s ease;
+}
+
+.home-carousel-slide.active { opacity: 1; pointer-events: auto; }
+
+.home-carousel-slide img {
+  width: 100%;
+  height: 100%;
+  display: block;
+  object-fit: cover;
+  transition: transform 5s ease;
+}
+
+.home-carousel-slide.active img { transform: scale(1.035); }
+
+.home-carousel-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: clamp(28px, 5vw, 52px);
+  color: #fff;
+  background: linear-gradient(180deg, rgba(237, 52, 80, .92), rgba(167, 15, 49, .94));
+  opacity: 0;
+  transition: opacity .28s ease;
+}
+
+.home-carousel-stage:hover .active .home-carousel-overlay,
+.home-carousel-stage:focus-within .active .home-carousel-overlay { opacity: 1; }
+.home-carousel-overlay strong { max-width: 380px; font-size: 22px; font-weight: 700; line-height: 22px; }
+.home-carousel-overlay p { max-width: 390px; margin: 13px 0 19px; color: rgba(255, 255, 255, .88); font-size: 14px; line-height: 1.5; }
+
+.home-carousel-arrow {
+  position: absolute;
+  top: 50%;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+  width: 39px;
+  height: 39px;
+  border: 1px solid rgba(255, 255, 255, .55);
+  border-radius: 50%;
+  color: #fff;
+  background: rgba(37, 17, 83, .7);
+  font-size: 25px;
+  line-height: 1;
+  opacity: .82;
+  transform: translateY(-50%);
+}
+
+.home-carousel-arrow:hover { opacity: 1; background: #c62442; }
+.home-carousel-arrow.previous { left: 15px; }
+.home-carousel-arrow.next { right: 15px; }
+.home-carousel-dots { display: flex; justify-content: center; gap: 8px; margin-top: 15px; }
+.home-carousel-dots button { width: 9px; height: 9px; padding: 0; border: 0; border-radius: 999px; background: #c8c5d1; transition: width .2s ease, background .2s ease; }
+.home-carousel-dots button.active { width: 27px; background: #c62442; }
+
+@media (max-width: 900px) {
+  .new-hero.home-with-carousel { grid-template-columns: 1fr; }
+  .new-hero.home-with-carousel > .home-intro { padding-top: 0; }
+  .home-carousel { width: 100%; justify-self: stretch; }
+}
+
+@media (max-width: 620px) {
+  .new-hero.home-with-carousel { padding: 40px 18px 52px; }
+  .home-carousel-stage { aspect-ratio: .95 / 1; border-radius: 20px; }
+  .home-carousel-overlay { padding: 24px; opacity: 1; }
+  .home-carousel-overlay p { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-carousel-slide,
+  .home-carousel-slide img,
+  .home-carousel-overlay { transition: none; }
+}
+
+/* Alineación y tipografía compartidas con la referencia institucional. */
+body,
+button,
+input,
+select,
+textarea {
+  font-family: Montserrat, sans-serif;
+}
+
+:root {
+  --layout-edge: clamp(18px, 4vw, 62px);
+}
+
+.page-container {
+  max-width: none;
+  padding-inline: var(--layout-edge);
+}
+
+.new-hero.home-with-carousel {
+  padding-inline: var(--layout-edge);
 }
 
 /* Menú de módulos existentes y enlace institucional externo. */
@@ -1107,4 +1262,111 @@ body,.workspace-app,.dashboard-shell { color:var(--gys-ink); background:linear-g
   .new-hero h1 {
     font-size: clamp(44px, 12vw, 62px);
   }
+}
+
+/* Auditoría final: margen único para los paneles que todavía conservaban ancho propio. */
+.page-container.role-dashboard {
+  width: 100%;
+  max-width: none;
+  margin-inline: 0;
+  padding-inline: var(--layout-edge);
+}
+
+/* Contraste mínimo para textos secundarios sobre los fondos claros del sistema. */
+.page-container > h1 + p:not(.eyebrow),
+.reserve-page > h1 + p,
+.catalog-title p,
+.reservations-hero p:last-child,
+.payments-title p,
+.dashboard-welcome > div > p:last-child,
+.profile-card > p,
+.dashboard-empty,
+.selector-heading small,
+.reservation-main-info p,
+.home-intro > p {
+  color: #53627d;
+}
+
+/* En teléfono, la navegación se concentra en un solo desplegable sin desbordarse. */
+@media (max-width: 700px) {
+  .app-nav {
+    min-height: 72px;
+    padding: 8px 18px;
+    flex-wrap: nowrap;
+    gap: 7px;
+  }
+
+  .app-brand.official-brand {
+    min-height: 50px;
+    padding: 5px 7px;
+    flex: 0 0 auto;
+  }
+
+  .app-brand.official-brand img {
+    width: 105px;
+    height: 38px;
+    object-fit: contain;
+  }
+
+  .app-nav nav.public-nav,
+  .app-nav nav.authenticated-nav {
+    order: initial;
+    width: auto;
+    margin-left: auto;
+    overflow: visible;
+    flex: 0 0 auto;
+    justify-content: flex-end;
+  }
+
+  .app-nav nav > .nav-link {
+    display: none;
+  }
+
+  .app-nav .module-menu {
+    width: auto;
+  }
+
+  .app-nav .module-menu-trigger {
+    display: inline-flex;
+    min-width: 0;
+    min-height: 42px;
+    padding: 10px 11px;
+    border: 1px solid var(--gys-purple);
+    color: #fff;
+    background: var(--gys-purple);
+    font-size: 11px;
+  }
+
+  .app-nav .module-menu-trigger:hover,
+  .app-nav .module-menu-trigger[aria-expanded="true"] {
+    color: #fff;
+    background: var(--gys-purple-dark);
+  }
+
+  .app-nav .module-menu-panel {
+    right: 0;
+    left: auto;
+    width: min(270px, calc(100vw - 36px));
+    min-width: 0;
+    transform: none;
+  }
+
+  .app-nav > .nav-session {
+    margin-left: 0;
+    padding: 10px 9px;
+    flex: 0 0 auto;
+    font-size: 10px;
+    white-space: nowrap;
+  }
+
+  .page-container.role-dashboard {
+    padding-inline: 18px;
+  }
+}
+
+@media (max-width: 370px) {
+  .app-nav { padding-inline: 12px; }
+  .app-brand.official-brand img { width: 92px; }
+  .app-nav .module-menu-trigger { padding-inline: 8px; }
+  .app-nav > .nav-session { padding-inline: 7px; font-size: 9px; }
 }
