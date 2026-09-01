@@ -1,6 +1,7 @@
 package cr.or.guiasyscouts.reservas.controller;
 
 import cr.or.guiasyscouts.reservas.dto.ReservaRequest;
+import cr.or.guiasyscouts.reservas.dto.ReservaRangoRequest;
 import cr.or.guiasyscouts.reservas.dto.ReservaResponse;
 import cr.or.guiasyscouts.reservas.service.ReservaService;
 import jakarta.validation.Valid;
@@ -32,6 +33,12 @@ public class ReservaController {
     @ResponseStatus(HttpStatus.CREATED)
     public ReservaResponse crear(Authentication authentication, @Valid @RequestBody ReservaRequest request) {
         return reservaService.crear(authentication.getName(), request);
+    }
+
+    @PostMapping("/rango")
+    @ResponseStatus(HttpStatus.CREATED)
+    public List<ReservaResponse> crearRango(Authentication authentication, @Valid @RequestBody ReservaRangoRequest request) {
+        return reservaService.crearRango(authentication.getName(), request);
     }
 
     @GetMapping("/mias")

@@ -44,8 +44,9 @@ public class UsuarioService {
         return UsuarioResponse.desde(usuarioRepository.save(usuario));
     }
 
+    @Transactional
     public AuthResponse iniciarSesion(LoginRequest request) {
-        Usuario usuario = usuarioRepository.findByCorreoIgnoreCase(request.correo().trim())
+        Usuario usuario = usuarioRepository.findByCorreoIgnoreCaseForUpdate(request.correo().trim())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciales invalidas"));
 
         if (usuario.getEstado() != EstadoUsuario.ACTIVO) {
@@ -55,6 +56,8 @@ public class UsuarioService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Credenciales invalidas");
         }
 
+        usuario.incrementarTokenVersion();
+        usuarioRepository.save(usuario);
         return new AuthResponse(jwtService.generarToken(usuario.getCorreo(), usuario.getTokenVersion()), "Bearer", UsuarioResponse.desde(usuario));
     }
 
