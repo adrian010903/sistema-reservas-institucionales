@@ -1,6 +1,7 @@
 package cr.or.guiasyscouts.reservas.service;
 
 import cr.or.guiasyscouts.reservas.dto.ReservaRequest;
+import cr.or.guiasyscouts.reservas.dto.ReservaRangoRequest;
 import cr.or.guiasyscouts.reservas.dto.ReservaResponse;
 import cr.or.guiasyscouts.reservas.model.Espacio;
 import cr.or.guiasyscouts.reservas.model.EstadoEspacio;
@@ -60,6 +61,44 @@ public class ReservaService {
         notificacionService.crear(usuario, cr.or.guiasyscouts.reservas.model.TipoNotificacion.RESERVA, "Reserva creada", "Tu reserva #" + guardada.getId() + " para " + espacio.getNombre() + " fue registrada.");
         notificacionService.administradores(cr.or.guiasyscouts.reservas.model.TipoNotificacion.RESERVA, "Nueva reserva", "Se registró la reserva #" + guardada.getId() + " para " + espacio.getNombre() + ".");
         return ReservaResponse.desde(guardada);
+    }
+
+    @Transactional
+    public List<ReservaResponse> crearRango(String correo, ReservaRangoRequest request) {
+        if (request.fechaFin().isBefore(request.fechaInicio()))
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La fecha final no puede ser anterior a la fecha inicial");
+        validarFechaHorario(request.fechaInicio(), request.horaInicio(), request.horaFin());
+
+        Usuario usuario = usuarioRepository.findByCorreoIgnoreCase(correo)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+        Espacio espacio = espacioRepository.findByIdForUpdate(request.espacioId())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Espacio no encontrado"));
+        validarEspacio(espacio, request.cantidadPersonas());
+
+        List<LocalDate> fechas = request.fechaInicio().datesUntil(request.fechaFin().plusDays(1)).toList();
+        for (LocalDate fecha : fechas) {
+            if (reservaRepository.existeSolapamiento(espacio.getId(), fecha, request.horaInicio(), request.horaFin(), estadosOcupados()))
+                throw new ResponseStatusException(HttpStatus.CONFLICT, "El espacio ya esta reservado durante una de las fechas seleccionadas");
+        }
+
+        List<Reserva> guardadas = fechas.stream().map(fecha -> {
+            Reserva reserva = new Reserva();
+            reserva.setFecha(fecha);
+            reserva.setHoraInicio(request.horaInicio());
+            reserva.setHoraFin(request.horaFin());
+            reserva.setCantidadPersonas(request.cantidadPersonas());
+            reserva.setUsuario(usuario);
+            reserva.setEspacio(espacio);
+            return reservaRepository.save(reserva);
+        }).toList();
+
+        guardadas.forEach(reserva -> {
+            notificacionService.crear(usuario, cr.or.guiasyscouts.reservas.model.TipoNotificacion.RESERVA,
+                    "Reserva creada", "Tu reserva #" + reserva.getId() + " para " + espacio.getNombre() + " fue registrada.");
+            notificacionService.administradores(cr.or.guiasyscouts.reservas.model.TipoNotificacion.RESERVA,
+                    "Nueva reserva", "Se registró la reserva #" + reserva.getId() + " para " + espacio.getNombre() + ".");
+        });
+        return guardadas.stream().map(ReservaResponse::desde).toList();
     }
 
     @Transactional
