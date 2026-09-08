@@ -2,17 +2,16 @@ package cr.or.guiasyscouts.reservas.controller;
 
 import cr.or.guiasyscouts.reservas.model.EstadoReserva;
 import cr.or.guiasyscouts.reservas.model.Reserva;
-import cr.or.guiasyscouts.reservas.repository.ReservaRepository;
+import cr.or.guiasyscouts.reservas.dto.ReporteResumenResponse;
+import cr.or.guiasyscouts.reservas.service.ReporteAnaliticoService;
 import cr.or.guiasyscouts.reservas.service.ReportePdfVisualService;
 import org.springframework.http.*;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import java.time.Month;
 import java.util.*;
 
 @RestController
@@ -20,50 +19,74 @@ import java.util.*;
 @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
 @Transactional(readOnly = true)
 public class ReporteController {
-    private final ReservaRepository reservaRepository;
     private final ReportePdfVisualService reportePdfService;
-    public ReporteController(ReservaRepository reservaRepository, ReportePdfVisualService reportePdfService) {
-        this.reservaRepository = reservaRepository; this.reportePdfService = reportePdfService;
+    private final ReporteAnaliticoService reporteAnaliticoService;
+    public ReporteController(ReportePdfVisualService reportePdfService, ReporteAnaliticoService reporteAnaliticoService) {
+        this.reportePdfService = reportePdfService;
+        this.reporteAnaliticoService = reporteAnaliticoService;
     }
 
     @GetMapping("/resumen")
-    public Map<String, Object> resumen() {
-        List<Reserva> reservas = reservaRepository.findAll();
-        Map<String, Long> porEstado = new LinkedHashMap<>();
-        for (EstadoReserva estado : EstadoReserva.values()) porEstado.put(estado.name(), reservas.stream().filter(r -> r.getEstado() == estado).count());
-        Map<String, Long> porEspacio = reservas.stream().filter(r -> r.getEspacio() != null)
-                .collect(java.util.stream.Collectors.groupingBy(r -> r.getEspacio().getNombre(), java.util.stream.Collectors.counting()));
-        Map<String, Long> porLugar = reservas.stream().filter(r -> r.getEspacio() != null)
-                .collect(java.util.stream.Collectors.groupingBy(r -> r.getEspacio().getLugar() == null ? "Sin lugar" : r.getEspacio().getLugar().getNombre(), java.util.stream.Collectors.counting()));
-        Map<String, Long> porMes = reservas.stream().filter(r -> r.getFecha() != null)
-                .collect(java.util.stream.Collectors.groupingBy(r -> Month.of(r.getFecha().getMonthValue()).name(), java.util.stream.Collectors.counting()));
-        LocalDate inicioSemana = LocalDate.now().minusDays(6);
-        Map<String, Long> porEspacioSemana = reservas.stream().filter(r -> r.getFecha() != null && !r.getFecha().isBefore(inicioSemana))
-                .collect(java.util.stream.Collectors.groupingBy(r -> r.getEspacio() == null ? "Sin espacio" : r.getEspacio().getNombre(), java.util.stream.Collectors.counting()));
-        long totalPersonas = reservas.stream().mapToLong(r -> r.getCantidadPersonas() == null ? 0 : r.getCantidadPersonas()).sum();
-        return Map.of("total", reservas.size(), "porEstado", porEstado,
-                "proximas", reservas.stream().filter(r -> !r.getFecha().isBefore(LocalDate.now()) && estadosActivos().contains(r.getEstado())).count(),
-                "totalPersonas", totalPersonas, "porEspacio", ordenar(porEspacio), "porEspacioSemana", ordenar(porEspacioSemana), "porLugar", ordenar(porLugar), "porMes", porMes,
-                "inicioSemana", inicioSemana.toString());
-    }
-
-    private Map<String, Long> ordenar(Map<String, Long> datos) {
-        return datos.entrySet().stream().sorted(Map.Entry.<String, Long>comparingByValue().reversed())
-                .collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (a, b) -> a, LinkedHashMap::new));
+    public ReporteResumenResponse resumen(@RequestParam(required = false) LocalDate desde,
+                                          @RequestParam(required = false) LocalDate hasta,
+                                          @RequestParam(required = false) EstadoReserva estado,
+                                          @RequestParam(required = false) Long lugarId,
+                                          @RequestParam(required = false) Long espacioId) {
+        return reporteAnaliticoService.resumen(desde, hasta, estado, lugarId, espacioId);
     }
 
     @GetMapping(value = "/reservas.csv", produces = "text/csv")
     public ResponseEntity<byte[]> reservasCsv(@RequestParam(required = false) LocalDate desde,
                                                @RequestParam(required = false) LocalDate hasta,
                                                @RequestParam(required = false) EstadoReserva estado,
+                                               @RequestParam(required = false) Long lugarId,
+                                               @RequestParam(required = false) Long espacioId,
                                                @RequestParam(required = false) String secciones) {
-        List<Reserva> reservas = filtrar(desde, hasta, estado);
-        StringBuilder csv = new StringBuilder("ID,Fecha,Hora inicio,Hora fin,Estado,Personas,Lugar,Espacio,Usuario\r\n");
-        reservas.forEach(r -> csv.append(r.getId()).append(',').append(r.getFecha()).append(',').append(r.getHoraInicio()).append(',')
-                .append(r.getHoraFin()).append(',').append(r.getEstado()).append(',').append(r.getCantidadPersonas()).append(',')
-                .append(celda(r.getEspacio().getLugar() == null ? "Sin lugar" : r.getEspacio().getLugar().getNombre())).append(',')
-                .append(celda(r.getEspacio() == null ? "Sin espacio" : r.getEspacio().getNombre())).append(',')
-                .append(celda(r.getUsuario() == null ? "Sin usuario" : r.getUsuario().getCorreo())).append("\r\n"));
+        List<Reserva> reservas = reporteAnaliticoService.filtrar(desde, hasta, estado, lugarId, espacioId);
+        ReporteResumenResponse resumen = reporteAnaliticoService.resumen(desde, hasta, estado, lugarId, espacioId);
+        Set<String> seleccion = secciones == null ? Set.of("lugares", "espacios", "detalles", "estados")
+                : new HashSet<>(Arrays.asList(secciones.split(",")));
+        StringBuilder csv = new StringBuilder("REPORTE DE RESERVAS INSTITUCIONALES\r\n")
+                .append("Periodo,").append(resumen.desde()).append(',').append(resumen.hasta()).append("\r\n")
+                .append("Reservas,").append(resumen.total()).append("\r\n")
+                .append("Horas reservadas,").append(resumen.totalHoras()).append("\r\n")
+                .append("Ocupacion estimada,").append(resumen.porcentajeOcupacion()).append("%\r\n")
+                .append("Personas atendidas,").append(resumen.totalPersonas()).append("\r\n")
+                .append("Promedio de personas por reserva,").append(resumen.promedioPersonasPorReserva()).append("\r\n")
+                .append("Porcentaje de cancelacion,").append(resumen.porcentajeCancelacion()).append("%\r\n")
+                .append("Variacion de reservas,").append(resumen.tienePeriodoAnterior() ? resumen.variacionReservas() + "%" : "Sin datos anteriores para comparar").append("\r\n")
+                .append("Variacion de horas,").append(resumen.tienePeriodoAnterior() ? resumen.variacionHoras() + "%" : "Sin datos anteriores para comparar").append("\r\n")
+                .append("Hay datos del periodo anterior,").append(resumen.tienePeriodoAnterior() ? "Si" : "No").append("\r\n\r\n")
+                .append("USO POR DIA\r\nDia,Horas\r\n");
+        resumen.porDiaSemana().forEach((dia, horas) -> csv.append(dia).append(',').append(horas).append("\r\n"));
+        csv.append("\r\nRESERVAS POR HORA DE INICIO\r\nHora,Reservas\r\n");
+        resumen.porHoraInicio().forEach((hora, cantidad) -> csv.append(hora).append(',').append(cantidad).append("\r\n"));
+        csv.append("\r\n");
+        if (seleccion.contains("espacios")) {
+            csv.append("ESPACIOS\r\nEspacio,Lugar,Reservas,Horas,Ocupacion,Nivel\r\n");
+            resumen.espaciosUso().forEach(e -> csv.append(celda(e.nombre())).append(',').append(celda(e.lugar())).append(',')
+                    .append(e.reservas()).append(',').append(e.horas()).append(',').append(e.porcentajeOcupacion()).append("%,").append(e.nivelUso()).append("\r\n"));
+            csv.append("\r\n");
+        }
+        if (seleccion.contains("lugares")) {
+            csv.append("LUGARES\r\nLugar,Reservas,Horas,Ocupacion,Nivel\r\n");
+            resumen.lugaresUso().forEach(l -> csv.append(celda(l.nombre())).append(',').append(l.reservas()).append(',')
+                    .append(l.horas()).append(',').append(l.porcentajeOcupacion()).append("%,").append(l.nivelUso()).append("\r\n"));
+            csv.append("\r\n");
+        }
+        if (seleccion.contains("estados")) {
+            csv.append("ESTADOS\r\nEstado,Reservas\r\n");
+            resumen.porEstado().forEach((nombre, cantidad) -> csv.append(nombre).append(',').append(cantidad).append("\r\n"));
+            csv.append("\r\n");
+        }
+        if (seleccion.contains("detalles")) {
+            csv.append("DETALLE DE RESERVAS\r\nID,Fecha,Hora inicio,Hora fin,Estado,Personas,Lugar,Espacio,Usuario\r\n");
+            reservas.forEach(r -> csv.append(r.getId()).append(',').append(r.getFecha()).append(',').append(r.getHoraInicio()).append(',')
+                    .append(r.getHoraFin()).append(',').append(r.getEstado()).append(',').append(r.getCantidadPersonas()).append(',')
+                    .append(celda(r.getEspacio().getLugar() == null ? "Sin lugar" : r.getEspacio().getLugar().getNombre())).append(',')
+                    .append(celda(r.getEspacio().getNombre())).append(',')
+                    .append(celda(r.getUsuario() == null ? "Sin usuario" : r.getUsuario().getCorreo())).append("\r\n"));
+        }
         byte[] contenido = ("\uFEFF" + csv).getBytes(StandardCharsets.UTF_8);
         return ResponseEntity.ok().header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=reservas-" + LocalDate.now() + ".csv")
                 .contentType(MediaType.parseMediaType("text/csv;charset=UTF-8")).body(contenido);
@@ -73,23 +96,16 @@ public class ReporteController {
     public ResponseEntity<byte[]> reservasPdf(@RequestParam(required = false) LocalDate desde,
                                                @RequestParam(required = false) LocalDate hasta,
                                                @RequestParam(required = false) EstadoReserva estado,
+                                               @RequestParam(required = false) Long lugarId,
+                                               @RequestParam(required = false) Long espacioId,
                                                @RequestParam(required = false) String secciones) {
-        byte[] contenido = reportePdfService.generar(filtrar(desde, hasta, estado), desde, hasta,
-                estado == null ? null : estado.name(), secciones);
+        ReporteResumenResponse resumen = reporteAnaliticoService.resumen(desde, hasta, estado, lugarId, espacioId);
+        byte[] contenido = reportePdfService.generar(reporteAnaliticoService.filtrar(desde, hasta, estado, lugarId, espacioId), desde, hasta,
+                estado == null ? null : estado.name(), secciones, resumen);
         return ResponseEntity.ok()
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=reporte-reservas-" + LocalDate.now() + ".pdf")
                 .contentType(MediaType.APPLICATION_PDF).body(contenido);
     }
 
-    private List<Reserva> filtrar(LocalDate desde, LocalDate hasta, EstadoReserva estado) {
-        if (desde != null && hasta != null && desde.isAfter(hasta))
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "La fecha inicial no puede ser posterior a la fecha final");
-        return reservaRepository.findAllByOrderByFechaDescHoraInicioDesc().stream()
-                .filter(r -> desde == null || !r.getFecha().isBefore(desde))
-                .filter(r -> hasta == null || !r.getFecha().isAfter(hasta))
-                .filter(r -> estado == null || r.getEstado() == estado).toList();
-    }
-
     private String celda(String value) { return "\"" + String.valueOf(value).replace("\"", "\"\"") + "\""; }
-    private EnumSet<EstadoReserva> estadosActivos() { return EnumSet.of(EstadoReserva.PENDIENTE, EstadoReserva.APROBADA, EstadoReserva.CONFIRMADA); }
 }
