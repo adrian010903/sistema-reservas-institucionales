@@ -32,14 +32,35 @@ public class ReportePdfService {
                 .append("0.12 0.15 0.28 rg\n")
                 .append(texto(45, 746, 9, "Generado: " + LocalDate.now() + "   Total: " + total
                         + "   Periodo: " + valor(desde) + " a " + valor(hasta) + "   Estado: " + (estado == null ? "TODOS" : estado)))
-                .append("0.92 0.94 0.98 rg\n35 715 525 22 re f\n0.12 0.15 0.28 rg\n")
-                .append(texto(43, 723, 9, "ID   FECHA       HORARIO       ESTADO       PERSONAS   ESPACIO / USUARIO"));
+                .append("0.12 0.15 0.28 rg\n");
         int y = 696;
+        if (pagina == 1) {
+            out.append(texto(43, 700, 11, "Resumen visual"));
+            int max = Math.max(1, reservas.size());
+            int chartY = 678;
+            for (String estadoGrafico : new String[]{"PENDIENTE", "APROBADA", "CONFIRMADA", "CANCELADA", "RECHAZADA"}) {
+                long count = reservas.stream().filter(r -> r.getEstado() != null && estadoGrafico.equals(r.getEstado().name())).count();
+                int width = (int) Math.round(210d * count / max);
+                out.append(texto(43, chartY + 3, 7, estadoGrafico));
+                out.append("0.91 0.92 0.96 rg\n105 ").append(chartY).append(" 210 10 re f\n");
+                out.append("0.17 0.07 0.38 rg\n105 ").append(chartY).append(" ").append(width).append(" 10 re f\n");
+                out.append(texto(322, chartY + 3, 8, String.valueOf(count)));
+                chartY -= 14;
+            }
+            out.append("0.92 0.94 0.98 rg\n35 575 525 22 re f\n0.12 0.15 0.28 rg\n")
+                    .append(texto(43, 583, 9, "ID   FECHA       HORARIO       ESTADO       PERSONAS   ESPACIO / USUARIO"));
+            y = 556;
+        }
+        if (pagina > 1) {
+            out.append("0.92 0.94 0.98 rg\n35 715 525 22 re f\n0.12 0.15 0.28 rg\n")
+                    .append(texto(43, 723, 9, "ID   FECHA       HORARIO       ESTADO       PERSONAS   ESPACIO / USUARIO"));
+        }
         for (Reserva reserva : reservas) {
             String linea = String.format("#%-4s %-10s %s-%s  %-11s  %-3s  %s / %s",
                     reserva.getId(), reserva.getFecha(), reserva.getHoraInicio(), reserva.getHoraFin(),
-                    reserva.getEstado(), reserva.getCantidadPersonas(), reserva.getEspacio().getNombre(),
-                    reserva.getUsuario().getCorreo());
+                    reserva.getEstado(), reserva.getCantidadPersonas(),
+                    reserva.getEspacio() == null ? "Sin espacio" : reserva.getEspacio().getNombre(),
+                    reserva.getUsuario() == null ? "Sin usuario" : reserva.getUsuario().getCorreo());
             out.append(texto(43, y, 8, limitar(linea, 112)));
             out.append("0.86 0.88 0.93 RG\n43 ").append(y - 7).append(" m 550 ").append(y - 7).append(" l S\n");
             y -= 25;
@@ -54,7 +75,8 @@ public class ReportePdfService {
     private String texto(int x, int y, int size, String value) {
         return "BT /F1 " + size + " Tf " + x + " " + y + " Td (" + escapar(value) + ") Tj ET\n";
     }
-    private String escapar(String value) { return value.replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)"); }
+    private String escapar(String value) { return String.valueOf(value).replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)"); }
+
 
     private byte[] construirPdf(List<String> paginas) {
         int fontId = 3 + paginas.size() * 2;
