@@ -9,11 +9,14 @@ app.reservas.tarifa-hora=25000
 # Separa varios orígenes con coma, sin barra final.
 app.cors.allowed-origins=http://localhost:5173
 app.upload.dir=uploads
-# Correo opcional. Mantén false hasta contar con un SMTP institucional.
+# Correo para demostración con Gmail. Activa la verificación en dos pasos en la
+# cuenta y genera una contraseña de aplicación; nunca uses la contraseña normal.
 app.frontend.url=http://localhost:5173
-app.mail.enabled=false
-app.mail.from=no-reply@ejemplo.cr
-spring.mail.host=smtp.ejemplo.cr
+app.mail.enabled=true
+app.mail.from=TU_CORREO@gmail.com
+spring.mail.host=smtp.gmail.com
 spring.mail.port=587
-spring.mail.username=TU_USUARIO_SMTP
-spring.mail.password=TU_PASSWORD_SMTP
+spring.mail.username=TU_CORREO@gmail.com
+spring.mail.password=PEGA_AQUI_LA_CONTRASENA_DE_APLICACION_DE_16_CARACTERES
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true

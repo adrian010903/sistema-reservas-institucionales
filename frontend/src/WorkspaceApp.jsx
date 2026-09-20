@@ -1,433 +1,45 @@
 import { useEffect, useMemo, useState } from 'react'
 import './App.css'
+import Header from './components/Header'
+import { SocialFooter, SiempreListosRibbon } from './components/Branding'
+import { AvailabilityDateStrip, CustomReservationSchedule } from './components/ReservationSchedule'
+import AdminTabs from './components/AdminTabs'
+import ReportFilters from './components/ReportFilters'
+import ReportMetrics from './components/ReportMetrics'
+import AuthPage from './pages/AuthPage'
+import HomePage from './pages/HomePage'
+import NotificationsPage from './pages/NotificationsPage'
+import ProfilePage from './pages/ProfilePage'
+import ReservationsPage from './pages/ReservationsPage'
+import PaymentsPage from './pages/PaymentsPage'
+import ClientDashboard from './pages/ClientDashboard'
+import SpacesPage from './pages/SpacesPage'
+import ReservePage from './pages/ReservePage'
+import { API, BACKEND, readJson, readJsonArray } from './services/api'
+import { isStrongPassword, PASSWORD_MESSAGE } from './utils/password'
+import { reservationDates } from './utils/reservations'
 
-const API = import.meta.env.VITE_API_URL || '/api/v1'
-const BACKEND = API.replace(/\/api\/v1\/?$/, '')
 const INITIAL_RESET_TOKEN = new URLSearchParams(window.location.search).get('resetToken') || ''
-const PASSWORD_MESSAGE = 'La contraseña debe tener entre 8 y 72 caracteres e incluir mayúscula, minúscula y número'
-
-function isStrongPassword(password) {
-  return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,72}$/.test(password)
+const ROUTES = {
+  home: '/',
+  login: '/login',
+  dashboard: '/dashboard',
+  spaces: '/espacios',
+  reserve: '/reservar',
+  reservations: '/reservas',
+  payments: '/pagos',
+  notifications: '/avisos',
+  profile: '/perfil',
+  admin: '/admin',
 }
+const PAGE_BY_PATH = Object.fromEntries(Object.entries(ROUTES).map(([page, path]) => [path, page]))
 
-async function readJson(response) {
-  const body = await response.json().catch(() => ({}))
-  if (!response.ok) throw new Error(body.detail || body.message || `Error ${response.status}`)
-  return body
-}
-
-async function readJsonArray(response) {
-  const body = await readJson(response)
-  if (!Array.isArray(body)) throw new Error('El servidor devolvió una respuesta inesperada')
-  return body
-}
-
-const HOME_SLIDES = [
-  {
-    image: '/assets/carousel/comunidad.webp',
-    alt: 'Personas uniendo sus manos durante una actividad comunitaria',
-    title: 'Espacios para compartir',
-    text: 'Encuentra ambientes para reuniones, formación y convivencia.',
-  },
-  {
-    image: '/assets/carousel/aventura.webp',
-    alt: 'Grupo realizando una actividad al aire libre',
-    title: 'Experiencias al aire libre',
-    text: 'Explora zonas pensadas para campamentos y aventura.',
-  },
-  {
-    image: '/assets/carousel/actividades.webp',
-    alt: 'Grupo participando en una dinámica de equipo',
-    title: 'Actividades en equipo',
-    text: 'Descubre espacios para aprender, colaborar y crecer.',
-  },
-]
-
-function HomeCarousel() {
-  const [activeSlide, setActiveSlide] = useState(0)
-  const [paused, setPaused] = useState(false)
-
-  useEffect(() => {
-    if (paused) return undefined
-    const timer = window.setInterval(() => setActiveSlide((current) => (current + 1) % HOME_SLIDES.length), 2000)
-    return () => window.clearInterval(timer)
-  }, [paused])
-
-  const showSlide = (index) => setActiveSlide((index + HOME_SLIDES.length) % HOME_SLIDES.length)
-
-  return (
-    <section
-      className="home-carousel"
-      aria-label="Galería de espacios y actividades"
-      onMouseEnter={() => setPaused(true)}
-      onMouseLeave={() => setPaused(false)}
-      onFocus={() => setPaused(true)}
-      onBlur={(event) => {
-        if (!event.currentTarget.contains(event.relatedTarget)) setPaused(false)
-      }}
-    >
-      <div className="home-carousel-stage">
-        {HOME_SLIDES.map((slide, index) => (
-          <article className={`home-carousel-slide ${index === activeSlide ? 'active' : ''}`} aria-hidden={index !== activeSlide} key={slide.image}>
-            <img src={slide.image} alt={index === activeSlide ? slide.alt : ''} />
-            <div className="home-carousel-overlay">
-              <strong>{slide.title}</strong>
-              <p>{slide.text}</p>
-            </div>
-          </article>
-        ))}
-        <button type="button" className="home-carousel-arrow previous" aria-label="Imagen anterior" onClick={() => showSlide(activeSlide - 1)}>
-          ‹
-        </button>
-        <button type="button" className="home-carousel-arrow next" aria-label="Imagen siguiente" onClick={() => showSlide(activeSlide + 1)}>
-          ›
-        </button>
-      </div>
-      <div className="home-carousel-dots" aria-label="Elegir imagen">
-        {HOME_SLIDES.map((slide, index) => (
-          <button type="button" className={index === activeSlide ? 'active' : ''} aria-label={`Ver imagen ${index + 1}`} aria-current={index === activeSlide ? 'true' : undefined} key={slide.image} onClick={() => showSlide(index)} />
-        ))}
-      </div>
-    </section>
-  )
-}
-
-const SOCIAL_NETWORKS = [
-  ['Instagram', 'https://www.instagram.com/guiasyscoutscr/'],
-  ['YouTube', 'https://www.youtube.com/@guiasyscoutsdecostarica8833'],
-  ['Facebook', 'https://www.facebook.com/GuiasyScoutsCR'],
-  ['TikTok', 'https://www.tiktok.com/@guiasyscoutscr'],
-]
-
-function SocialIcon({ name }) {
-  if (name === 'Instagram') return <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3.5" y="3.5" width="17" height="17" rx="4" /><circle cx="12" cy="12" r="4" /><circle cx="17.4" cy="6.7" r="1" fill="currentColor" stroke="none" /></svg>
-  if (name === 'YouTube') return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 8.2a2.8 2.8 0 0 0-2-2C17.2 5.7 12 5.7 12 5.7s-5.2 0-7 .5a2.8 2.8 0 0 0-2 2A29 29 0 0 0 2.5 12 29 29 0 0 0 3 15.8a2.8 2.8 0 0 0 2 2c1.8.5 7 .5 7 .5s5.2 0 7-.5a2.8 2.8 0 0 0 2-2 29 29 0 0 0 .5-3.8 29 29 0 0 0-.5-3.8Z" /><path d="m10 9 5 3-5 3Z" fill="currentColor" stroke="none" /></svg>
-  if (name === 'Facebook') return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14 21v-8h2.7l.4-3H14V8.1c0-.9.3-1.5 1.6-1.5h1.7V3.9c-.3 0-1.3-.1-2.4-.1-2.4 0-4 1.5-4 4.1V10H8.3v3h2.6v8Z" fill="currentColor" stroke="none" /></svg>
-  return <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M14.2 4c.3 1.8 1.3 3 3.1 3.2v2.7a6.3 6.3 0 0 1-3.1-.9v6.4a4.5 4.5 0 1 1-3.9-4.4v2.8a1.8 1.8 0 1 0 1.2 1.7V4Z" fill="currentColor" stroke="none" /></svg>
-}
-
-function SocialLinks({ compact = false }) {
-  return (
-    <div className={`social-links ${compact ? 'header-social-links' : ''}`} aria-label="Redes sociales oficiales">
-      {SOCIAL_NETWORKS.map(([name, href]) => (
-        <a href={href} target="_blank" rel="noreferrer" aria-label={`${name} de Guías y Scouts de Costa Rica`} key={name}>
-          <SocialIcon name={name} />
-        </a>
-      ))}
-    </div>
-  )
-}
-
-function SocialFooter() {
-  return (
-    <footer className="social-footer">
-      <div className="social-footer-inner">
-        <div>
-          <p className="social-footer-kicker">Guías y Scouts de Costa Rica</p>
-          <h2>Síguenos en nuestras redes sociales</h2>
-          <p>Conoce nuestras actividades, noticias y comunidad.</p>
-        </div>
-        <SocialLinks />
-      </div>
-    </footer>
-  )
-}
-
-function reservationDates(fechaInicio, fechaFin) {
-  if (!fechaInicio || !fechaFin) return []
-  const fechas = []
-  const actual = new Date(`${fechaInicio}T12:00:00`)
-  const limite = new Date(`${fechaFin}T12:00:00`)
-  while (actual <= limite) {
-    fechas.push(actual.toISOString().slice(0, 10))
-    actual.setDate(actual.getDate() + 1)
-  }
-  return fechas
-}
-
-const DATE_LABEL = new Intl.DateTimeFormat('es-CR', {
-  day: '2-digit',
-  month: 'short',
-  year: 'numeric',
-})
-const MONTH_LABEL = new Intl.DateTimeFormat('es-CR', {
-  month: 'long',
-  year: 'numeric',
-})
-
-function CustomReservationSchedule({ form, setForm }) {
-  const today = new Date()
-  today.setHours(12, 0, 0, 0)
-  const [calendarOpen, setCalendarOpen] = useState(false)
-  const [selectingEnd, setSelectingEnd] = useState(false)
-  const [timeOpen, setTimeOpen] = useState(null)
-  const [month, setMonth] = useState(() => new Date(`${form.fecha || today.toISOString().slice(0, 10)}T12:00:00`))
-  const iso = (date) => date.toISOString().slice(0, 10)
-  const formatDate = (value) => (value ? DATE_LABEL.format(new Date(`${value}T12:00:00`)).replace('.', '') : 'Seleccionar fecha')
-  const first = new Date(month.getFullYear(), month.getMonth(), 1, 12)
-  const offset = (first.getDay() + 6) % 7
-  const calendarDays = Array.from({ length: 42 }, (_, index) => new Date(month.getFullYear(), month.getMonth(), index - offset + 1, 12))
-  const chooseDate = (date) => {
-    const value = iso(date)
-    if (!selectingEnd || !form.fecha || value < form.fecha) {
-      setForm({ ...form, fecha: value, fechaFin: value })
-      setSelectingEnd(true)
-    } else {
-      setForm({ ...form, fechaFin: value })
-      setSelectingEnd(false)
-      setCalendarOpen(false)
-    }
-  }
-  const adjustTime = (field, amount) => {
-    const [hours, minutes] = String(form[field] || (field === 'horaInicio' ? '08:00' : '09:00'))
-      .split(':')
-      .map(Number)
-    const total = Math.min(17 * 60, Math.max(8 * 60, hours * 60 + minutes + amount))
-    setForm({
-      ...form,
-      [field]: `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}`,
-    })
-  }
-  const dateRangeLabel = form.fechaFin && form.fechaFin !== form.fecha ? `${formatDate(form.fecha)} → ${formatDate(form.fechaFin)}` : formatDate(form.fecha)
-  return (
-    <section className="custom-schedule" aria-label="Fechas y horario de la reserva">
-      <label>Fechas</label>
-      <button
-        type="button"
-        className="custom-picker-trigger"
-        aria-expanded={calendarOpen}
-        onClick={() => {
-          setCalendarOpen((value) => !value)
-          setTimeOpen(null)
-        }}
-      >
-        <span className="picker-icon">▣</span>
-        <strong>{dateRangeLabel}</strong>
-        <span className="picker-chevron">⌄</span>
-      </button>
-      {calendarOpen && (
-        <div className="custom-calendar">
-          <header>
-            <button type="button" aria-label="Mes anterior" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() - 1, 1, 12))}>
-              ‹
-            </button>
-            <strong>{MONTH_LABEL.format(month)}</strong>
-            <button type="button" aria-label="Mes siguiente" onClick={() => setMonth(new Date(month.getFullYear(), month.getMonth() + 1, 1, 12))}>
-              ›
-            </button>
-          </header>
-          <p>{selectingEnd ? 'Selecciona la fecha final' : 'Selecciona la fecha inicial'}</p>
-          <div className="calendar-week">
-            {['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'].map((day) => (
-              <span key={day}>{day}</span>
-            ))}
-          </div>
-          <div className="custom-calendar-grid">
-            {calendarDays.map((date) => {
-              const value = iso(date)
-              const outside = date.getMonth() !== month.getMonth()
-              const disabled = date < today
-              const inRange = form.fecha && form.fechaFin && value >= form.fecha && value <= form.fechaFin
-              return (
-                <button type="button" key={value} disabled={disabled} className={`${outside ? 'outside' : ''} ${value === form.fecha || value === form.fechaFin ? 'selected' : ''} ${inRange ? 'in-range' : ''}`} onClick={() => chooseDate(date)}>
-                  {date.getDate()}
-                </button>
-              )
-            })}
-          </div>
-          <footer>
-            <button
-              type="button"
-              onClick={() => {
-                const value = iso(today)
-                setForm({ ...form, fecha: value, fechaFin: value })
-                setMonth(today)
-                setSelectingEnd(true)
-              }}
-            >
-              Hoy
-            </button>
-            <button type="button" onClick={() => setCalendarOpen(false)}>
-              Cerrar
-            </button>
-          </footer>
-        </div>
-      )}
-      {['horaInicio', 'horaFin'].map((field, index) => (
-        <div className="custom-time-field" key={field}>
-          <label>{index ? 'Hora de fin' : 'Hora de inicio'}</label>
-          <button
-            type="button"
-            className="custom-picker-trigger"
-            aria-expanded={timeOpen === field}
-            onClick={() => {
-              setTimeOpen(timeOpen === field ? null : field)
-              setCalendarOpen(false)
-            }}
-          >
-            <span className="picker-icon">◷</span>
-            <strong>{form[field] || (index ? '09:00' : '08:00')}</strong>
-            <span className="picker-chevron">⌄</span>
-          </button>
-          {timeOpen === field && (
-            <div className="custom-time-picker">
-              <button type="button" aria-label="Aumentar una hora" onClick={() => adjustTime(field, 60)}>
-                +
-              </button>
-              <button type="button" aria-label="Aumentar treinta minutos" onClick={() => adjustTime(field, 30)}>
-                +
-              </button>
-              <strong>
-                {String(form[field] || (index ? '09:00' : '08:00')).slice(0, 2)}
-                <span>:</span>
-                {String(form[field] || (index ? '09:00' : '08:00')).slice(3, 5)}
-              </strong>
-              <button type="button" aria-label="Reducir una hora" onClick={() => adjustTime(field, -60)}>
-                −
-              </button>
-              <button type="button" aria-label="Reducir treinta minutos" onClick={() => adjustTime(field, -30)}>
-                −
-              </button>
-              <small>Horario permitido: 08:00–17:00</small>
-            </div>
-          )}
-        </div>
-      ))}
-    </section>
-  )
-}
-
-function Header({ user, page, navigate, logout, unreadCount }) {
-  const [menuOpen, setMenuOpen] = useState(false)
-  useEffect(() => {
-    if (!menuOpen) return
-    const closeOnOutside = (event) => {
-      if (!event.target?.closest?.('.module-menu')) setMenuOpen(false)
-    }
-    const closeOnEscape = (event) => {
-      if (event.key === 'Escape') setMenuOpen(false)
-    }
-    document.addEventListener('pointerdown', closeOnOutside)
-    document.addEventListener('keydown', closeOnEscape)
-    return () => {
-      document.removeEventListener('pointerdown', closeOnOutside)
-      document.removeEventListener('keydown', closeOnEscape)
-    }
-  }, [menuOpen])
-  const items = user
-    ? [
-        ['dashboard', 'Dashboard'],
-        ['spaces', 'Espacios'],
-        ['reserve', 'Reservar'],
-        ['reservations', 'Mis reservas'],
-        ['payments', 'Pagos'],
-        ['notifications', `Avisos${unreadCount ? ` (${unreadCount})` : ''}`],
-        ['profile', 'Mi perfil'],
-      ]
-    : [
-        ['home', 'Inicio'],
-        ['spaces', 'Espacios'],
-      ]
-  if (user && ['ADMIN', 'SUPERADMIN'].includes(user.rol)) items.push(['admin', 'Administración'])
-  const primaryItems = user ? items.slice(0, 2) : items
-  const menuActive = items.some(([key]) => key === page) && !primaryItems.some(([key]) => key === page)
-  const goTo = (key) => {
-    setMenuOpen(false)
-    navigate(key)
-  }
-  const renderNavItem = ([key, label]) => (
-    <button className={`nav-link nav-${key} ${page === key ? 'active' : ''}`} key={key} onClick={() => goTo(key)}>
-      <span className="nav-icon" aria-hidden="true">
-        {key === 'home' && (
-          <svg viewBox="0 0 24 24" focusable="false">
-            <path d="M3 10.8 12 3l9 7.8v9.2a1 1 0 0 1-1 1h-5.2v-6h-5.6v6H4a1 1 0 0 1-1-1z" />
-          </svg>
-        )}
-        {key === 'spaces' && (
-          <svg viewBox="0 0 24 24" focusable="false">
-            <path d="M6 3.5h12v17l-6-3.4-6 3.4z" />
-          </svg>
-        )}
-      </span>
-      <span>{label}</span>
-      {key === 'spaces' && !user && (
-        <span className="nav-chevron" aria-hidden="true">
-          <svg viewBox="0 0 24 24" focusable="false">
-            <path d="m6 9 6 6 6-6" />
-          </svg>
-        </span>
-      )}
-    </button>
-  )
-  return (
-    <header className="app-nav">
-      <button className="app-brand official-brand" aria-label="Ir al inicio" onClick={() => goTo(user ? 'dashboard' : 'home')}>
-        <img src="/assets/logo-asociacion.png" alt="Guías y Scouts de Costa Rica — Institución Benemérita" />
-      </button>
-      <nav className={user ? 'authenticated-nav' : 'public-nav'}>
-        {primaryItems.map(renderNavItem)}
-        <div className="module-menu">
-          <button className={`nav-link module-menu-trigger ${menuOpen || menuActive ? 'active' : ''}`} type="button" aria-haspopup="true" aria-expanded={menuOpen} onClick={() => setMenuOpen((current) => !current)}>
-            <span>Menú</span>
-            <span className="nav-chevron" aria-hidden="true">
-              <svg viewBox="0 0 24 24" focusable="false">
-                <path d="m6 9 6 6 6-6" />
-              </svg>
-            </span>
-          </button>
-          {menuOpen && (
-            <div className="module-menu-panel" role="menu">
-              {items.map(([key, label]) => (
-                <button type="button" className={page === key ? 'active' : ''} key={key} role="menuitem" onClick={() => goTo(key)}>
-                  {label}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </nav>
-      <SocialLinks compact />
-      {user ? (
-        <button
-          className="nav-session"
-          onClick={() => {
-            setMenuOpen(false)
-            logout()
-          }}
-        >
-          Cerrar sesión
-        </button>
-      ) : (
-        <button
-          className="nav-session public-login"
-          onClick={() => {
-            setMenuOpen(false)
-            navigate('login', page)
-          }}
-        >
-          Iniciar sesión
-        </button>
-      )}
-    </header>
-  )
-}
-
-function SiempreListosRibbon() {
-  return (
-    <aside className="siempre-listos-ribbon" aria-label="Enlace a Siempre Listos">
-      <div className="siempre-listos-ribbon-copy">
-        <span>Siempre Listos</span>
-        <p>Recursos y comunidad para seguir siempre preparados.</p>
-      </div>
-      <a className="siempre-listos-ribbon-link" href="https://siemprelistos.com" target="_blank" rel="noopener noreferrer">
-        Visitar siemprelistos.com <span aria-hidden="true">↗</span>
-      </a>
-    </aside>
-  )
+function pageFromLocation() {
+  return PAGE_BY_PATH[window.location.pathname] || 'home'
 }
 
 function WorkspaceApp() {
-  const [page, setPage] = useState(INITIAL_RESET_TOKEN ? 'login' : 'home')
+  const [page, setPage] = useState(INITIAL_RESET_TOKEN ? 'login' : pageFromLocation())
   const [returnPage, setReturnPage] = useState('home')
   const [user, setUser] = useState(null)
   const [token, setToken] = useState(() => localStorage.getItem('reservas_token'))
@@ -502,6 +114,8 @@ function WorkspaceApp() {
   })
   const [spaceUsageSlide, setSpaceUsageSlide] = useState(0)
   const [autoRotateCharts, setAutoRotateCharts] = useState(true)
+  const [showDemoControls, setShowDemoControls] = useState(false)
+  const [darkMode, setDarkMode] = useState(() => localStorage.getItem('reservas_dark_mode') === 'true')
   const [selectedSpace, setSelectedSpace] = useState(null)
   const [form, setForm] = useState({
     fecha: '',
@@ -566,7 +180,18 @@ function WorkspaceApp() {
     if (next === 'login') setReturnPage(origin && origin !== 'login' ? origin : 'home')
     setPage(next)
     setMessage('')
+    const path = ROUTES[next] || ROUTES.home
+    if (window.location.pathname !== path) window.history.pushState({}, '', path)
   }
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setPage(pageFromLocation())
+      setMessage('')
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
 
   useEffect(() => {
     if (!INITIAL_RESET_TOKEN) return
@@ -583,6 +208,11 @@ function WorkspaceApp() {
         setToken(null)
       })
   }, [token, auth])
+
+  useEffect(() => {
+    document.documentElement.classList.toggle('dark-theme', darkMode)
+    localStorage.setItem('reservas_dark_mode', String(darkMode))
+  }, [darkMode])
 
   useEffect(() => {
     if (page !== 'dashboard' || !autoRotateCharts) return
@@ -711,7 +341,7 @@ function WorkspaceApp() {
     localStorage.setItem('reservas_token', result.token)
     setToken(result.token)
     setUser(result.usuario)
-    setPage(returnPage === 'home' ? 'dashboard' : returnPage)
+    navigate(returnPage === 'home' ? 'dashboard' : returnPage)
   }
 
   async function register(event) {
@@ -746,9 +376,16 @@ function WorkspaceApp() {
     })
     const body = await response.json().catch(() => ({}))
     if (!response.ok) return setMessage(body.detail || body.message || `Error ${response.status}`)
-    setRecoveryToken(body.tokenDesarrollo || '')
-    setAuthMode('reset')
-    setMessage(body.tokenDesarrollo ? 'Token local generado. Confirma tu nueva contraseña.' : body.mensaje)
+    if (body.tokenDesarrollo) {
+      setRecoveryToken(body.tokenDesarrollo)
+      setAuthMode('reset')
+      setMessage('Solicitud de prueba generada. Confirma tu nueva contraseña.')
+      return
+    }
+    // Con SMTP activo el enlace llega al correo y abre esta misma pantalla con el token incluido.
+    setRecoveryToken('')
+    setAuthMode('login')
+    setMessage(body.mensaje || 'Si el correo está registrado, recibirás un enlace para restablecer tu contraseña.')
   }
 
   async function confirmRecovery(event) {
@@ -842,7 +479,7 @@ function WorkspaceApp() {
     setPaymentReservationId(String(created[0]?.id || ''))
     setPaymentResult(null)
     setShowSummary(false)
-    setPage('payments')
+    navigate('payments')
     setMessage(`${created.length} reserva(s) diaria(s) creadas. Selecciona cómo deseas completar el pago de demostración.`)
   }
 
@@ -1256,12 +893,14 @@ function WorkspaceApp() {
     setReservations([])
     setPayments([])
     setAuthMode('login')
-    setPage('login')
+    navigate('login')
     setMessage('Contraseña restablecida. Inicia sesión nuevamente con tu nueva contraseña.')
   }
 
   function renderDashboard() {
-    return ['ADMIN', 'SUPERADMIN'].includes(user?.rol) ? renderAdminDashboard() : renderClientDashboard()
+    return ['ADMIN', 'SUPERADMIN'].includes(user?.rol)
+      ? renderAdminDashboard()
+      : <ClientDashboard user={user} reservations={reservations} payments={payments} notifications={notifications} showDemoControls={showDemoControls} onNavigate={navigate} />
   }
 
   function renderAdminDashboard() {
@@ -1295,6 +934,9 @@ function WorkspaceApp() {
       background: `conic-gradient(#00b0c6 0 ${confirmedEnd}%, #2c1261 ${confirmedEnd}% ${approvedEnd}%, #ed1a39 ${approvedEnd}% ${pendingEnd}%, #c1c5d3 ${pendingEnd}% 100%)`,
     }
     const carouselView = spaceUsageSlide % 2
+    const occupancyAlerts = (reportSummary.espaciosUso || [])
+      .filter((space) => space.nivelUso === 'ALTO' || space.nivelUso === 'BAJO')
+      .slice(0, 3)
     return (
       <main className="page-container role-dashboard admin-dashboard">
         <div className="dashboard-welcome">
@@ -1584,6 +1226,39 @@ function WorkspaceApp() {
             {!Object.keys(reportSummary.porEspacioSemana || {}).length && <p>Aún no hay reservas en los últimos 7 días.</p>}
           </div>
         </section>
+        <section className="dashboard-panel occupancy-alerts">
+          <div className="panel-heading">
+            <div>
+              <p className="eyebrow">Seguimiento de capacidad</p>
+              <h2>Alertas de ocupación</h2>
+            </div>
+            <button
+              onClick={() => {
+                setAdminTab('reportes')
+                navigate('admin')
+              }}
+            >
+              Ver análisis →
+            </button>
+          </div>
+          {occupancyAlerts.length ? (
+            <div className="occupancy-alert-list">
+              {occupancyAlerts.map((space) => (
+                <article className={space.nivelUso.toLowerCase()} key={space.id}>
+                  <span>{space.nivelUso === 'ALTO' ? '↑' : '↓'}</span>
+                  <div>
+                    <strong>{space.nombre}</strong>
+                    <small>{space.lugar || 'Sin lugar asignado'} · {space.reservas} reservas · {space.horas} h</small>
+                    <p>{space.recomendacion || (space.nivelUso === 'ALTO' ? 'Revisa la rotación y el mantenimiento del espacio.' : 'Considera promover este espacio para equilibrar su uso.')}</p>
+                  </div>
+                  <b>{space.porcentajeOcupacion}%</b>
+                </article>
+              ))}
+            </div>
+          ) : (
+            <div className="dashboard-empty">Aún no hay datos suficientes para generar alertas de ocupación.</div>
+          )}
+        </section>
       </main>
     )
   }
@@ -1700,14 +1375,16 @@ function WorkspaceApp() {
                 </div>
                 <b>→</b>
               </button>
-              <button onClick={() => navigate('profile')}>
-                <span>◎</span>
-                <div>
-                  <strong>Actualizar mi perfil</strong>
-                  <small>Gestiona tus datos y contraseña</small>
-                </div>
-                <b>→</b>
-              </button>
+              {showDemoControls && (
+                <button onClick={() => navigate('profile')}>
+                  <span>◎</span>
+                  <div>
+                    <strong>Actualizar mi perfil</strong>
+                    <small>Gestiona tus datos y contraseña</small>
+                  </div>
+                  <b>→</b>
+                </button>
+              )}
             </div>
           </section>
         </div>
@@ -1739,6 +1416,9 @@ function WorkspaceApp() {
       </main>
     )
   }
+
+  // Respaldo temporal mientras se completa la migración del panel cliente.
+  void renderClientDashboard
 
   function renderSpacesPage() {
     const isAdmin = user && ['ADMIN', 'SUPERADMIN'].includes(user.rol)
@@ -1791,9 +1471,11 @@ function WorkspaceApp() {
               {isAdmin && (
                 <div className="card-admin-actions">
                   <button onClick={() => openPlaceEditor(place)}>Editar</button>
-                  <button className="danger" disabled={place.estado === 'INACTIVO'} onClick={() => deletePlace(place)}>
-                    Eliminar
-                  </button>
+                  {showDemoControls && (
+                    <button className="danger" disabled={place.estado === 'INACTIVO'} onClick={() => deletePlace(place)}>
+                      Eliminar
+                    </button>
+                  )}
                 </div>
               )}
             </article>
@@ -1825,28 +1507,38 @@ function WorkspaceApp() {
               {isAdmin && currentPlace && (
                 <div className="place-heading-actions">
                   <button onClick={() => openPlaceEditor(currentPlace)}>Editar lugar</button>
-                  <button className="danger" disabled={currentPlace.estado === 'INACTIVO'} onClick={() => deletePlace(currentPlace)}>
-                    Eliminar lugar
-                  </button>
+                  {showDemoControls && (
+                    <button className="danger" disabled={currentPlace.estado === 'INACTIVO'} onClick={() => deletePlace(currentPlace)}>
+                      Eliminar lugar
+                    </button>
+                  )}
                 </div>
               )}
             </div>
             {selectedPlaceId !== 'sin-lugar' && (
-              <form className="availability-bar" onSubmit={checkAvailability}>
-                <label>
-                  Fecha
-                  <input
-                    type="date"
-                    required
-                    value={availabilityForm.fecha}
-                    onChange={(e) =>
-                      setAvailabilityForm({
-                        ...availabilityForm,
-                        fecha: e.target.value,
-                      })
-                    }
-                  />
-                </label>
+              <>
+                <AvailabilityDateStrip
+                  value={availabilityForm.fecha}
+                  onChange={(fecha) => {
+                    setAvailabilityForm((current) => ({ ...current, fecha }))
+                    setAvailableSpaceIds(null)
+                  }}
+                />
+                <form className="availability-bar" onSubmit={checkAvailability}>
+                  <label className="availability-date-input">
+                    Fecha
+                    <input
+                      type="date"
+                      required
+                      value={availabilityForm.fecha}
+                      onChange={(e) =>
+                        setAvailabilityForm({
+                          ...availabilityForm,
+                          fecha: e.target.value,
+                        })
+                      }
+                    />
+                  </label>
                 <label>
                   Desde
                   <input
@@ -1918,7 +1610,8 @@ function WorkspaceApp() {
                     Limpiar
                   </button>
                 )}
-              </form>
+                </form>
+              </>
             )}
             {visibleSpaces.length === 0 ? (
               <div className="catalog-empty">
@@ -1969,9 +1662,11 @@ function WorkspaceApp() {
                             <button className="edit-space-button" onClick={() => openSpaceEditor(space)}>
                               Editar
                             </button>
-                            <button className="delete-space-button" disabled={space.estado === 'INACTIVO'} onClick={() => deleteSpace(space)}>
-                              Eliminar
-                            </button>
+                            {showDemoControls && (
+                              <button className="delete-space-button" disabled={space.estado === 'INACTIVO'} onClick={() => deleteSpace(space)}>
+                                Eliminar
+                              </button>
+                            )}
                           </>
                         )}
                       </div>
@@ -1985,6 +1680,8 @@ function WorkspaceApp() {
       </main>
     )
   }
+
+  void renderSpacesPage
 
   function renderReservePage() {
     const reservablePlaces = places.filter((place) => place.estado === 'ACTIVO')
@@ -2215,312 +1912,7 @@ function WorkspaceApp() {
     )
   }
 
-  function renderReservationsPage() {
-    const activeReservations = reservations.filter((item) => ['PENDIENTE', 'APROBADA', 'CONFIRMADA'].includes(item.estado)).length
-    const confirmedReservations = reservations.filter((item) => item.estado === 'CONFIRMADA').length
-    const pendingReservations = reservations.filter((item) => item.estado === 'PENDIENTE').length
-    return (
-      <main className="page-container my-reservations-page">
-        <div className="reservations-hero">
-          <div>
-            <p className="eyebrow">Historial personal</p>
-            <h1>Mis reservas</h1>
-            <p>Consulta el estado de tus solicitudes y administra las que todavía están activas.</p>
-          </div>
-          <button className="primary-button" onClick={() => navigate('spaces')}>
-            + Nueva reserva
-          </button>
-        </div>
-        <section className="reservation-mini-stats">
-          <div>
-            <small>Reservas activas</small>
-            <strong>{activeReservations}</strong>
-          </div>
-          <div>
-            <small>Confirmadas</small>
-            <strong>{confirmedReservations}</strong>
-          </div>
-          <div>
-            <small>Por revisar</small>
-            <strong>{pendingReservations}</strong>
-          </div>
-        </section>
-        {message && <p className="form-message">{message}</p>}
-        {reservations.length === 0 ? (
-          <div className="reservations-empty">
-            <span>▤</span>
-            <h2>Aún no tienes reservas</h2>
-            <p>Explora los lugares disponibles y programa tu primera actividad.</p>
-            <button className="primary-button" onClick={() => navigate('spaces')}>
-              Explorar espacios
-            </button>
-          </div>
-        ) : (
-          <div className="reservation-grid">
-            {reservations.map((r) => {
-              const date = new Date(`${r.fecha}T12:00:00`)
-              const linkedSpace = spaces.find((space) => String(space.id) === String(r.espacioId) || space.nombre === r.espacio)
-              const linkedPlace = places.find((place) => String(place.id) === String(linkedSpace?.lugarId))
-              const canModify = ['PENDIENTE', 'APROBADA'].includes(r.estado) && !payments.some((payment) => payment.reservaId === r.id && payment.estado !== 'RECHAZADO')
-              const canCancel = ['PENDIENTE', 'APROBADA', 'CONFIRMADA'].includes(r.estado)
-              return (
-                <article className="reservation-modern-card" key={r.id}>
-                  <div className="reservation-card-top">
-                    <div className="reservation-date-tile">
-                      <strong>{date.toLocaleDateString('es-CR', { day: '2-digit' })}</strong>
-                      <span>{date.toLocaleDateString('es-CR', { month: 'short' }).replace('.', '')}</span>
-                      <small>{date.getFullYear()}</small>
-                    </div>
-                    <div className="reservation-main-info">
-                      <small>RESERVA #{r.id}</small>
-                      <h2>{r.espacio}</h2>
-                      <p>⌂ {linkedPlace?.nombre || 'Instalación institucional'}</p>
-                    </div>
-                    <span className={`reservation-status ${r.estado.toLowerCase()}`}>{r.estado}</span>
-                  </div>
-                  <div className="reservation-detail-row">
-                    <div>
-                      <small>HORARIO</small>
-                      <strong>
-                        {String(r.horaInicio).slice(0, 5)} – {String(r.horaFin).slice(0, 5)}
-                      </strong>
-                    </div>
-                    <div>
-                      <small>PERSONAS</small>
-                      <strong>{r.cantidadPersonas}</strong>
-                    </div>
-                    <div>
-                      <small>FECHA</small>
-                      <strong>
-                        {date.toLocaleDateString('es-CR', {
-                          day: '2-digit',
-                          month: 'short',
-                          year: 'numeric',
-                        })}
-                      </strong>
-                    </div>
-                  </div>
-                  {(canModify || canCancel) && (
-                    <div className="reservation-card-actions">
-                      {canModify && <button onClick={() => openReservationEditor(r)}>Modificar reserva</button>}
-                      {canCancel && (
-                        <button className="danger" onClick={() => cancelReservation(r)}>
-                          Cancelar
-                        </button>
-                      )}
-                    </div>
-                  )}
-                </article>
-              )
-            })}
-          </div>
-        )}
-      </main>
-    )
-  }
-
-  function renderPaymentsPage() {
-    const payableReservations = reservations.filter((r) => !payments.some((p) => p.reservaId === r.id && p.estado !== 'RECHAZADO') && !['CANCELADA', 'RECHAZADA'].includes(r.estado))
-    const selected = reservations.find((item) => String(item.id) === String(paymentReservationId))
-    const paymentHours = selected ? Math.max(0, (Number(String(selected.horaFin).slice(0, 2)) * 60 + Number(String(selected.horaFin).slice(3, 5)) - (Number(String(selected.horaInicio).slice(0, 2)) * 60 + Number(String(selected.horaInicio).slice(3, 5)))) / 60) : 0
-    const paymentTotal = paymentHours * hourlyRate
-    return (
-      <main className="page-container payment-page modern-payment-page">
-        <div className="payments-title">
-          <div>
-            <p className="eyebrow">Pago demostrativo seguro</p>
-            <h1>Completa tu reserva</h1>
-            <p>Proceso simulado en colones costarricenses. Nunca solicitamos ni almacenamos datos bancarios reales.</p>
-          </div>
-          <span>🔒 Entorno de prueba</span>
-        </div>
-        <div className="payment-flow-layout">
-          <section className="payment-wizard">
-            <div className="payment-progress">
-              {[
-                ['1', 'Reserva'],
-                ['2', 'Método'],
-                ['3', 'Confirmación'],
-              ].map(([number, label], index) => (
-                <div className={paymentStep >= index + 1 ? 'active' : ''} key={number}>
-                  <span>{paymentStep > index + 1 ? '✓' : number}</span>
-                  <small>{label}</small>
-                </div>
-              ))}
-            </div>
-            {paymentStep === 1 && (
-              <div className="payment-stage">
-                <p className="eyebrow">Paso 1 de 3</p>
-                <h2>Selecciona la reserva</h2>
-                <p>Elige cuál solicitud deseas completar.</p>
-                {payableReservations.length === 0 ? (
-                  <div className="payment-empty">No tienes reservas pendientes de pago.</div>
-                ) : (
-                  <div className="payable-list">
-                    {payableReservations.map((r) => (
-                      <button
-                        className={String(paymentReservationId) === String(r.id) ? 'selected' : ''}
-                        key={r.id}
-                        onClick={() => {
-                          setPaymentReservationId(String(r.id))
-                          setPaymentResult(null)
-                        }}
-                      >
-                        <span className="payment-calendar">
-                          <strong>{new Date(`${r.fecha}T12:00`).getDate()}</strong>
-                          <small>{new Date(`${r.fecha}T12:00`).toLocaleDateString('es-CR', { month: 'short' }).replace('.', '')}</small>
-                        </span>
-                        <span>
-                          <strong>{r.espacio}</strong>
-                          <small>
-                            Reserva #{r.id} · {String(r.horaInicio).slice(0, 5)} - {String(r.horaFin).slice(0, 5)}
-                          </small>
-                        </span>
-                        <b>{String(paymentReservationId) === String(r.id) ? '✓' : '›'}</b>
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <div className="wizard-actions">
-                  <span />
-                  <button className="primary-button" disabled={!selected} onClick={() => setPaymentStep(2)}>
-                    Continuar al método →
-                  </button>
-                </div>
-              </div>
-            )}
-            {paymentStep === 2 && (
-              <form className="payment-stage" onSubmit={submitPayment}>
-                <p className="eyebrow">Paso 2 de 3</p>
-                <h2>Selecciona cómo pagar</h2>
-                {selected && (
-                  <div className="compact-payment-summary">
-                    <div>
-                      <strong>{selected.espacio}</strong>
-                      <small>
-                        {selected.fecha} · {String(selected.horaInicio).slice(0, 5)} - {String(selected.horaFin).slice(0, 5)} ({paymentHours} h)
-                      </small>
-                    </div>
-                    <strong>₡{paymentTotal.toLocaleString('es-CR')}</strong>
-                  </div>
-                )}
-                <fieldset className="payment-methods visual-methods">
-                  <legend>Método de pago</legend>
-                  {[
-                    ['TARJETA_MOCK', '▣', 'Tarjeta simulada', 'Aprobación inmediata sin introducir números reales.'],
-                    ['TRANSFERENCIA', '▤', 'Transferencia bancaria', 'Registra el método y queda pendiente de verificación.'],
-                    ['EFECTIVO', '₡', 'Efectivo en sede', 'Paga en recepción dentro de las próximas 48 horas.'],
-                  ].map(([value, icon, title, help]) => (
-                    <label className={paymentMethod === value ? 'selected' : ''} key={value}>
-                      <input type="radio" name="metodo" value={value} checked={paymentMethod === value} onChange={(e) => setPaymentMethod(e.target.value)} />
-                      <i>{icon}</i>
-                      <span>
-                        <strong>{title}</strong>
-                        <small>{help}</small>
-                      </span>
-                      <b>{paymentMethod === value ? '✓' : ''}</b>
-                    </label>
-                  ))}
-                </fieldset>
-                {paymentMethod === 'TARJETA_MOCK' && (
-                  <div className="method-instructions card-demo">
-                    <span>SIMULACIÓN</span>
-                    <strong>•••• •••• •••• 2026</strong>
-                    <small>No se solicitarán datos de una tarjeta real.</small>
-                  </div>
-                )}
-                {paymentMethod === 'TRANSFERENCIA' && (
-                  <div className="method-instructions">
-                    <strong>Transferencia de demostración</strong>
-                    <p>Banco Nacional · Cuenta institucional simulada</p>
-                    <small>Utiliza la referencia de reserva #{selected?.id}. Un administrador deberá verificarla.</small>
-                  </div>
-                )}
-                {paymentMethod === 'EFECTIVO' && (
-                  <div className="method-instructions">
-                    <strong>Pago en recepción</strong>
-                    <p>Presenta el número de reserva #{selected?.id} y un documento de identificación.</p>
-                    <small>La reserva permanecerá pendiente hasta registrar el pago.</small>
-                  </div>
-                )}
-                <div className="wizard-actions">
-                  <button type="button" className="secondary-button" onClick={() => setPaymentStep(1)}>
-                    ← Volver
-                  </button>
-                  <button className="primary-button" disabled={paying}>
-                    {paying ? 'Procesando…' : paymentMethod === 'TARJETA_MOCK' ? 'Confirmar pago simulado' : 'Registrar método'}
-                  </button>
-                </div>
-                {message && <p className={paymentResult ? 'form-message' : 'form-error'}>{message}</p>}
-              </form>
-            )}
-            {paymentStep === 3 && (
-              <div className="payment-stage payment-finish">
-                <div className="success-check">✓</div>
-                <p className="eyebrow">Paso 3 de 3</p>
-                <h2>{paymentResult?.estado === 'APROBADO' ? 'Reserva confirmada' : 'Solicitud registrada'}</h2>
-                <p>{paymentResult?.estado === 'APROBADO' ? 'El pago de demostración fue aprobado inmediatamente.' : 'El método quedó pendiente de verificación administrativa.'}</p>
-                {paymentResult && (
-                  <div className="finish-receipt">
-                    <span>
-                      Referencia<strong>{paymentResult.referencia}</strong>
-                    </span>
-                    <span>
-                      Total
-                      <strong>₡{Number(paymentResult.monto).toLocaleString('es-CR')}</strong>
-                    </span>
-                    <span>
-                      Estado
-                      <strong>{paymentResult.estado.replaceAll('_', ' ')}</strong>
-                    </span>
-                  </div>
-                )}
-                <div className="wizard-actions centered">
-                  <button
-                    className="secondary-button"
-                    onClick={() => {
-                      setPaymentStep(1)
-                      setPaymentResult(null)
-                    }}
-                  >
-                    Realizar otro pago
-                  </button>
-                  <button className="primary-button" onClick={() => navigate('reservations')}>
-                    Ver mis reservas
-                  </button>
-                </div>
-              </div>
-            )}
-          </section>
-          <aside className="payment-history-modern">
-            <div>
-              <p className="eyebrow">Historial</p>
-              <h2>Pagos registrados</h2>
-            </div>
-            {payments.length === 0 ? (
-              <p className="payment-empty">Aún no hay pagos.</p>
-            ) : (
-              payments.slice(0, 6).map((p) => (
-                <article key={p.id}>
-                  <div>
-                    <strong>{p.referencia}</strong>
-                    <small>
-                      Reserva #{p.reservaId} · {p.metodo.replace('_MOCK', '')}
-                    </small>
-                    {p.estado === 'APROBADO' && <button onClick={() => downloadReceipt(p)}>Comprobante PDF</button>}
-                  </div>
-                  <div>
-                    <strong>₡{Number(p.monto).toLocaleString('es-CR')}</strong>
-                    <span className={`payment-status ${p.estado.toLowerCase()}`}>{p.estado.replaceAll('_', ' ')}</span>
-                  </div>
-                </article>
-              ))
-            )}
-          </aside>
-        </div>
-      </main>
-    )
-  }
+  void renderReservePage
 
   function renderAdminPage() {
     const reportMonths = Object.entries(reportSummary.porMes || {})
@@ -2537,43 +1929,7 @@ function WorkspaceApp() {
       <main className="page-container admin-page">
         <p className="eyebrow">Acceso administrativo</p>
         <h1>Administración</h1>
-        <div className="admin-tabs">
-          <select
-            className="admin-tabs-mobile"
-            aria-label="Sección de administración"
-            value={adminTab}
-            onChange={(event) => {
-              setAdminTab(event.target.value)
-              setMessage('')
-            }}
-          >
-            <option value="reservas">Reservas</option>
-            <option value="pagos">Pagos</option>
-            <option value="usuarios">Usuarios</option>
-            <option value="precios">Precios</option>
-            <option value="reportes">Reportes</option>
-            <option value="auditoria">Bitácora</option>
-          </select>
-          {[
-            ['reservas', 'Reservas'],
-            ['pagos', 'Pagos'],
-            ['usuarios', 'Usuarios'],
-            ['precios', 'Precios'],
-            ['reportes', 'Reportes'],
-            ['auditoria', 'Bitácora'],
-          ].map(([key, label]) => (
-            <button
-              className={adminTab === key ? 'active' : ''}
-              key={key}
-              onClick={() => {
-                setAdminTab(key)
-                setMessage('')
-              }}
-            >
-              {label}
-            </button>
-          ))}
-        </div>
+        <AdminTabs value={adminTab} onChange={(tab) => { setAdminTab(tab); setMessage('') }} />
         {message && <p className="form-message">{message}</p>}
         {adminTab === 'precios' && (
           <form className="admin-rate-panel" onSubmit={saveRate}>
@@ -2757,94 +2113,8 @@ function WorkspaceApp() {
         )}
         {adminTab === 'reportes' && (
           <div className="reports-panel">
-            <section className="report-filter-panel">
-              <div>
-                <p className="eyebrow">Análisis institucional</p>
-                <h2>Filtrar estadísticas</h2>
-                <p>Los indicadores y las descargas utilizan el mismo período y selección.</p>
-              </div>
-              <div className="report-filter-grid">
-                <label>
-                  Desde
-                  <input type="date" value={reportFilters.desde} onChange={(e) => setReportFilters({ ...reportFilters, desde: e.target.value })} />
-                </label>
-                <label>
-                  Hasta
-                  <input type="date" value={reportFilters.hasta} onChange={(e) => setReportFilters({ ...reportFilters, hasta: e.target.value })} />
-                </label>
-                <label>
-                  Estado
-                  <select value={reportFilters.estado} onChange={(e) => setReportFilters({ ...reportFilters, estado: e.target.value })}>
-                    <option value="">Todos</option>
-                    {['PENDIENTE', 'APROBADA', 'CONFIRMADA', 'CANCELADA', 'RECHAZADA'].map((value) => (
-                      <option key={value}>{value}</option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Lugar
-                  <select value={reportFilters.lugarId} onChange={(e) => setReportFilters({ ...reportFilters, lugarId: e.target.value, espacioId: '' })}>
-                    <option value="">Todos los lugares</option>
-                    {places.map((place) => (
-                      <option key={place.id} value={place.id}>
-                        {place.nombre}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-                <label>
-                  Espacio
-                  <select value={reportFilters.espacioId} onChange={(e) => setReportFilters({ ...reportFilters, espacioId: e.target.value })}>
-                    <option value="">Todos los espacios</option>
-                    {spaces
-                      .filter((space) => !reportFilters.lugarId || String(space.lugarId) === String(reportFilters.lugarId))
-                      .map((space) => (
-                        <option key={space.id} value={space.id}>
-                          {space.nombre}
-                        </option>
-                      ))}
-                  </select>
-                </label>
-                <button type="button" className="secondary-button" onClick={() => setReportFilters({ desde: '', hasta: '', estado: '', lugarId: '', espacioId: '' })}>
-                  Limpiar filtros
-                </button>
-              </div>
-              {reportFilters.desde && reportFilters.hasta && reportFilters.desde > reportFilters.hasta && <p className="form-error">La fecha inicial no puede ser posterior a la fecha final.</p>}
-            </section>
-            <div className="report-metrics">
-              <article>
-                <span>Total de reservas</span>
-                <strong>{reportSummary.total || 0}</strong>
-              </article>
-              <article>
-                <span>Horas reservadas</span>
-                <strong>{reportSummary.totalHoras || 0} h</strong>
-              </article>
-              <article>
-                <span>Ocupación estimada</span>
-                <strong>{reportSummary.porcentajeOcupacion || 0}%</strong>
-              </article>
-              <article>
-                <span>Personas atendidas</span>
-                <strong>{reportSummary.totalPersonas || 0}</strong>
-              </article>
-              <article>
-                <span>Reservas próximas</span>
-                <strong>{reportSummary.proximas || 0}</strong>
-              </article>
-              <article>
-                <span>Menor demanda</span>
-                <strong className="metric-text">{leastUsedSpace?.nombre || 'Sin datos'}</strong>
-              </article>
-              <article>
-                <span>Promedio por reserva</span>
-                <strong>{reportSummary.promedioPersonasPorReserva || 0} personas</strong>
-              </article>
-              <article>
-                <span>Porcentaje de cancelación</span>
-                <strong>{reportSummary.porcentajeCancelacion || 0}%</strong>
-              </article>
-            </div>
+            <ReportFilters filters={reportFilters} places={places} spaces={spaces} onChange={setReportFilters} />
+            <ReportMetrics summary={reportSummary} leastUsedSpace={leastUsedSpace} />
             <section className="report-comparison">
               <div>
                 <p className="eyebrow">Comparación automática</p>
@@ -3084,228 +2354,123 @@ function WorkspaceApp() {
         setSelectedPlaceId(data[0]?.id || null)
       })
       .catch(() => setPlaces([]))
-    setPage('home')
+    navigate('home')
   }
 
   return (
     <div className="workspace-app">
-      <Header user={user} page={page} navigate={navigate} logout={logout} unreadCount={notifications.filter((notification) => !notification.leida).length} />
+      <Header
+        user={user}
+        page={page}
+        navigate={navigate}
+        logout={logout}
+        darkMode={darkMode}
+        onToggleDarkMode={() => setDarkMode((current) => !current)}
+        unreadCount={notifications.filter((notification) => !notification.leida).length}
+        showDemoControls={showDemoControls}
+        onToggleDemoControls={() => setShowDemoControls((current) => !current)}
+      />
       <SiempreListosRibbon />
-      {page === 'home' && (
-        <>
-          <main className="new-hero home-with-carousel">
-            <div className="home-intro">
-              <h1>Reserva espacios institucionales con claridad.</h1>
-              <p>Consulta disponibilidad, crea solicitudes y da seguimiento desde una sola plataforma.</p>
-              <button className="primary-button" onClick={() => navigate('spaces')}>
-                Explorar espacios
-              </button>
-            </div>
-            <HomeCarousel onExplore={() => navigate('spaces')} />
-          </main>
-          <SocialFooter />
-        </>
-      )}
+      {page === 'home' && <HomePage onExploreSpaces={() => navigate('spaces')} />}
       {page === 'login' && (
-        <main className="auth-shell">
-          {authMode === 'login' && (
-            <form className="auth-card" onSubmit={login}>
-              <button
-                className="link-button auth-back-link"
-                type="button"
-                onClick={() => {
-                  setMessage('')
-                  setPage(returnPage === 'login' ? 'home' : returnPage || 'home')
-                }}
-              >
-                Volver
-              </button>
-              <p className="eyebrow">Acceso institucional</p>
-              <h1>Iniciar sesión</h1>
-              <label>
-                Correo
-                <input name="correo" type="email" required />
-              </label>
-              <label>
-                Contraseña
-                <input name="password" type="password" required />
-              </label>
-              {message && <p className={message.includes('exitoso') || message.includes('restablecida') ? 'form-message' : 'form-error'}>{message}</p>}
-              <button className="primary-button">Entrar</button>
-              <div className="auth-links">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMode('register')
-                    setMessage('')
-                  }}
-                >
-                  Crear cuenta
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setAuthMode('recover')
-                    setMessage('')
-                  }}
-                >
-                  Olvidé mi contraseña
-                </button>
-              </div>
-            </form>
-          )}
-          {authMode === 'register' && (
-            <form className="auth-card" onSubmit={register}>
-              <p className="eyebrow">Nueva cuenta</p>
-              <h1>Registrarse</h1>
-              <label>
-                Nombre
-                <input name="nombre" required maxLength="120" />
-              </label>
-              <label>
-                Correo
-                <input name="correo" type="email" required />
-              </label>
-              <label>
-                Contraseña
-                <input name="password" type="password" minLength="8" maxLength="72" required />
-              </label>
-              <label>
-                Confirmar contraseña
-                <input name="confirmacion" type="password" minLength="8" maxLength="72" required />
-              </label>
-              {message && <p className="form-error">{message}</p>}
-              <button className="primary-button">Crear cuenta</button>
-              <button
-                className="link-button"
-                type="button"
-                onClick={() => {
-                  setAuthMode('login')
-                  setMessage('')
-                }}
-              >
-                Ya tengo una cuenta
-              </button>
-            </form>
-          )}
-          {authMode === 'recover' && (
-            <form className="auth-card" onSubmit={requestRecovery}>
-              <p className="eyebrow">Recuperación</p>
-              <h1>Recuperar acceso</h1>
-              <p>Ingresa el correo asociado a tu cuenta.</p>
-              <label>
-                Correo
-                <input name="correo" type="email" required />
-              </label>
-              {message && <p className="form-error">{message}</p>}
-              <button className="primary-button">Generar solicitud</button>
-              <button className="link-button" type="button" onClick={() => setAuthMode('login')}>
-                Volver al acceso
-              </button>
-            </form>
-          )}
-          {authMode === 'reset' && (
-            <form className="auth-card" onSubmit={confirmRecovery}>
-              <p className="eyebrow">Nueva contraseña</p>
-              <h1>Restablecer</h1>
-              <label>
-                Token
-                <input name="token" required defaultValue={recoveryToken} />
-              </label>
-              <label>
-                Nueva contraseña
-                <input name="passwordNuevo" type="password" minLength="8" maxLength="72" required />
-              </label>
-              <label>
-                Confirmar contraseña
-                <input name="confirmacion" type="password" minLength="8" maxLength="72" required />
-              </label>
-              {message && <p className={recoveryToken ? 'form-message' : 'form-error'}>{message}</p>}
-              <button className="primary-button">Guardar contraseña</button>
-              <button className="link-button" type="button" onClick={() => setAuthMode('login')}>
-                Cancelar
-              </button>
-            </form>
-          )}
-        </main>
+        <AuthPage
+          authMode={authMode}
+          message={message}
+          recoveryToken={recoveryToken}
+          returnPage={returnPage}
+          onLogin={login}
+          onRegister={register}
+          onRequestRecovery={requestRecovery}
+          onConfirmRecovery={confirmRecovery}
+          onModeChange={setAuthMode}
+          onMessageChange={setMessage}
+          onBack={(targetPage) => { setMessage(''); navigate(targetPage === 'login' ? 'home' : targetPage || 'home') }}
+        />
       )}
       {page === 'dashboard' && renderDashboard()}
-      {page === 'spaces' && renderSpacesPage()}
-      {page === 'reserve' && renderReservePage()}
-      {page === 'reservations' && renderReservationsPage()}
-      {page === 'payments' && renderPaymentsPage()}
-      {page === 'notifications' && (
-        <main className="page-container notifications-page">
-          <p className="eyebrow">Centro de avisos</p>
-          <h1>Notificaciones</h1>
-          <p>Actualizaciones de tus reservas, pagos y cuenta.</p>
-          <div className="notification-list">
-            {notifications.length === 0 ? (
-              <div className="catalog-empty">
-                <strong>No tienes notificaciones</strong>
-                <span>Los cambios importantes aparecerán aquí.</span>
-              </div>
-            ) : (
-              notifications.map((notification) => (
-                <button className={notification.leida ? 'read' : 'unread'} key={notification.id} onClick={() => readNotification(notification)}>
-                  <span className={`notification-icon ${notification.tipo.toLowerCase()}`}>{notification.tipo === 'PAGO' ? '₡' : notification.tipo === 'RESERVA' ? '⌂' : 'i'}</span>
-                  <div>
-                    <strong>{notification.titulo}</strong>
-                    <p>{notification.mensaje}</p>
-                    <small>{new Date(notification.creadaEn).toLocaleString('es-CR')}</small>
-                  </div>
-                  {!notification.leida && <b>NUEVA</b>}
-                </button>
-              ))
-            )}
-          </div>
-        </main>
+      {page === 'spaces' && (
+        <SpacesPage
+          user={user}
+          places={places}
+          spaces={spaces}
+          selectedPlaceId={selectedPlaceId}
+          availabilityForm={availabilityForm}
+          availabilityTypeId={availabilityTypeId}
+          availableSpaceIds={availableSpaceIds}
+          types={types}
+          message={message}
+          showDemoControls={showDemoControls}
+          onPlaceChange={(placeId) => { setSelectedPlaceId(placeId); setAvailableSpaceIds(null) }}
+          onAvailabilityChange={setAvailabilityForm}
+          onTypeChange={setAvailabilityTypeId}
+          onCheckAvailability={checkAvailability}
+          onClearAvailability={(clearType) => { setAvailableSpaceIds(null); if (clearType) setAvailabilityTypeId('') }}
+          onCreatePlace={openPlaceCreator}
+          onCreateSpace={openSpaceCreator}
+          onEditPlace={openPlaceEditor}
+          onDeletePlace={deletePlace}
+          onEditSpace={openSpaceEditor}
+          onDeleteSpace={deleteSpace}
+          onReserve={(space) => {
+            setSelectedSpace(space)
+            setForm({ ...form, ...availabilityForm, fechaFin: '' })
+            user ? navigate('reserve') : navigate('login', 'reserve')
+          }}
+        />
       )}
-      {page === 'profile' && (
-        <main className="page-container profile-page">
-          <p className="eyebrow">Cuenta personal</p>
-          <h1>Mi perfil</h1>
-          <div className="profile-layout">
-            <form className="profile-card" onSubmit={updateProfile}>
-              <h2>Información personal</h2>
-              <p>Actualiza el nombre y correo asociados a tu cuenta.</p>
-              <label>
-                Nombre
-                <input name="nombre" required maxLength="120" defaultValue={user?.nombre} />
-              </label>
-              <label>
-                Correo
-                <input name="correo" type="email" required maxLength="160" defaultValue={user?.correo} />
-              </label>
-              <div className="profile-meta">
-                <span>Rol</span>
-                <strong>{user?.rol}</strong>
-                <span>Estado</span>
-                <strong>{user?.estado}</strong>
-              </div>
-              <button className="primary-button">Guardar perfil</button>
-            </form>
-            <form className="profile-card" onSubmit={changePassword}>
-              <h2>Cambiar contraseña</h2>
-              <p>Utiliza al menos 8 caracteres y no repitas tu contraseña actual.</p>
-              <label>
-                Contraseña actual
-                <input name="passwordActual" type="password" required />
-              </label>
-              <label>
-                Nueva contraseña
-                <input name="passwordNuevo" type="password" minLength="8" maxLength="72" required />
-              </label>
-              <label>
-                Confirmar contraseña
-                <input name="confirmacion" type="password" minLength="8" maxLength="72" required />
-              </label>
-              <button className="primary-button">Actualizar contraseña</button>
-            </form>
-          </div>
-          {message && <p className={message.includes('correct') || message.includes('actualiz') ? 'form-message' : 'form-error'}>{message}</p>}
-        </main>
+      {page === 'reserve' && (
+        <ReservePage
+          places={places}
+          spaces={spaces}
+          selectedPlaceId={selectedPlaceId}
+          selectedSpace={selectedSpace}
+          form={form}
+          hours={hours}
+          hourlyRate={hourlyRate}
+          reservationAvailability={reservationAvailability}
+          checkingReservation={checkingReservation}
+          message={message}
+          onPlaceChange={(placeId) => { setSelectedPlaceId(placeId); setSelectedSpace(null); setMessage('') }}
+          onSpaceChange={(space) => { setSelectedSpace(space); setMessage('') }}
+          onFormChange={setForm}
+          onClearAvailability={() => setReservationAvailability(null)}
+          onReview={reviewReservation}
+        />
       )}
+      {page === 'reservations' && (
+        <ReservationsPage
+          reservations={reservations}
+          payments={payments}
+          spaces={spaces}
+          places={places}
+          message={message}
+          onNavigateSpaces={() => navigate('spaces')}
+          onEdit={openReservationEditor}
+          onCancel={cancelReservation}
+        />
+      )}
+      {page === 'payments' && (
+        <PaymentsPage
+          reservations={reservations}
+          payments={payments}
+          paymentReservationId={paymentReservationId}
+          paymentMethod={paymentMethod}
+          paymentStep={paymentStep}
+          paymentResult={paymentResult}
+          paying={paying}
+          hourlyRate={hourlyRate}
+          message={message}
+          onReservationChange={setPaymentReservationId}
+          onMethodChange={setPaymentMethod}
+          onStepChange={setPaymentStep}
+          onResultChange={setPaymentResult}
+          onSubmit={submitPayment}
+          onNavigateReservations={() => navigate('reservations')}
+          onDownloadReceipt={downloadReceipt}
+        />
+      )}
+      {page === 'notifications' && <NotificationsPage notifications={notifications} onRead={readNotification} />}
+      {page === 'profile' && <ProfilePage user={user} message={message} onUpdateProfile={updateProfile} onChangePassword={changePassword} />}
       {page === 'admin' && renderAdminPage()}
       {showSummary && (
         <div

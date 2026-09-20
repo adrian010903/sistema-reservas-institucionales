@@ -403,6 +403,17 @@ body,.workspace-app,.dashboard-shell { color:var(--gys-ink); background:linear-g
 .decision-list > div > div { height: 10px; overflow: hidden; border-radius: 99px; background: #edf0f6; }
 .decision-list i { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--gys-purple), var(--gys-teal)); }
 .decision-list strong { color: var(--gys-purple); font-size: 11px; }
+.occupancy-alerts { margin-top: 20px; }
+.occupancy-alert-list { display: grid; gap: 10px; }
+.occupancy-alert-list article { display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 14px; border: 1px solid #e6e8ef; border-radius: 14px; background: #fff; }
+.occupancy-alert-list article > span { display: grid; width: 38px; height: 38px; place-items: center; border-radius: 12px; font-size: 20px; font-weight: 900; }
+.occupancy-alert-list article.alto > span { color: #a71235; background: #ffe8ee; }
+.occupancy-alert-list article.bajo > span { color: #087486; background: #e0f8fa; }
+.occupancy-alert-list article div { min-width: 0; }
+.occupancy-alert-list article strong { display: block; color: var(--gys-purple); font-size: 14px; }
+.occupancy-alert-list article small { display: block; margin-top: 3px; color: #6f7890; font-size: 11px; }
+.occupancy-alert-list article p { margin: 7px 0 0; color: #505b73; font-size: 12px; line-height: 1.4; }
+.occupancy-alert-list article b { padding: 8px; border-radius: 10px; color: var(--gys-purple); background: #f2eff8; font-size: 12px; }
 .report-section-selector { margin: 18px 0; }
 .report-section-buttons { display: flex; flex-wrap: wrap; gap: 9px; margin: 12px 0 15px; }
 .report-section-buttons button { padding: 10px 14px; border: 1px solid #d9d2e8; border-radius: 12px; color: var(--gys-purple); background: #fff; font-weight: 700; }
@@ -419,6 +430,21 @@ body,.workspace-app,.dashboard-shell { color:var(--gys-ink); background:linear-g
 .place-card.selected { box-shadow: 0 0 0 3px rgba(0,176,198,.45), 0 20px 38px rgba(44,18,97,.17); }
 .place-heading { margin-top: 32px; padding: 20px 0; border-top: 1px solid rgba(44,18,97,.1); }
 .availability-bar { padding: 17px; border: 1px solid rgba(44,18,97,.1); border-radius: 18px; background: rgba(255,255,255,.9); box-shadow: 0 10px 26px rgba(44,18,97,.06); }
+.availability-date-strip { margin: 22px 0 12px; padding: 18px; border: 1px solid rgba(44,18,97,.1); border-radius: 18px; background: rgba(255,255,255,.92); box-shadow: 0 10px 26px rgba(44,18,97,.06); }
+.availability-date-strip-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 14px; }
+.availability-date-strip-heading > div { display: grid; gap: 3px; }
+.availability-date-strip-heading span { color: var(--gys-teal-dark); font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; }
+.availability-date-strip-heading strong { color: var(--gys-purple); font-size: 15px; }
+.availability-date-strip-heading > small { padding: 7px 10px; border-radius: 999px; color: var(--gys-purple); background: #f2eff8; font-size: 11px; font-weight: 800; text-transform: capitalize; }
+.availability-date-options { display: grid; grid-template-columns: repeat(14, minmax(48px, 1fr)); gap: 8px; overflow-x: auto; padding-bottom: 2px; }
+.availability-date-options button { display: grid; min-width: 48px; min-height: 70px; align-content: center; justify-items: center; gap: 2px; padding: 7px 5px; border: 1px solid #e3e5ed; border-radius: 13px; color: #697189; background: #fff; transition: transform .18s ease, border-color .18s ease, color .18s ease, background .18s ease; }
+.availability-date-options button:hover { border-color: rgba(0,176,198,.7); color: var(--gys-purple); transform: translateY(-2px); }
+.availability-date-options button:focus-visible { outline: 3px solid rgba(0,176,198,.35); outline-offset: 2px; }
+.availability-date-options button small { font-size: 9px; font-weight: 800; text-transform: capitalize; }
+.availability-date-options button strong { color: var(--gys-purple); font-size: 18px; line-height: 1; }
+.availability-date-options button span { font-size: 9px; text-transform: capitalize; }
+.availability-date-options button.active { border-color: var(--gys-teal); color: #fff; background: var(--gys-teal); box-shadow: 0 8px 17px rgba(0,176,198,.24); }
+.availability-date-options button.active strong { color: #fff; }
 .space-list { gap: 20px; }
 .space-card { border-radius: 22px; box-shadow: 0 13px 30px rgba(44,18,97,.08); transition: transform .2s ease, box-shadow .2s ease; }
 .space-card:hover { transform: translateY(-5px); box-shadow: 0 22px 40px rgba(44,18,97,.15); }
@@ -491,6 +517,13 @@ body,.workspace-app,.dashboard-shell { color:var(--gys-ink); background:linear-g
   .admin-table { overflow-x: auto; }
   .admin-table-head, .admin-table article { min-width: 680px; }
   .admin-rate-panel { grid-template-columns: 1fr; padding: 21px; }
+  .availability-date-strip { margin-top: 16px; padding: 15px; }
+  .availability-date-options { display: flex; gap: 7px; }
+  .availability-date-options button { flex: 0 0 52px; }
+  .availability-date-input { display: none !important; }
+  .occupancy-alert-list article { grid-template-columns: 34px minmax(0, 1fr); }
+  .occupancy-alert-list article > span { width: 34px; height: 34px; }
+  .occupancy-alert-list article b { grid-column: 2; justify-self: start; }
 }
 
 /* Módulos operativos de administración: reservas, pagos, usuarios y bitácora. */
@@ -1411,6 +1444,11 @@ textarea {
   align-self: center;
   line-height: 1.1;
 }
+
+/* Acceso temporal de demostración: no concede permisos ni habilita el backend. */
+.hidden-controls-toggle { width: 10px; height: 18px; padding: 0; border: 0; color: var(--gys-purple); background: transparent; font-size: 12px; line-height: 1; opacity: .18; transition: opacity .18s ease; }
+.hidden-controls-toggle:hover, .hidden-controls-toggle:focus-visible, .hidden-controls-toggle.active { opacity: .75; }
+.hidden-controls-toggle:focus-visible { outline: 2px solid var(--gys-teal); outline-offset: 2px; }
 
 .app-brand.official-brand {
   min-height: 56px;
@@ -2639,4 +2677,83 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
 @media (max-width: 700px) {
   .admin-page .report-filter-grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+}
+.theme-toggle { display:grid; place-items:center; width:34px; height:34px; padding:0; border:1px solid rgba(44,18,97,.16); border-radius:50%; color:var(--gys-purple); background:#f5f2fa; font-size:17px; line-height:1; transition:transform .18s ease, background .18s ease, color .18s ease; }
+.theme-toggle:hover { color:white; background:var(--gys-purple); transform:rotate(12deg); }
+html.dark-theme body, html.dark-theme #root, html.dark-theme .workspace-app, html.dark-theme .dashboard-shell { color:#f4f1fb; background:#151323; }
+html.dark-theme .app-nav { border-bottom-color:#332b48; background:#1b1729; box-shadow:0 3px 18px rgba(0,0,0,.25); }
+html.dark-theme .app-nav nav button:not(.active), html.dark-theme .nav-session { color:#ddd7eb; background:#252039; border-color:#4a3c68; }
+html.dark-theme .app-nav nav button:hover, html.dark-theme .nav-session:hover { color:#fff; background:#33245b; }
+html.dark-theme .theme-toggle { color:#f9dc70; border-color:#6a5a87; background:#2a2240; }
+html.dark-theme .page-container>h1, html.dark-theme .new-hero h1, html.dark-theme .reservations-hero h1, html.dark-theme .dashboard-welcome h1, html.dark-theme .auth-card h1, html.dark-theme .dashboard-panel h2, html.dark-theme .panel-heading h2, html.dark-theme .reservation-main-info h2, html.dark-theme .payments-title h1, html.dark-theme .payment-stage>h2, html.dark-theme .payment-history-modern h2 { color:#e7d5ff; }
+html.dark-theme .page-container>p:not(.eyebrow), html.dark-theme .dashboard-welcome p:not(.eyebrow), html.dark-theme .payments-title p, html.dark-theme .payment-stage>p:not(.eyebrow) { color:#c0b8d2; }
+html.dark-theme .dashboard-panel, html.dark-theme .custom-modal, html.dark-theme .auth-card, html.dark-theme .polished, html.dark-theme .reservation-modern-card, html.dark-theme .payment-wizard, html.dark-theme .payment-history-modern, html.dark-theme .admin-table, html.dark-theme .report-filter-panel, html.dark-theme .report-chart, html.dark-theme .reports-panel { border-color:#3b3152; background:#211c30; box-shadow:0 12px 30px rgba(0,0,0,.2); }
+html.dark-theme input, html.dark-theme select, html.dark-theme textarea, html.dark-theme .payable-list>button, html.dark-theme .method-instructions, html.dark-theme .payment-empty, html.dark-theme .admin-filter-bar, html.dark-theme .compact-payment-summary { color:#f4f1fb; border-color:#514468; background:#2a233d; }
+html.dark-theme input::placeholder, html.dark-theme textarea::placeholder { color:#a69bbd; }
+html.dark-theme label, html.dark-theme .form-label, html.dark-theme .report-filter-panel label { color:#ddd5eb; }
+html.dark-theme .dashboard-metrics button, html.dark-theme .quick-action-list button, html.dark-theme .notification-list button, html.dark-theme .reservation-modern-card { color:#eee9f6; border-color:#3e3454; background:#211c30; }
+html.dark-theme .dashboard-metrics button:hover, html.dark-theme .dashboard-panel:hover, html.dark-theme .quick-action-list button:hover, html.dark-theme .payable-list>button:hover, html.dark-theme .payable-list>button.selected { background:#2c2441; border-color:#6b4ba4; }
+html.dark-theme .secondary-button { color:#64e4ee!important; border-color:var(--gys-teal)!important; background:#18343b!important; }
+html.dark-theme .card-admin-actions button:not(.danger), html.dark-theme .edit-space-button, html.dark-theme .place-heading-actions button:not(.danger) { background:#18343b; }
+html.dark-theme .module-menu-panel { border-color:#4a3c68; background:#211c30; box-shadow:0 15px 32px rgba(0,0,0,.35); }
+html.dark-theme .module-menu-panel button { color:#e7e0f1; }
+html.dark-theme .module-menu-panel button:hover, html.dark-theme .module-menu-panel button.active { color:#fff; background:var(--gys-purple); }
+html.dark-theme .admin-tabs button:not(.active) { color:#ddd5eb; border-color:#4b3d65; background:#28213b; }
+html.dark-theme .admin-tabs button:hover { color:#fff; background:#392b59; }
+html.dark-theme .report-metrics article, html.dark-theme .report-comparison article { border-color:#493c60; background:#28213a; }
+html.dark-theme .reservation-status.pendiente { color:#f2d67d; background:#4b4025; }
+html.dark-theme .form-message, html.dark-theme .live-total { color:#8ceaf0; background:#173238; border-color:#23616b; }
+html.dark-theme .form-error { color:#ff8698; }
+html.dark-theme .page-container, html.dark-theme .page-container:has(.place-selector), html.dark-theme .new-hero, html.dark-theme .app-shell, html.dark-theme .spaces-shell { background:#151323; }
+html.dark-theme .polished, html.dark-theme .space-card, html.dark-theme .catalog-empty, html.dark-theme .availability-bar, html.dark-theme .reservation-modern-card, html.dark-theme .reservation-mini-stats div, html.dark-theme .reservations-empty, html.dark-theme .profile-card, html.dark-theme .notification-list>button, html.dark-theme .admin-rate-panel, html.dark-theme .report-form, html.dark-theme .report-metrics article, html.dark-theme .report-chart, html.dark-theme .report-filter-panel, html.dark-theme .place-section { color:#eee9f6; border-color:#3b3152; background:#211c30; }
+html.dark-theme .reserve-space-card, html.dark-theme .selector-empty, html.dark-theme .space-picker, html.dark-theme .custom-picker-trigger, html.dark-theme .custom-calendar, html.dark-theme .custom-time-picker { color:#eee9f6; border-color:#4a3c68; background:#28213b; }
+html.dark-theme .availability-bar input, html.dark-theme .availability-bar select, html.dark-theme .space-editor-grid input, html.dark-theme .space-editor-grid select, html.dark-theme .space-editor-grid textarea, html.dark-theme .profile-card input, html.dark-theme .report-filter-grid select, html.dark-theme .admin-page .admin-table article select { color:#f4f1fb; border-color:#514468; background:#2a233d; }
+html.dark-theme .space-info h3, html.dark-theme .reservation-main-info h2, html.dark-theme .reservation-detail-row strong, html.dark-theme .profile-card h2, html.dark-theme .notification-list strong, html.dark-theme .report-chart h2, html.dark-theme .report-form h2, html.dark-theme .catalog-empty strong, html.dark-theme .report-metrics strong { color:#e7d5ff; }
+html.dark-theme .space-info p, html.dark-theme .space-info small, html.dark-theme .reservation-main-info p, html.dark-theme .reservation-detail-row small, html.dark-theme .profile-card>p, html.dark-theme .notification-list p, html.dark-theme .notification-list small, html.dark-theme .chart-row, html.dark-theme .report-form>p { color:#bdb4d0; }
+html.dark-theme .reservation-card-actions, html.dark-theme .profile-meta, html.dark-theme .quick-action-list>button, html.dark-theme .notice-preview>button, html.dark-theme .admin-empty, html.dark-theme .usage-table-head { color:#ddd5eb; background:#28213b; border-color:#3f3456; }
+html.dark-theme .dashboard-welcome .primary-button, html.dark-theme .reservations-hero .primary-button { color:#fff; background:var(--gys-purple)!important; border-color:var(--gys-purple)!important; }
+html.dark-theme .panel-heading button, html.dark-theme .reservation-card-actions button, html.dark-theme .admin-row-actions button, html.dark-theme .admin-filter-bar button { color:#d9d0ea; border-color:#514468; background:#2a233d; }
+html.dark-theme .availability-date-options button { color:#c8bfd8; border-color:#4a3c68; background:#28213b; }
+html.dark-theme .reserve-page:has(.visual-reservation-form) { background:#151323; }
+/* Pulido visual transversal: profundidad, foco y entradas suaves sin cambiar la paleta. */
+@keyframes modern-fade-up { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+@keyframes modern-soft-pop { from { opacity:0; transform:scale(.985); } to { opacity:1; transform:scale(1); } }
+.app-nav { backdrop-filter:blur(16px); -webkit-backdrop-filter:blur(16px); }
+.page-container > .eyebrow, .page-container > h1, .page-container > h1 + p, .page-container > .catalog-title, .page-container > .dashboard-welcome, .page-container > .reservations-hero { animation:modern-fade-up .42s ease both; }
+.dashboard-panel, .payment-wizard, .payment-history-modern, .report-chart, .report-filter-panel, .report-metrics article, .reservation-modern-card, .space-card, .place-card, .profile-card, .notification-list > button { animation:modern-soft-pop .42s ease both; }
+.space-card:nth-child(2), .place-card:nth-child(2), .reservation-modern-card:nth-child(2), .notification-list > button:nth-child(2), .report-metrics article:nth-child(2) { animation-delay:.04s; }
+.space-card:nth-child(3), .place-card:nth-child(3), .reservation-modern-card:nth-child(3), .notification-list > button:nth-child(3), .report-metrics article:nth-child(3) { animation-delay:.08s; }
+.space-card:nth-child(4), .place-card:nth-child(4), .reservation-modern-card:nth-child(4), .notification-list > button:nth-child(4), .report-metrics article:nth-child(4) { animation-delay:.12s; }
+.dashboard-panel, .space-card, .place-card, .reservation-modern-card, .profile-card, .payment-wizard, .payment-history-modern, .report-chart { transition:transform .22s ease, box-shadow .22s ease, border-color .22s ease; }
+.dashboard-panel:hover, .space-card:hover, .place-card:hover, .reservation-modern-card:hover, .profile-card:hover, .report-chart:hover { transform:translateY(-3px); box-shadow:0 18px 42px rgba(44,18,97,.11); }
+button, input, select, textarea { transition:box-shadow .18s ease, border-color .18s ease, transform .18s ease, background-color .18s ease; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible { outline:3px solid rgba(0,176,198,.35); outline-offset:3px; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration:.01ms !important; animation-iteration-count:1 !important; scroll-behavior:auto !important; transition-duration:.01ms !important; } }
+.admin-page .admin-tabs { align-items:center; gap:6px; padding:6px; border:1px solid rgba(44,18,97,.1); border-radius:16px; background:rgba(255,255,255,.7); box-shadow:0 8px 22px rgba(44,18,97,.06); }
+.admin-page .admin-tabs button { border-radius:11px; transition:color .18s ease, background .18s ease, transform .18s ease, box-shadow .18s ease; }
+.admin-page .admin-tabs button:hover { transform:translateY(-1px); }
+.admin-page .admin-tabs button.active { box-shadow:0 7px 16px rgba(44,18,97,.18); }
+.admin-page .admin-filter-bar { border:1px solid rgba(44,18,97,.08); border-radius:14px; background:rgba(248,249,253,.8); }
+.admin-page .admin-table-head { box-shadow:0 5px 14px rgba(44,18,97,.12); }
+.admin-page .admin-table article { transition:transform .18s ease, background .18s ease, box-shadow .18s ease; }
+.admin-page .admin-table article:hover { position:relative; z-index:1; transform:translateX(3px); box-shadow:0 7px 18px rgba(44,18,97,.07); }
+.catalog-title, .dashboard-welcome, .payments-title { position:relative; }
+.catalog-title::after, .dashboard-welcome::after, .payments-title::after { position:absolute; right:0; bottom:-12px; left:0; height:1px; background:linear-gradient(90deg, rgba(44,18,97,.18), rgba(0,176,198,.14), transparent); content:''; }
+.availability-bar, .report-filter-panel { backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); }
+html.dark-theme .admin-page .admin-tabs { border-color:#3b3152; background:rgba(33,28,48,.8); }
+html.dark-theme .admin-page .admin-filter-bar { border-color:#3b3152; background:rgba(42,35,61,.8); }
+html.dark-theme .catalog-title::after, html.dark-theme .dashboard-welcome::after, html.dark-theme .payments-title::after { background:linear-gradient(90deg, rgba(164,129,225,.4), rgba(0,176,198,.35), transparent); }
+@keyframes modern-page-enter { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+.page-container { animation:modern-page-enter .38s cubic-bezier(.2,.7,.2,1) both; }
+.module-menu-panel { transform-origin:top center; animation:modern-soft-pop .2s ease both; }
+.module-menu-panel button { transition:padding-left .18s ease, color .18s ease, background .18s ease; }
+.module-menu-panel button:hover, .module-menu-panel button.active { padding-left:17px; }
+.app-nav .nav-link, .app-nav .nav-session { transition:transform .18s ease, box-shadow .18s ease, color .18s ease, background .18s ease; }
+.app-nav .nav-link:hover, .app-nav .nav-session:hover { transform:translateY(-1px); }
+@media (max-width:700px) {
+  .page-container { animation-duration:.3s; }
+  .module-menu-panel { animation:modern-soft-pop .22s ease both; }
+  .admin-page .admin-tabs { overflow-x:auto; justify-content:flex-start; scrollbar-width:none; }
+  .admin-page .admin-tabs::-webkit-scrollbar { display:none; }
+  .admin-page .admin-tabs button { flex:0 0 auto; }
 }
