@@ -42,7 +42,7 @@ public class RecuperacionPasswordService {
     @Transactional
     public Respuesta solicitar(String correo) {
         String mensaje = "Si el correo está registrado, se generó una solicitud de recuperación";
-        Usuario usuario = usuarioRepository.findByCorreoIgnoreCaseForUpdate(correo.trim()).orElse(null);
+        Usuario usuario = usuarioRepository.findByCorreoIgnoreCase(correo.trim()).orElse(null);
         if (usuario == null) return new Respuesta(mensaje, null);
         tokenRepository.deleteByExpiraEnBefore(Instant.now());
         tokenRepository.invalidarActivosDeUsuario(usuario.getId());
@@ -58,7 +58,7 @@ public class RecuperacionPasswordService {
 
     @Transactional
     public void confirmar(String tokenPlano, String passwordNuevo) {
-        PasswordResetToken token = tokenRepository.findByTokenHashForUpdate(hash(tokenPlano))
+        PasswordResetToken token = tokenRepository.findByTokenHash(hash(tokenPlano))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Token inválido o vencido"));
         if (token.isUsado() || token.getExpiraEn().isBefore(Instant.now()))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Token inválido o vencido");
