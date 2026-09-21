@@ -26,7 +26,7 @@ class RecuperacionPasswordServiceTest {
     @Test
     void invalidaSolicitudesAnterioresAntesDeCrearUnaNueva() {
         Usuario usuario = usuario();
-        when(usuarios.findByCorreoIgnoreCaseForUpdate(usuario.getCorreo())).thenReturn(Optional.of(usuario));
+        when(usuarios.findByCorreoIgnoreCase(usuario.getCorreo())).thenReturn(Optional.of(usuario));
         when(tokens.save(any(PasswordResetToken.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var response = service.solicitar(usuario.getCorreo());
@@ -43,7 +43,7 @@ class RecuperacionPasswordServiceTest {
         Usuario usuario = usuario();
         PasswordResetToken token = new PasswordResetToken(); token.setUsuario(usuario);
         token.setTokenHash("hash"); token.setExpiraEn(Instant.now().plusSeconds(300));
-        when(tokens.findByTokenHashForUpdate(anyString())).thenReturn(Optional.of(token));
+        when(tokens.findByTokenHash(anyString())).thenReturn(Optional.of(token));
         when(encoder.encode("NuevaClave1")).thenReturn("nuevo-hash");
 
         service.confirmar("token-plano", "NuevaClave1");

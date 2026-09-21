@@ -35,7 +35,7 @@ class UsuarioServiceTest {
         usuario.setNombre("Persona");
         usuario.setCorreo("persona@ejemplo.cr");
         usuario.setPasswordHash("hash");
-        when(usuarioRepository.findByCorreoIgnoreCaseForUpdate("persona@ejemplo.cr")).thenReturn(Optional.of(usuario));
+        when(usuarioRepository.findByCorreoIgnoreCase("persona@ejemplo.cr")).thenReturn(Optional.of(usuario));
         when(passwordEncoder.matches("ClaveSegura1", "hash")).thenReturn(true);
         when(usuarioRepository.save(any(Usuario.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(jwtService.generarToken("persona@ejemplo.cr", 1)).thenReturn("token-nuevo");
