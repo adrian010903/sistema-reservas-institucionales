@@ -8,6 +8,7 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.server.ResponseStatusException;
@@ -17,6 +18,8 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -57,5 +60,29 @@ public class AdminUsuarioController {
         auditoriaService.registrar(actor.getCorreo(), "ACTUALIZAR", "USUARIO", guardado.getId(),
                 "Rol=" + guardado.getRol() + ", estado=" + guardado.getEstado());
         return UsuarioResponse.desde(guardado);
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'SUPERADMIN')")
+    @Transactional
+    public void eliminar(Authentication authentication, @PathVariable Long id) {
+        Usuario actor = usuarioRepository.findByCorreoIgnoreCase(authentication.getName())
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Usuario no encontrado"));
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+        if (actor.getId().equals(usuario.getId()))
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "No puedes eliminar tu propia cuenta");
+        if (actor.getRol() != RolUsuario.SUPERADMIN && usuario.getRol() != RolUsuario.USUARIO)
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Solo un superadministrador puede eliminar cuentas administrativas");
+        try {
+            usuarioRepository.delete(usuario);
+            usuarioRepository.flush();
+        } catch (DataIntegrityViolationException ex) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "No se puede eliminar esta cuenta porque tiene reservas, pagos o registros asociados");
+        }
+        auditoriaService.registrar(actor.getCorreo(), "ELIMINAR", "USUARIO", id,
+                "Cuenta eliminada por un administrador");
     }
 }

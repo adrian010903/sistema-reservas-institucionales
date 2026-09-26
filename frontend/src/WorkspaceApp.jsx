@@ -776,6 +776,16 @@ function WorkspaceApp() {
     setMessage('Usuario actualizado correctamente')
   }
 
+  async function deleteAdminUser(target) {
+    if (target.id === user?.id) return setMessage('No puedes eliminar tu propia cuenta')
+    if (!window.confirm(`¿Eliminar permanentemente la cuenta de ${target.nombre}? Esta acción no se puede deshacer.`)) return
+    const response = await fetch(`${API}/admin/usuarios/${target.id}`, { method: 'DELETE', headers: auth })
+    const body = await response.json().catch(() => ({}))
+    if (!response.ok) return setMessage(body.detail || body.message || `No se pudo eliminar la cuenta (error ${response.status})`)
+    setAdminUsers((current) => current.filter((item) => item.id !== target.id))
+    setMessage('Cuenta eliminada permanentemente')
+  }
+
   async function updateProfile(event) {
     event.preventDefault()
     setMessage('')
@@ -2107,6 +2117,11 @@ function WorkspaceApp() {
                     <option value="BLOQUEADO">Bloqueado</option>
                     <option value="INACTIVO">Inactivo</option>
                   </select>
+                  <div className="admin-row-actions">
+                    <button className="danger" disabled={target.id === user?.id || (user?.rol !== 'SUPERADMIN' && target.rol !== 'USUARIO')} onClick={() => deleteAdminUser(target)}>
+                      Eliminar
+                    </button>
+                  </div>
                 </article>
               ))}
           </div>
