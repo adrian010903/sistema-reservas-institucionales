@@ -1,3 +1,5 @@
+import PasswordField from '../components/PasswordField'
+
 export default function AuthPage({
   authMode,
   message,
@@ -24,7 +26,7 @@ export default function AuthPage({
           <p className="eyebrow">Acceso institucional</p>
           <h1>Iniciar sesión</h1>
           <label>Correo<input name="correo" type="email" required /></label>
-          <label>Contraseña<input name="password" type="password" required /></label>
+          <PasswordField label="Contraseña" name="password" required />
           {message && <p className={message.includes('exitoso') || message.includes('restablecida') ? 'form-message' : 'form-error'}>{message}</p>}
           <button className="primary-button">Entrar</button>
           <div className="auth-links">
@@ -39,8 +41,8 @@ export default function AuthPage({
           <h1>Registrarse</h1>
           <label>Nombre<input name="nombre" required maxLength="120" /></label>
           <label>Correo<input name="correo" type="email" required /></label>
-          <label>Contraseña<input name="password" type="password" minLength="8" maxLength="72" required /></label>
-          <label>Confirmar contraseña<input name="confirmacion" type="password" minLength="8" maxLength="72" required /></label>
+          <PasswordField label="Contraseña" name="password" minLength="8" maxLength="72" required />
+          <PasswordField label="Confirmar contraseña" name="confirmacion" minLength="8" maxLength="72" required />
           {message && <p className="form-error">{message}</p>}
           <button className="primary-button">Crear cuenta</button>
           <button className="link-button" type="button" onClick={() => clearAndChangeMode('login')}>Ya tengo una cuenta</button>
@@ -62,8 +64,8 @@ export default function AuthPage({
           <p className="eyebrow">Nueva contraseña</p>
           <h1>Restablecer</h1>
           <label>Token<input name="token" required defaultValue={recoveryToken} /></label>
-          <label>Nueva contraseña<input name="passwordNuevo" type="password" minLength="8" maxLength="72" required /></label>
-          <label>Confirmar contraseña<input name="confirmacion" type="password" minLength="8" maxLength="72" required /></label>
+          <PasswordField label="Nueva contraseña" name="passwordNuevo" minLength="8" maxLength="72" required />
+          <PasswordField label="Confirmar contraseña" name="confirmacion" minLength="8" maxLength="72" required />
           {message && <p className={recoveryToken ? 'form-message' : 'form-error'}>{message}</p>}
           <button className="primary-button">Guardar contraseña</button>
           <button className="link-button" type="button" onClick={() => onModeChange('login')}>Cancelar</button>

@@ -1,3 +1,5 @@
+import PasswordField from '../components/PasswordField'
+
 export default function ProfilePage({ user, message, onUpdateProfile, onChangePassword }) {
   return (
     <main className="page-container profile-page">
@@ -13,9 +15,9 @@ export default function ProfilePage({ user, message, onUpdateProfile, onChangePa
         </form>
         <form className="profile-card" onSubmit={onChangePassword}>
           <h2>Cambiar contraseña</h2><p>Utiliza al menos 8 caracteres y no repitas tu contraseña actual.</p>
-          <label>Contraseña actual<input name="passwordActual" type="password" required /></label>
-          <label>Nueva contraseña<input name="passwordNuevo" type="password" minLength="8" maxLength="72" required /></label>
-          <label>Confirmar contraseña<input name="confirmacion" type="password" minLength="8" maxLength="72" required /></label>
+          <PasswordField label="Contraseña actual" name="passwordActual" required />
+          <PasswordField label="Nueva contraseña" name="passwordNuevo" minLength="8" maxLength="72" required />
+          <PasswordField label="Confirmar contraseña" name="confirmacion" minLength="8" maxLength="72" required />
           <button className="primary-button">Actualizar contraseña</button>
         </form>
       </div>

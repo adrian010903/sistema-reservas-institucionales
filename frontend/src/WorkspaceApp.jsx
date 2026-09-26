@@ -4,6 +4,7 @@ import Header from './components/Header'
 import { SocialFooter, SiempreListosRibbon } from './components/Branding'
 import { AvailabilityDateStrip, CustomReservationSchedule } from './components/ReservationSchedule'
 import AdminTabs from './components/AdminTabs'
+import PasswordField from './components/PasswordField'
 import ReportFilters from './components/ReportFilters'
 import ReportMetrics from './components/ReportMetrics'
 import AuthPage from './pages/AuthPage'
@@ -82,6 +83,8 @@ function WorkspaceApp() {
   const [availableSpaceIds, setAvailableSpaceIds] = useState(null)
   const [adminTab, setAdminTab] = useState('usuarios')
   const [adminUsers, setAdminUsers] = useState([])
+  const [showUserCreator, setShowUserCreator] = useState(false)
+  const [savingUser, setSavingUser] = useState(false)
   const [adminReservations, setAdminReservations] = useState([])
   const [adminPayments, setAdminPayments] = useState([])
   const [adminFilters, setAdminFilters] = useState({
@@ -774,6 +777,30 @@ function WorkspaceApp() {
     if (!response.ok) return setMessage(body.detail || body.message || `Error ${response.status}`)
     setAdminUsers((current) => current.map((item) => (item.id === body.id ? body : item)))
     setMessage('Usuario actualizado correctamente')
+  }
+
+  async function createAdminUser(event) {
+    event.preventDefault()
+    setMessage('')
+    const formElement = event.currentTarget
+    const data = Object.fromEntries(new FormData(formElement))
+    if (!isStrongPassword(data.password)) return setMessage(PASSWORD_MESSAGE)
+    setSavingUser(true)
+    try {
+      const response = await fetch(`${API}/admin/usuarios`, {
+        method: 'POST',
+        headers: { ...auth, 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      })
+      const body = await response.json().catch(() => ({}))
+      if (!response.ok) return setMessage(body.detail || body.message || `Error ${response.status}`)
+      setAdminUsers((current) => [...current, body])
+      formElement.reset()
+      setShowUserCreator(false)
+      setMessage('Usuario registrado correctamente')
+    } finally {
+      setSavingUser(false)
+    }
   }
 
   async function deleteAdminUser(target) {
@@ -2091,6 +2118,46 @@ function WorkspaceApp() {
         )}
         {adminTab === 'usuarios' && (
           <div className="admin-table users-admin">
+            <div className="admin-users-toolbar">
+              <div>
+                <strong>Usuarios registrados</strong>
+                <small>Crea cuentas y administra sus permisos de acceso.</small>
+              </div>
+              <button className="primary-button" type="button" onClick={() => { setShowUserCreator((visible) => !visible); setMessage('') }}>
+                {showUserCreator ? 'Cancelar' : '+ Registrar usuario'}
+              </button>
+            </div>
+            {showUserCreator && (
+              <form className="admin-user-form" onSubmit={createAdminUser}>
+                <label>
+                  Nombre completo
+                  <input name="nombre" maxLength="120" required autoFocus placeholder="Ej. María Rodríguez" />
+                </label>
+                <label>
+                  Correo electrónico
+                  <input name="correo" type="email" maxLength="160" required placeholder="correo@ejemplo.com" />
+                </label>
+                <PasswordField label="Contraseña temporal" name="password" minLength="8" maxLength="72" required placeholder="Mayúscula, minúscula y número" />
+                <label>
+                  Rol
+                  <select name="rol" defaultValue="USUARIO">
+                    <option value="USUARIO">Usuario</option>
+                    {user?.rol === 'SUPERADMIN' && <option value="ADMIN">Administrador</option>}
+                  </select>
+                </label>
+                <label>
+                  Estado inicial
+                  <select name="estado" defaultValue="ACTIVO">
+                    <option value="ACTIVO">Activo</option>
+                    <option value="INACTIVO">Inactivo</option>
+                    <option value="BLOQUEADO">Bloqueado</option>
+                  </select>
+                </label>
+                <button className="primary-button" disabled={savingUser}>
+                  {savingUser ? 'Registrando…' : 'Crear cuenta'}
+                </button>
+              </form>
+            )}
             <div className="admin-filter-bar">
               <label>
                 Buscar usuario

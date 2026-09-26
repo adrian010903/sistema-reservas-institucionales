@@ -1,12 +1,14 @@
 package cr.or.guiasyscouts.reservas.controller;
 
 import cr.or.guiasyscouts.reservas.dto.AdminUsuarioUpdateRequest;
+import cr.or.guiasyscouts.reservas.dto.AdminUsuarioCreateRequest;
 import cr.or.guiasyscouts.reservas.model.*;
 import cr.or.guiasyscouts.reservas.repository.UsuarioRepository;
 import cr.or.guiasyscouts.reservas.service.AuditoriaService;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -19,7 +21,42 @@ import static org.mockito.Mockito.*;
 class AdminUsuarioControllerTest {
     private final UsuarioRepository repository = mock(UsuarioRepository.class);
     private final AuditoriaService auditoria = mock(AuditoriaService.class);
-    private final AdminUsuarioController controller = new AdminUsuarioController(repository, auditoria);
+    private final PasswordEncoder passwordEncoder = mock(PasswordEncoder.class);
+    private final AdminUsuarioController controller = new AdminUsuarioController(repository, auditoria, passwordEncoder);
+
+    @Test
+    void administradorPuedeCrearUsuarioComun() {
+        Usuario actor = usuario(1L, "admin@ejemplo.cr", RolUsuario.ADMIN);
+        when(repository.findByCorreoIgnoreCase(actor.getCorreo())).thenReturn(Optional.of(actor));
+        when(repository.existsByCorreoIgnoreCase("persona@ejemplo.cr")).thenReturn(false);
+        when(passwordEncoder.encode("Clave123")).thenReturn("hash");
+        when(repository.save(any(Usuario.class))).thenAnswer(invocation -> {
+            Usuario guardado = invocation.getArgument(0);
+            ReflectionTestUtils.setField(guardado, "id", 2L);
+            return guardado;
+        });
+
+        var response = controller.crear(autenticacion(actor), new AdminUsuarioCreateRequest(
+                "Persona", "Persona@Ejemplo.cr", "Clave123", RolUsuario.USUARIO, EstadoUsuario.ACTIVO));
+
+        assertEquals("persona@ejemplo.cr", response.correo());
+        assertEquals(RolUsuario.USUARIO.name(), response.rol());
+        verify(auditoria).registrar(actor.getCorreo(), "CREAR", "USUARIO", 2L,
+                "Rol=USUARIO, estado=ACTIVO");
+    }
+
+    @Test
+    void administradorNoPuedeCrearOtraCuentaAdministrativa() {
+        Usuario actor = usuario(1L, "admin@ejemplo.cr", RolUsuario.ADMIN);
+        when(repository.findByCorreoIgnoreCase(actor.getCorreo())).thenReturn(Optional.of(actor));
+
+        ResponseStatusException error = assertThrows(ResponseStatusException.class, () -> controller.crear(
+                autenticacion(actor), new AdminUsuarioCreateRequest("Otro admin", "otro@ejemplo.cr",
+                        "Clave123", RolUsuario.ADMIN, EstadoUsuario.ACTIVO)));
+
+        assertEquals(HttpStatus.FORBIDDEN, error.getStatusCode());
+        verify(repository, never()).save(any());
+    }
 
     @Test
     void administradorNoPuedePromoverOtrosAdministradores() {
