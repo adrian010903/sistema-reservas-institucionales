@@ -80,7 +80,7 @@ function WorkspaceApp() {
   })
   const [availabilityTypeId, setAvailabilityTypeId] = useState('')
   const [availableSpaceIds, setAvailableSpaceIds] = useState(null)
-  const [adminTab, setAdminTab] = useState('reservas')
+  const [adminTab, setAdminTab] = useState('usuarios')
   const [adminUsers, setAdminUsers] = useState([])
   const [adminReservations, setAdminReservations] = useState([])
   const [adminPayments, setAdminPayments] = useState([])
@@ -917,6 +917,20 @@ function WorkspaceApp() {
     const pendingReservations = adminReservations.filter((item) => item.estado === 'PENDIENTE').length
     const pendingPayments = adminPayments.filter((item) => item.estado === 'PENDIENTE_VERIFICACION').length
     const activeUsers = adminUsers.filter((item) => item.estado === 'ACTIVO').length
+    if (!showDemoControls) {
+      return (
+        <main className="page-container role-dashboard admin-dashboard">
+          <div className="dashboard-welcome">
+            <div><p className="eyebrow">Panel administrativo · {user?.rol}</p><h1>Gestión institucional</h1><p>Administra usuarios, roles, lugares y espacios desde los módulos disponibles.</p></div>
+            <button className="primary-button" onClick={() => { setAdminTab('usuarios'); navigate('admin') }}>Gestionar usuarios</button>
+          </div>
+          <section className="dashboard-metrics">
+            <button onClick={() => { setAdminTab('usuarios'); navigate('admin') }}><span className="metric-icon violet">◎</span><div><small>Usuarios activos</small><strong>{activeUsers}</strong><em>{adminUsers.length} cuentas registradas</em></div></button>
+            <button onClick={() => navigate('spaces')}><span className="metric-icon indigo">⌂</span><div><small>Espacios registrados</small><strong>{spaces.length}</strong><em>{places.length} lugares</em></div></button>
+          </section>
+        </main>
+      )
+    }
     const total = Math.max(reportSummary.total || 0, 1)
     const confirmed = reportSummary.porEstado?.CONFIRMADA || 0
     const approved = reportSummary.porEstado?.APROBADA || 0
@@ -1939,7 +1953,7 @@ function WorkspaceApp() {
       <main className="page-container admin-page">
         <p className="eyebrow">Acceso administrativo</p>
         <h1>Administración</h1>
-        <AdminTabs value={adminTab} onChange={(tab) => { setAdminTab(tab); setMessage('') }} />
+        <AdminTabs value={adminTab} showDemoControls={showDemoControls} onChange={(tab) => { setAdminTab(tab); setMessage('') }} />
         {message && <p className="form-message">{message}</p>}
         {adminTab === 'precios' && (
           <form className="admin-rate-panel" onSubmit={saveRate}>
@@ -2117,11 +2131,11 @@ function WorkspaceApp() {
                     <option value="BLOQUEADO">Bloqueado</option>
                     <option value="INACTIVO">Inactivo</option>
                   </select>
-                  <div className="admin-row-actions">
+                  {showDemoControls && <div className="admin-row-actions">
                     <button className="danger" disabled={target.id === user?.id || (user?.rol !== 'SUPERADMIN' && target.rol !== 'USUARIO')} onClick={() => deleteAdminUser(target)}>
                       Eliminar
                     </button>
-                  </div>
+                  </div>}
                 </article>
               ))}
           </div>
@@ -2383,7 +2397,14 @@ function WorkspaceApp() {
         onToggleDarkMode={() => setDarkMode((current) => !current)}
         unreadCount={notifications.filter((notification) => !notification.leida).length}
         showDemoControls={showDemoControls}
-        onToggleDemoControls={() => setShowDemoControls((current) => !current)}
+        onToggleDemoControls={() => {
+          const next = !showDemoControls
+          setShowDemoControls(next)
+          if (!next) {
+            setAdminTab('usuarios')
+            if (['reserve', 'reservations', 'payments', 'notifications'].includes(page)) navigate('dashboard')
+          }
+        }}
       />
       <SiempreListosRibbon />
       {page === 'home' && <HomePage onExploreSpaces={() => navigate('spaces')} />}

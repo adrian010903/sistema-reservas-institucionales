@@ -16,6 +16,7 @@
 # Configuración local con secretos
 backend/src/main/resources/application-local.properties
 backend/uploads/
+render-backend.env
 
 # Sistema operativo
 .DS_Store

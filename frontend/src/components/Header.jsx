@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { SocialLinks } from './Branding'
 
-export default function Header({ user, page, navigate, logout, unreadCount, showDemoControls, onToggleDemoControls, darkMode, onToggleDarkMode }) {
+export default function Header({ user, page, navigate, logout, unreadCount, showDemoControls, onToggleDemoControls }) {
   const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
@@ -21,12 +21,12 @@ export default function Header({ user, page, navigate, logout, unreadCount, show
   }, [menuOpen])
 
   const items = user
-    ? [
-        ['dashboard', 'Dashboard'], ['spaces', 'Espacios'], ['reserve', 'Reservar'], ['reservations', 'Mis reservas'],
-        ['payments', 'Pagos'], ['notifications', `Avisos${unreadCount ? ` (${unreadCount})` : ''}`],
-      ]
+    ? [['dashboard', 'Dashboard'], ['spaces', 'Espacios'], ['profile', 'Mi perfil']]
     : [['home', 'Inicio'], ['spaces', 'Espacios']]
-  if (user && showDemoControls) items.push(['profile', 'Mi perfil'])
+  if (user && showDemoControls) items.push(
+    ['reserve', 'Reservar'], ['reservations', 'Mis reservas'], ['payments', 'Pagos'],
+    ['notifications', `Avisos${unreadCount ? ` (${unreadCount})` : ''}`],
+  )
   if (user && ['ADMIN', 'SUPERADMIN'].includes(user.rol)) items.push(['admin', 'Administración'])
   const primaryItems = user ? items.slice(0, 2) : items
   const menuActive = items.some(([key]) => key === page) && !primaryItems.some(([key]) => key === page)
@@ -59,7 +59,6 @@ export default function Header({ user, page, navigate, logout, unreadCount, show
           {menuOpen && <div className="module-menu-panel" role="menu">{items.map(([key, label]) => <button type="button" className={page === key ? 'active' : ''} key={key} role="menuitem" onClick={() => goTo(key)}>{label}</button>)}</div>}
         </div>
       </nav>
-      <button type="button" className="theme-toggle" aria-label={darkMode ? 'Activar modo claro' : 'Activar modo oscuro'} title={darkMode ? 'Modo claro' : 'Modo oscuro'} onClick={onToggleDarkMode}>{darkMode ? '☀' : '☾'}</button>
       <SocialLinks compact />
       {user && <button type="button" className={`hidden-controls-toggle ${showDemoControls ? 'active' : ''}`} aria-label={showDemoControls ? 'Ocultar acciones de demostración' : 'Mostrar acciones de demostración'} title={showDemoControls ? 'Ocultar acciones de demostración' : 'Mostrar acciones de demostración'} onClick={onToggleDemoControls}>·</button>}
       {user ? <button className="nav-session" onClick={() => { setMenuOpen(false); logout() }}>Cerrar sesión</button> : <button className="nav-session public-login" onClick={() => { setMenuOpen(false); navigate('login', page) }}>Iniciar sesión</button>}

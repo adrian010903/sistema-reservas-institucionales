@@ -3,6 +3,23 @@ import { formatCurrency } from '../utils/formatters'
 const ACTIVE_STATES = ['PENDIENTE', 'APROBADA', 'CONFIRMADA']
 
 export default function ClientDashboard({ user, reservations, payments, notifications, showDemoControls, onNavigate }) {
+  if (!showDemoControls) {
+    return (
+      <main className="page-container role-dashboard client-dashboard">
+        <div className="dashboard-welcome">
+          <div><p className="eyebrow">Panel de usuario</p><h1>Hola, {user?.nombre}</h1><p>Consulta los espacios institucionales o actualiza la información de tu cuenta.</p></div>
+          <button className="primary-button" onClick={() => onNavigate('spaces')}>Consultar espacios</button>
+        </div>
+        <section className="dashboard-panel quick-management">
+          <div className="panel-heading"><div><p className="eyebrow">Accesos</p><h2>Gestiones disponibles</h2></div></div>
+          <div className="quick-action-list">
+            <button onClick={() => onNavigate('spaces')}><span>⌕</span><div><strong>Consultar espacios</strong><small>Revisa lugares, capacidad y disponibilidad</small></div><b>→</b></button>
+            <button onClick={() => onNavigate('profile')}><span>◎</span><div><strong>Consultar y actualizar perfil</strong><small>Gestiona tus datos y contraseña</small></div><b>→</b></button>
+          </div>
+        </section>
+      </main>
+    )
+  }
   const upcoming = reservations
     .filter((reservation) => ACTIVE_STATES.includes(reservation.estado) && new Date(`${reservation.fecha}T${reservation.horaInicio}`) >= new Date())
     .sort((first, second) => `${first.fecha}T${first.horaInicio}`.localeCompare(`${second.fecha}T${second.horaInicio}`))
