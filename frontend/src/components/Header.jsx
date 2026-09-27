@@ -60,7 +60,7 @@ export default function Header({ user, page, navigate, logout, unreadCount, show
         </div>
       </nav>
       <SocialLinks compact />
-      {user && <button type="button" className={`hidden-controls-toggle ${showDemoControls ? 'active' : ''}`} aria-label={showDemoControls ? 'Ocultar acciones de demostración' : 'Mostrar acciones de demostración'} title={showDemoControls ? 'Ocultar acciones de demostración' : 'Mostrar acciones de demostración'} onClick={onToggleDemoControls}>·</button>}
+      <button type="button" className={`hidden-controls-toggle ${showDemoControls ? 'active' : ''}`} aria-label={showDemoControls ? 'Ocultar opciones avanzadas' : 'Mostrar opciones avanzadas'} title={showDemoControls ? 'Ocultar opciones avanzadas' : 'Mostrar opciones avanzadas'} onClick={onToggleDemoControls}>·</button>
       {user ? <button className="nav-session" onClick={() => { setMenuOpen(false); logout() }}>Cerrar sesión</button> : <button className="nav-session public-login" onClick={() => { setMenuOpen(false); navigate('login', page) }}>Iniciar sesión</button>}
     </header>
   )

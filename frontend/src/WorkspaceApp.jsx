@@ -117,7 +117,8 @@ function WorkspaceApp() {
   })
   const [spaceUsageSlide, setSpaceUsageSlide] = useState(0)
   const [autoRotateCharts, setAutoRotateCharts] = useState(true)
-  const [showDemoControls, setShowDemoControls] = useState(false)
+  // Las opciones están visibles por defecto; el botón permite ocultarlas durante la presentación.
+  const [showDemoControls, setShowDemoControls] = useState(true)
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('reservas_dark_mode') === 'true')
   const [selectedSpace, setSelectedSpace] = useState(null)
   const [form, setForm] = useState({
@@ -211,6 +212,15 @@ function WorkspaceApp() {
         setToken(null)
       })
   }, [token, auth])
+
+  useEffect(() => {
+    const protectedPages = ['dashboard', 'reserve', 'reservations', 'payments', 'notifications', 'profile', 'admin']
+    if (!token && protectedPages.includes(page)) {
+      const redirect = window.setTimeout(() => navigate('login', page), 0)
+      return () => window.clearTimeout(redirect)
+    }
+    return undefined
+  }, [page, token])
 
   useEffect(() => {
     document.documentElement.classList.toggle('dark-theme', darkMode)
