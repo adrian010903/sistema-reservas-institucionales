@@ -17,6 +17,14 @@ import ClientDashboard from './pages/ClientDashboard'
 import SpacesPage from './pages/SpacesPage'
 import ReservePage from './pages/ReservePage'
 import { API, BACKEND, readJson, readJsonArray } from './services/api'
+import {
+  confirmPasswordRecovery,
+  registerUser,
+  requestPasswordRecovery,
+  updateCurrentPassword,
+  updateCurrentUser,
+} from './services/authService'
+import useAuth from './hooks/useAuth'
 import { isStrongPassword, PASSWORD_MESSAGE } from './utils/password'
 import { reservationDates } from './utils/reservations'
 
@@ -42,8 +50,14 @@ function pageFromLocation() {
 function WorkspaceApp() {
   const [page, setPage] = useState(INITIAL_RESET_TOKEN ? 'login' : pageFromLocation())
   const [returnPage, setReturnPage] = useState('home')
-  const [user, setUser] = useState(null)
-  const [token, setToken] = useState(() => localStorage.getItem('reservas_token'))
+  const {
+    user,
+    token,
+    authHeaders: auth,
+    authenticate,
+    clearSession,
+    updateSessionUser,
+  } = useAuth()
   const [spaces, setSpaces] = useState([])
   const [reservations, setReservations] = useState([])
   const [payments, setPayments] = useState([])
@@ -179,7 +193,6 @@ function WorkspaceApp() {
     }
   }, [modalOpen])
 
-  const auth = useMemo(() => (token ? { Authorization: `Bearer ${token}` } : {}), [token])
   const navigate = (next, origin) => {
     if (next === 'login') setReturnPage(origin && origin !== 'login' ? origin : 'home')
     setPage(next)
@@ -201,17 +214,6 @@ function WorkspaceApp() {
     if (!INITIAL_RESET_TOKEN) return
     window.history.replaceState({}, document.title, window.location.pathname)
   }, [])
-
-  useEffect(() => {
-    if (!token) return
-    fetch(`${API}/usuarios/me`, { headers: auth })
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then(setUser)
-      .catch(() => {
-        localStorage.removeItem('reservas_token')
-        setToken(null)
-      })
-  }, [token, auth])
 
   useEffect(() => {
     const protectedPages = ['dashboard', 'reserve', 'reservations', 'payments', 'notifications', 'profile', 'admin']
@@ -344,17 +346,12 @@ function WorkspaceApp() {
   async function login(event) {
     event.preventDefault()
     const data = Object.fromEntries(new FormData(event.currentTarget))
-    const response = await fetch(`${API}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    })
-    if (!response.ok) return setMessage('Correo o contraseña incorrectos')
-    const result = await response.json()
-    localStorage.setItem('reservas_token', result.token)
-    setToken(result.token)
-    setUser(result.usuario)
-    navigate(returnPage === 'home' ? 'dashboard' : returnPage)
+    try {
+      await authenticate(data)
+      navigate(returnPage === 'home' ? 'dashboard' : returnPage)
+    } catch {
+      setMessage('Correo o contraseña incorrectos')
+    }
   }
 
   async function register(event) {
@@ -363,32 +360,29 @@ function WorkspaceApp() {
     const data = Object.fromEntries(new FormData(event.currentTarget))
     if (data.password !== data.confirmacion) return setMessage('Las contraseñas no coinciden')
     if (!isStrongPassword(data.password)) return setMessage(PASSWORD_MESSAGE)
-    const response = await fetch(`${API}/auth/registro`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    try {
+      await registerUser({
         nombre: data.nombre,
         correo: data.correo,
         password: data.password,
-      }),
-    })
-    const body = await response.json().catch(() => ({}))
-    if (!response.ok) return setMessage(body.detail || body.message || `Error ${response.status}`)
-    setAuthMode('login')
-    setMessage('Registro exitoso. Ya puedes iniciar sesión.')
+      })
+      setAuthMode('login')
+      setMessage('Registro exitoso. Ya puedes iniciar sesión.')
+    } catch (error) {
+      setMessage(error.message || 'No se pudo completar el registro')
+    }
   }
 
   async function requestRecovery(event) {
     event.preventDefault()
     setMessage('')
     const data = Object.fromEntries(new FormData(event.currentTarget))
-    const response = await fetch(`${API}/auth/recuperacion/solicitar`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    })
-    const body = await response.json().catch(() => ({}))
-    if (!response.ok) return setMessage(body.detail || body.message || `Error ${response.status}`)
+    let body
+    try {
+      body = await requestPasswordRecovery(data)
+    } catch (error) {
+      return setMessage(error.message || 'No se pudo generar la solicitud')
+    }
     if (body.tokenDesarrollo) {
       setRecoveryToken(body.tokenDesarrollo)
       setAuthMode('reset')
@@ -407,17 +401,13 @@ function WorkspaceApp() {
     const data = Object.fromEntries(new FormData(event.currentTarget))
     if (data.passwordNuevo !== data.confirmacion) return setMessage('Las contraseñas no coinciden')
     if (!isStrongPassword(data.passwordNuevo)) return setMessage(PASSWORD_MESSAGE)
-    const response = await fetch(`${API}/auth/recuperacion/confirmar`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    try {
+      await confirmPasswordRecovery({
         token: data.token,
         passwordNuevo: data.passwordNuevo,
-      }),
-    })
-    if (!response.ok) {
-      const body = await response.json().catch(() => ({}))
-      return setMessage(body.detail || body.message || `Error ${response.status}`)
+      })
+    } catch (error) {
+      return setMessage(error.message || 'No se pudo restablecer la contraseña')
     }
     setAuthMode('login')
     setRecoveryToken('')
@@ -828,14 +818,13 @@ function WorkspaceApp() {
     setMessage('')
     const data = Object.fromEntries(new FormData(event.currentTarget))
     const correoAnterior = user.correo
-    const response = await fetch(`${API}/usuarios/me`, {
-      method: 'PUT',
-      headers: { ...auth, 'Content-Type': 'application/json' },
-      body: JSON.stringify(data),
-    })
-    const body = await response.json().catch(() => ({}))
-    if (!response.ok) return setMessage(body.detail || body.message || `Error ${response.status}`)
-    setUser(body)
+    let body
+    try {
+      body = await updateCurrentUser(auth, data)
+    } catch (error) {
+      return setMessage(error.message || 'No se pudo actualizar el perfil')
+    }
+    updateSessionUser(body)
     if (body.correo !== correoAnterior) {
       setMessage('Perfil actualizado. Inicia sesión nuevamente con tu nuevo correo.')
       setTimeout(logout, 1800)
@@ -921,22 +910,16 @@ function WorkspaceApp() {
     const data = Object.fromEntries(new FormData(formElement))
     if (data.passwordNuevo !== data.confirmacion) return setMessage('La confirmación de la contraseña no coincide')
     if (!isStrongPassword(data.passwordNuevo)) return setMessage(PASSWORD_MESSAGE)
-    const response = await fetch(`${API}/usuarios/me/password`, {
-      method: 'PATCH',
-      headers: { ...auth, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    try {
+      await updateCurrentPassword(auth, {
         passwordActual: data.passwordActual,
         passwordNuevo: data.passwordNuevo,
-      }),
-    })
-    if (!response.ok) {
-      const body = await response.json().catch(() => ({}))
-      return setMessage(body.detail || body.message || `Error ${response.status}`)
+      })
+    } catch (error) {
+      return setMessage(error.message || 'No se pudo actualizar la contraseña')
     }
     formElement.reset()
-    localStorage.removeItem('reservas_token')
-    setToken(null)
-    setUser(null)
+    clearSession()
     setReservations([])
     setPayments([])
     setAuthMode('login')
@@ -2444,9 +2427,7 @@ function WorkspaceApp() {
   }
 
   function logout() {
-    localStorage.removeItem('reservas_token')
-    setToken(null)
-    setUser(null)
+    clearSession()
     setReservations([])
     setPayments([])
     fetch(`${API}/espacios`)
