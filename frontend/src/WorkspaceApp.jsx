@@ -25,6 +25,13 @@ import {
   updateCurrentUser,
 } from './services/authService'
 import useAuth from './hooks/useAuth'
+import useReservations from './hooks/useReservations'
+import {
+  cancelReservationRequest,
+  createReservationRange,
+  fetchAvailability,
+  updateReservation as updateReservationRequest,
+} from './services/reservationService'
 import { isStrongPassword, PASSWORD_MESSAGE } from './utils/password'
 import { reservationDates } from './utils/reservations'
 
@@ -59,7 +66,13 @@ function WorkspaceApp() {
     updateSessionUser,
   } = useAuth()
   const [spaces, setSpaces] = useState([])
-  const [reservations, setReservations] = useState([])
+  const {
+    reservations,
+    prependReservations,
+    mergeReservation,
+    confirmReservationPayment,
+    clearReservations,
+  } = useReservations({ token, authHeaders: auth, refreshKey: page })
   const [payments, setPayments] = useState([])
   const [paymentReservationId, setPaymentReservationId] = useState('')
   const [paymentMethod, setPaymentMethod] = useState('TARJETA_MOCK')
@@ -261,10 +274,6 @@ function WorkspaceApp() {
 
   useEffect(() => {
     if (!token) return
-    fetch(`${API}/reservas/mias`, { headers: auth })
-      .then(readJsonArray)
-      .then(setReservations)
-      .catch(() => setReservations([]))
     fetch(`${API}/pagos/mios`, { headers: auth })
       .then(readJsonArray)
       .then(setPayments)
@@ -428,23 +437,16 @@ function WorkspaceApp() {
     try {
       const resultados = await Promise.all(
         fechas.map(async (fecha) => {
-          const params = new URLSearchParams({
+          const available = await fetchAvailability({
             fecha,
             horaInicio: form.horaInicio,
             horaFin: form.horaFin,
             personas: form.cantidadPersonas,
             lugarId: selectedSpace.lugarId,
           })
-          const response = await fetch(`${API}/reservas/disponibilidad?${params}`)
-          return {
-            fecha,
-            response,
-            available: await response.json().catch(() => []),
-          }
+          return { fecha, available }
         }),
       )
-      const error = resultados.find((result) => !result.response.ok)
-      if (error) return setMessage(error.available.detail || error.available.message || 'No se pudo comprobar la disponibilidad')
       const unavailable = resultados.find((result) => !result.available.some((space) => space.id === selectedSpace.id))
       if (unavailable) {
         setReservationAvailability('unavailable')
@@ -460,25 +462,21 @@ function WorkspaceApp() {
   }
 
   async function confirmReservation() {
-    const response = await fetch(`${API}/reservas/rango`, {
-      method: 'POST',
-      headers: { ...auth, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
+    let created
+    try {
+      created = await createReservationRange(auth, {
         fechaInicio: form.fecha,
         fechaFin: form.fechaFin,
         horaInicio: form.horaInicio,
         horaFin: form.horaFin,
         cantidadPersonas: Number(form.cantidadPersonas),
         espacioId: selectedSpace.id,
-      }),
-    })
-    const body = await response.json().catch(() => ({}))
-    if (!response.ok) {
+      })
+    } catch (error) {
       setShowSummary(false)
-      return setMessage(body.detail || body.message || `Error ${response.status}`)
+      return setMessage(error.message || 'No se pudo crear la reserva')
     }
-    const created = Array.isArray(body) ? body : []
-    setReservations((current) => [...created.slice().reverse(), ...current])
+    prependReservations(created)
     setPaymentReservationId(String(created[0]?.id || ''))
     setPaymentResult(null)
     setShowSummary(false)
@@ -505,7 +503,7 @@ function WorkspaceApp() {
     if (!response.ok) return setMessage(body.detail || body.message || `Error ${response.status} al registrar el pago`)
     setPaymentResult(body)
     setPayments((current) => (current.some((payment) => payment.id === body.id) ? current.map((payment) => (payment.id === body.id ? body : payment)) : [body, ...current]))
-    setReservations((current) => current.map((r) => (r.id === body.reservaId && body.estado === 'APROBADO' ? { ...r, estado: 'CONFIRMADA' } : r)))
+    if (body.estado === 'APROBADO') confirmReservationPayment(body.reservaId)
     setPaymentReservationId('')
     setPaymentStep(3)
     setMessage(body.estado === 'APROBADO' ? 'Pago simulado aprobado. La reserva quedó confirmada.' : 'Método registrado. El pago quedó pendiente de verificación.')
@@ -702,45 +700,47 @@ function WorkspaceApp() {
       cantidadPersonas: Number(editingReservation.cantidadPersonas),
       espacioId: Number(editingReservation.espacioId),
     }
-    const response = await fetch(`${API}/reservas/${editingReservation.id}`, {
-      method: 'PUT',
-      headers: { ...auth, 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-    const body = await response.json().catch(() => ({}))
+    let body
+    try {
+      body = await updateReservationRequest(auth, editingReservation.id, payload)
+    } catch (error) {
+      setSavingReservation(false)
+      return setMessage(error.message || 'No se pudo modificar la reserva')
+    }
     setSavingReservation(false)
-    if (!response.ok) return setMessage(body.detail || body.message || `Error ${response.status} al modificar la reserva`)
-    setReservations((current) => current.map((item) => (item.id === body.id ? body : item)))
+    mergeReservation(body)
     setEditingReservation(null)
     setMessage('Reserva modificada y enviada nuevamente a revisión')
   }
 
   async function cancelReservation(reservation) {
     if (!window.confirm(`¿Cancelar la reserva #${reservation.id} de ${reservation.espacio}?`)) return
-    const response = await fetch(`${API}/reservas/${reservation.id}/cancelar`, {
-      method: 'PATCH',
-      headers: auth,
-    })
-    const body = await response.json().catch(() => ({}))
-    if (!response.ok) return setMessage(body.detail || body.message || `Error ${response.status} al cancelar la reserva`)
-    setReservations((current) => current.map((item) => (item.id === body.id ? body : item)))
+    let body
+    try {
+      body = await cancelReservationRequest(auth, reservation.id)
+    } catch (error) {
+      return setMessage(error.message || 'No se pudo cancelar la reserva')
+    }
+    mergeReservation(body)
     setMessage('Reserva cancelada. El horario quedó disponible nuevamente.')
   }
 
   async function checkAvailability(event) {
     event.preventDefault()
     setMessage('')
-    const params = new URLSearchParams({
-      fecha: availabilityForm.fecha,
-      horaInicio: availabilityForm.horaInicio,
-      horaFin: availabilityForm.horaFin,
-      personas: availabilityForm.cantidadPersonas,
-      lugarId: selectedPlaceId,
-    })
-    if (availabilityTypeId) params.set('tipoId', availabilityTypeId)
-    const response = await fetch(`${API}/reservas/disponibilidad?${params}`)
-    const body = await response.json().catch(() => ({}))
-    if (!response.ok) return setMessage(body.detail || body.message || `Error ${response.status} al consultar disponibilidad`)
+    let body
+    try {
+      body = await fetchAvailability({
+        fecha: availabilityForm.fecha,
+        horaInicio: availabilityForm.horaInicio,
+        horaFin: availabilityForm.horaFin,
+        personas: availabilityForm.cantidadPersonas,
+        lugarId: selectedPlaceId,
+        tipoId: availabilityTypeId,
+      })
+    } catch (error) {
+      return setMessage(error.message || 'No se pudo consultar la disponibilidad')
+    }
     setAvailableSpaceIds(body.map((space) => space.id))
     setMessage(`${body.length} espacio(s) disponible(s) para el horario indicado`)
   }
@@ -920,7 +920,7 @@ function WorkspaceApp() {
     }
     formElement.reset()
     clearSession()
-    setReservations([])
+    clearReservations()
     setPayments([])
     setAuthMode('login')
     navigate('login')
@@ -2428,7 +2428,7 @@ function WorkspaceApp() {
 
   function logout() {
     clearSession()
-    setReservations([])
+    clearReservations()
     setPayments([])
     fetch(`${API}/espacios`)
       .then(readJsonArray)
