@@ -21,11 +21,10 @@ export default function Header({ user, page, navigate, logout, unreadCount, show
   }, [menuOpen])
 
   const items = user
-    ? [['dashboard', 'Dashboard'], ['spaces', 'Espacios'], ['profile', 'Mi perfil']]
+    ? [['dashboard', 'Dashboard'], ['spaces', 'Espacios'], ['reserve', 'Reservar'], ['reservations', 'Mis reservas'], ['profile', 'Mi perfil']]
     : [['home', 'Inicio'], ['spaces', 'Espacios']]
   if (user && showDemoControls) items.push(
-    ['reserve', 'Reservar'], ['reservations', 'Mis reservas'], ['payments', 'Pagos'],
-    ['notifications', `Avisos${unreadCount ? ` (${unreadCount})` : ''}`],
+    ['payments', 'Pagos'], ['notifications', `Avisos${unreadCount ? ` (${unreadCount})` : ''}`],
   )
   if (user && ['ADMIN', 'SUPERADMIN'].includes(user.rol)) items.push(['admin', 'Administración'])
   const primaryItems = user ? items.slice(0, 2) : items

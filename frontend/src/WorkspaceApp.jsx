@@ -2191,11 +2191,11 @@ function WorkspaceApp() {
                     <option value="BLOQUEADO">Bloqueado</option>
                     <option value="INACTIVO">Inactivo</option>
                   </select>
-                  {showDemoControls && <div className="admin-row-actions">
+                  <div className="admin-row-actions">
                     <button className="danger" disabled={target.id === user?.id || (user?.rol !== 'SUPERADMIN' && target.rol !== 'USUARIO')} onClick={() => deleteAdminUser(target)}>
                       Eliminar
                     </button>
-                  </div>}
+                  </div>
                 </article>
               ))}
           </div>
@@ -2460,7 +2460,7 @@ function WorkspaceApp() {
           setShowDemoControls(next)
           if (!next) {
             setAdminTab('usuarios')
-            if (['reserve', 'reservations', 'payments', 'notifications'].includes(page)) navigate('dashboard')
+            if (['payments', 'notifications'].includes(page)) navigate('dashboard')
           }
         }}
       />

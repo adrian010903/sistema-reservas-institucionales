@@ -14,6 +14,8 @@ export default function ClientDashboard({ user, reservations, payments, notifica
           <div className="panel-heading"><div><p className="eyebrow">Accesos</p><h2>Gestiones disponibles</h2></div></div>
           <div className="quick-action-list">
             <button onClick={() => onNavigate('spaces')}><span>⌕</span><div><strong>Consultar espacios</strong><small>Revisa lugares, capacidad y disponibilidad</small></div><b>→</b></button>
+            <button onClick={() => onNavigate('reserve')}><span>⌂</span><div><strong>Crear reserva</strong><small>Elige un espacio, fecha y horario</small></div><b>→</b></button>
+            <button onClick={() => onNavigate('reservations')}><span>▤</span><div><strong>Mis reservas</strong><small>Consulta tus solicitudes registradas</small></div><b>→</b></button>
             <button onClick={() => onNavigate('profile')}><span>◎</span><div><strong>Consultar y actualizar perfil</strong><small>Gestiona tus datos y contraseña</small></div><b>→</b></button>
           </div>
         </section>
