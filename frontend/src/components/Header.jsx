@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { SocialLinks } from './Branding'
 
-export default function Header({ user, page, navigate, logout, unreadCount, showDemoControls, onToggleDemoControls }) {
+export default function Header({ user, page, navigate, logout, unreadCount, showDemoControls, sprintView, onToggleDemoControls, onToggleSprintView }) {
   const [menuOpen, setMenuOpen] = useState(false)
 
   useEffect(() => {
@@ -20,8 +20,9 @@ export default function Header({ user, page, navigate, logout, unreadCount, show
     }
   }, [menuOpen])
 
+  const showSprint2 = showDemoControls || sprintView !== 'sprint1'
   const items = user
-    ? [['dashboard', 'Dashboard'], ['spaces', 'Espacios'], ['reserve', 'Reservar'], ['reservations', 'Mis reservas'], ['profile', 'Mi perfil']]
+    ? [['dashboard', 'Dashboard'], ['spaces', 'Espacios'], ...(showSprint2 ? [['reserve', 'Reservar'], ['reservations', 'Mis reservas']] : []), ['profile', 'Mi perfil']]
     : [['home', 'Inicio'], ['spaces', 'Espacios']]
   if (user && showDemoControls) items.push(
     ['payments', 'Pagos'], ['notifications', `Avisos${unreadCount ? ` (${unreadCount})` : ''}`],
@@ -60,6 +61,7 @@ export default function Header({ user, page, navigate, logout, unreadCount, show
       </nav>
       <SocialLinks compact />
       <button type="button" className={`hidden-controls-toggle ${showDemoControls ? 'active' : ''}`} aria-label={showDemoControls ? 'Ocultar opciones avanzadas' : 'Mostrar opciones avanzadas'} title={showDemoControls ? 'Ocultar opciones avanzadas' : 'Mostrar opciones avanzadas'} onClick={onToggleDemoControls}>·</button>
+      {!showDemoControls && <button type="button" className="sprint-view-toggle" aria-label={`Alcance actual: ${sprintView === 'both' ? 'Sprints 1 y 2' : sprintView === 'sprint1' ? 'Sprint 1' : 'Sprint 2'}. Cambiar sprint`} title="Cambiar alcance entre Sprints 1 y 2" onClick={onToggleSprintView}>{sprintView === 'both' ? 'Sprints 1 + 2' : sprintView === 'sprint1' ? 'Sprint 1' : 'Sprint 2'} <span aria-hidden="true">↻</span></button>}
       {user ? <button className="nav-session" onClick={() => { setMenuOpen(false); logout() }}>Cerrar sesión</button> : <button className="nav-session public-login" onClick={() => { setMenuOpen(false); navigate('login', page) }}>Iniciar sesión</button>}
     </header>
   )

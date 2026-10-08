@@ -1467,6 +1467,10 @@ textarea {
 .hidden-controls-toggle { width: 10px; height: 18px; padding: 0; border: 0; color: var(--gys-purple); background: transparent; font-size: 12px; line-height: 1; opacity: .18; transition: opacity .18s ease; }
 .hidden-controls-toggle:hover, .hidden-controls-toggle:focus-visible, .hidden-controls-toggle.active { opacity: .75; }
 .hidden-controls-toggle:focus-visible { outline: 2px solid var(--gys-teal); outline-offset: 2px; }
+.sprint-view-toggle { flex: 0 0 auto; padding: 7px 10px; border: 1px solid rgba(44,18,97,.2); border-radius: 999px; color: var(--gys-purple); background: #f5f2fa; font-size: 10px; font-weight: 800; white-space: nowrap; }
+.sprint-view-toggle span { margin-left: 4px; color: var(--gys-teal-dark); }
+.sprint-view-toggle:focus-visible { outline: 2px solid var(--gys-teal); outline-offset: 2px; }
+html.dark-theme .sprint-view-toggle { border-color: rgba(219,197,255,.26); color: #e4d4ff; background: #302543; }
 
 .app-brand.official-brand {
   min-height: 56px;

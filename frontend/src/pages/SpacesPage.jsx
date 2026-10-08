@@ -2,7 +2,7 @@ import { BACKEND } from '../services/api'
 import { AvailabilityDateStrip } from '../components/ReservationSchedule'
 
 export default function SpacesPage({
-  user, places, spaces, selectedPlaceId, availabilityForm, availabilityTypeId, availableSpaceIds, types, message, showDemoControls,
+  user, places, spaces, selectedPlaceId, availabilityForm, availabilityTypeId, availableSpaceIds, types, message, showDemoControls, showSprint2,
   onPlaceChange, onAvailabilityChange, onTypeChange, onCheckAvailability, onClearAvailability, onCreatePlace, onCreateSpace,
   onEditPlace, onDeletePlace, onEditSpace, onDeleteSpace, onReserve,
 }) {
@@ -28,7 +28,7 @@ export default function SpacesPage({
       {places.length === 0 && !(isAdmin && spaces.some((space) => !space.lugarId)) ? <div className="catalog-empty"><strong>Aún no hay lugares registrados</strong><span>Un administrador debe crear primero Sede Nacional, Campo Escuela, Hostel u otro lugar.</span></div> : (
         <section className="place-section">
           <div className="place-heading"><div className="place-symbol">⌂</div><div><h2>{selectedPlaceId === 'sin-lugar' ? 'Sin lugar asignado' : currentPlace?.nombre || 'Selecciona un lugar'}</h2><span>{visibleSpaces.length} espacio(s)</span></div>{isAdmin && currentPlace && <div className="place-heading-actions"><button onClick={() => onEditPlace(currentPlace)}>Editar lugar</button>{showDemoControls && <button className="danger" disabled={currentPlace.estado === 'INACTIVO'} onClick={() => onDeletePlace(currentPlace)}>Eliminar lugar</button>}</div>}</div>
-          {selectedPlaceId !== 'sin-lugar' && <><AvailabilityDateStrip value={availabilityForm.fecha} onChange={(fecha) => { updateAvailability('fecha', fecha); onClearAvailability(false) }} />
+          {showSprint2 && selectedPlaceId !== 'sin-lugar' && <><AvailabilityDateStrip value={availabilityForm.fecha} onChange={(fecha) => { updateAvailability('fecha', fecha); onClearAvailability(false) }} />
             <form className="availability-bar" onSubmit={onCheckAvailability}>
               <label className="availability-date-input">Fecha<input type="date" required value={availabilityForm.fecha} onChange={(event) => updateAvailability('fecha', event.target.value)} /></label>
               <label>Desde<input type="time" min="08:00" max="17:00" required value={availabilityForm.horaInicio} onChange={(event) => updateAvailability('horaInicio', event.target.value)} /></label>
@@ -40,7 +40,7 @@ export default function SpacesPage({
             </form></>}
           {visibleSpaces.length === 0 ? <div className="catalog-empty"><strong>{availableSpaceIds === null ? 'Este lugar todavía no tiene espacios' : 'No hay espacios disponibles'}</strong><span>{availableSpaceIds === null ? (isAdmin ? 'Usa “Crear espacio” para agregar el primero.' : 'Pronto se agregarán espacios reservables.') : 'Prueba otra fecha, horario o cantidad de personas.'}</span></div> : <div className="space-list">{visibleSpaces.map((space, index) => <article className={`space-card space-tone-${index % 3} ${space.estado === 'INACTIVO' ? 'inactive' : ''}`} key={space.id}>
             <div className="space-image" style={space.imagenUrl ? { backgroundImage: `linear-gradient(0deg, rgba(19,24,43,.5), rgba(19,24,43,.08)), url(${BACKEND}${space.imagenUrl})` } : undefined}><span>{space.tipo}</span>{space.estado !== 'DISPONIBLE' && <b>{space.estado}</b>}</div>
-            <div className="space-info"><h3>{space.nombre}</h3><p>{space.descripcion}</p><small>Capacidad: {space.capacidad} · {space.categoria}</small><div className="space-actions"><button className="primary-button" disabled={space.estado !== 'DISPONIBLE'} onClick={() => onReserve(space)}>{space.estado === 'DISPONIBLE' ? 'Reservar' : 'No disponible'}</button>{isAdmin && <><button className="edit-space-button" onClick={() => onEditSpace(space)}>Editar</button><button className="delete-space-button" disabled={space.estado === 'INACTIVO'} onClick={() => onDeleteSpace(space)}>Eliminar</button></>}</div></div>
+            <div className="space-info"><h3>{space.nombre}</h3><p>{space.descripcion}</p><small>Capacidad: {space.capacidad} · {space.categoria}</small><div className="space-actions">{showSprint2 && <button className="primary-button" disabled={space.estado !== 'DISPONIBLE'} onClick={() => onReserve(space)}>{space.estado === 'DISPONIBLE' ? 'Reservar' : 'No disponible'}</button>}{isAdmin && <><button className="edit-space-button" onClick={() => onEditSpace(space)}>Editar</button>{showSprint2 && <button className="delete-space-button" disabled={space.estado === 'INACTIVO'} onClick={() => onDeleteSpace(space)}>Eliminar</button>}</>}</div></div>
           </article>)}</div>}
         </section>
       )}

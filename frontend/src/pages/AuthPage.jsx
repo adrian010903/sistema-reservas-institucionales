@@ -5,6 +5,7 @@ export default function AuthPage({
   message,
   recoveryToken,
   returnPage,
+  showSprint2,
   onLogin,
   onRegister,
   onRequestRecovery,
@@ -31,7 +32,7 @@ export default function AuthPage({
           <button className="primary-button">Entrar</button>
           <div className="auth-links">
             <button type="button" onClick={() => clearAndChangeMode('register')}>Crear cuenta</button>
-            <button type="button" onClick={() => clearAndChangeMode('recover')}>Olvidé mi contraseña</button>
+            {showSprint2 && <button type="button" onClick={() => clearAndChangeMode('recover')}>Olvidé mi contraseña</button>}
           </div>
         </form>
       )}

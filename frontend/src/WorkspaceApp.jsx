@@ -146,6 +146,8 @@ function WorkspaceApp() {
   const [autoRotateCharts, setAutoRotateCharts] = useState(true)
   // Las opciones están visibles por defecto; el botón permite ocultarlas durante la presentación.
   const [showDemoControls, setShowDemoControls] = useState(true)
+  const [sprintView, setSprintView] = useState('both')
+  const showSprint2 = showDemoControls || sprintView !== 'sprint1'
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem('reservas_dark_mode') === 'true')
   const [selectedSpace, setSelectedSpace] = useState(null)
   const [form, setForm] = useState({
@@ -930,7 +932,7 @@ function WorkspaceApp() {
   function renderDashboard() {
     return ['ADMIN', 'SUPERADMIN'].includes(user?.rol)
       ? renderAdminDashboard()
-      : <ClientDashboard user={user} reservations={reservations} payments={payments} notifications={notifications} showDemoControls={showDemoControls} onNavigate={navigate} />
+      : <ClientDashboard user={user} reservations={reservations} payments={payments} notifications={notifications} showDemoControls={showDemoControls} showSprint2={showSprint2} onNavigate={navigate} />
   }
 
   function renderAdminDashboard() {
@@ -2191,11 +2193,11 @@ function WorkspaceApp() {
                     <option value="BLOQUEADO">Bloqueado</option>
                     <option value="INACTIVO">Inactivo</option>
                   </select>
-                  <div className="admin-row-actions">
+                  {showSprint2 && <div className="admin-row-actions">
                     <button className="danger" disabled={target.id === user?.id || (user?.rol !== 'SUPERADMIN' && target.rol !== 'USUARIO')} onClick={() => deleteAdminUser(target)}>
                       Eliminar
                     </button>
-                  </div>
+                  </div>}
                 </article>
               ))}
           </div>
@@ -2455,10 +2457,19 @@ function WorkspaceApp() {
         onToggleDarkMode={() => setDarkMode((current) => !current)}
         unreadCount={notifications.filter((notification) => !notification.leida).length}
         showDemoControls={showDemoControls}
+        sprintView={sprintView}
+        onToggleSprintView={() => {
+          const next = sprintView === 'both' ? 'sprint1' : sprintView === 'sprint1' ? 'sprint2' : 'both'
+          setSprintView(next)
+          setMessage('')
+          if (next === 'sprint1' && ['reserve', 'reservations'].includes(page)) navigate('dashboard')
+          if (next === 'sprint1' && authMode === 'recover') setAuthMode('login')
+        }}
         onToggleDemoControls={() => {
           const next = !showDemoControls
           setShowDemoControls(next)
           if (!next) {
+            setSprintView('both')
             setAdminTab('usuarios')
             if (['payments', 'notifications'].includes(page)) navigate('dashboard')
           }
@@ -2470,6 +2481,7 @@ function WorkspaceApp() {
         <AuthPage
           authMode={authMode}
           message={message}
+          showSprint2={showSprint2}
           recoveryToken={recoveryToken}
           returnPage={returnPage}
           onLogin={login}
@@ -2494,6 +2506,7 @@ function WorkspaceApp() {
           types={types}
           message={message}
           showDemoControls={showDemoControls}
+          showSprint2={showSprint2}
           onPlaceChange={(placeId) => { setSelectedPlaceId(placeId); setAvailableSpaceIds(null) }}
           onAvailabilityChange={setAvailabilityForm}
           onTypeChange={setAvailabilityTypeId}
