@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import './App.css'
 import Header from './components/Header'
 import { SocialFooter, SiempreListosRibbon } from './components/Branding'
@@ -75,9 +75,10 @@ function WorkspaceApp() {
   } = useReservations({ token, authHeaders: auth, refreshKey: page })
   const [payments, setPayments] = useState([])
   const [paymentReservationId, setPaymentReservationId] = useState('')
-  const [paymentMethod, setPaymentMethod] = useState('TARJETA_MOCK')
+  const [paymentMethod, setPaymentMethod] = useState('STRIPE')
   const [paymentStep, setPaymentStep] = useState(1)
   const [paymentResult, setPaymentResult] = useState(null)
+  const stripeHandledRef = useRef('')
   const [paying, setPaying] = useState(false)
   const [types, setTypes] = useState([])
   const [categories, setCategories] = useState([])
@@ -287,6 +288,46 @@ function WorkspaceApp() {
   }, [token, page, auth])
 
   useEffect(() => {
+    if (page !== 'payments') return
+    const params = new URLSearchParams(window.location.search)
+    const sessionId = params.get('stripe_session')
+    if (params.get('stripe_cancelled') === '1') {
+      const sessionId = sessionStorage.getItem('stripe_pending_session')
+      if (token && sessionId) {
+        fetch(`${API}/pagos/stripe/cancelar`, {
+          method: 'POST',
+          headers: { ...auth, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ sessionId }),
+        }).then(readJson).then((payment) => {
+          setPayments((current) => (current.some((item) => item.id === payment.id) ? current.map((item) => item.id === payment.id ? payment : item) : [payment, ...current]))
+          setMessage(payment.estado === 'APROBADO' ? 'Stripe confirmó el pago. La reserva quedó confirmada.' : 'El pago se canceló en Stripe. Puedes intentarlo de nuevo cuando quieras.')
+        }).catch(() => setMessage('El pago se canceló. Si sigue pendiente, vuelve a cargar esta pantalla.'))
+          .finally(() => sessionStorage.removeItem('stripe_pending_session'))
+      } else {
+        Promise.resolve().then(() => setMessage('El pago se canceló en Stripe. Puedes intentarlo de nuevo cuando quieras.'))
+      }
+      window.history.replaceState({}, document.title, '/pagos')
+      return
+    }
+    const pendingSessionId = sessionId || sessionStorage.getItem('stripe_pending_session')
+    if (!token || !pendingSessionId || stripeHandledRef.current === pendingSessionId) return
+    stripeHandledRef.current = pendingSessionId
+    fetch(`${API}/pagos/stripe/confirmar?session_id=${encodeURIComponent(pendingSessionId)}`, { headers: auth })
+      .then(readJson)
+      .then((payment) => {
+        setPaymentResult(payment)
+        setPayments((current) => (current.some((item) => item.id === payment.id) ? current.map((item) => (item.id === payment.id ? payment : item)) : [payment, ...current]))
+        if (payment.estado === 'APROBADO') confirmReservationPayment(payment.reservaId)
+        setPaymentReservationId('')
+        setPaymentStep(3)
+        setMessage(payment.estado === 'APROBADO' ? 'Stripe confirmó el pago de prueba. La reserva quedó confirmada.' : 'Stripe aún no confirma el pago. Actualiza en unos segundos para consultar de nuevo.')
+        if (payment.estado === 'APROBADO') sessionStorage.removeItem('stripe_pending_session')
+      })
+      .catch((error) => { setMessage(error.message || 'No se pudo verificar el resultado de Stripe') })
+      .finally(() => { window.history.replaceState({}, document.title, '/pagos') })
+  }, [page, token, auth, confirmReservationPayment])
+
+  useEffect(() => {
     if (!user || !['ADMIN', 'SUPERADMIN'].includes(user.rol)) return
     Promise.all([fetch(`${API}/admin/catalogo/tipos`, { headers: auth }).then(readJsonArray), fetch(`${API}/admin/catalogo/categorias`, { headers: auth }).then(readJsonArray), fetch(`${API}/admin/catalogo/espacios`, { headers: auth }).then(readJsonArray), fetch(`${API}/admin/catalogo/lugares`, { headers: auth }).then(readJsonArray)])
       .then(([typeData, categoryData, spaceData, placeData]) => {
@@ -492,6 +533,26 @@ function WorkspaceApp() {
     setPaymentResult(null)
     if (!paymentReservationId) return setMessage('Selecciona una reserva pendiente de pago')
     setPaying(true)
+    if (paymentMethod === 'STRIPE') {
+      try {
+        const response = await fetch(`${API}/pagos/stripe/checkout`, {
+          method: 'POST',
+          headers: { ...auth, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reservaId: Number(paymentReservationId) }),
+        })
+        const body = await response.json().catch(() => ({}))
+        if (!response.ok) return setMessage(body.detail || body.message || `Error ${response.status} al iniciar Stripe Checkout`)
+        if (!body.url) return setMessage('Stripe no devolvió el enlace de Checkout')
+        if (body.sessionId) sessionStorage.setItem('stripe_pending_session', body.sessionId)
+        window.location.assign(body.url)
+        return
+      } catch {
+        setMessage('No se pudo conectar con Stripe. Inténtalo de nuevo.')
+      } finally {
+        setPaying(false)
+      }
+      return
+    }
     const response = await fetch(`${API}/pagos/mock`, {
       method: 'POST',
       headers: { ...auth, 'Content-Type': 'application/json' },

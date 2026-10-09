@@ -12,5 +12,6 @@ public interface PagoRepository extends JpaRepository<Pago, Long> {
     Optional<Pago> findByIdForUpdate(@Param("id") Long id);
     boolean existsByReservaId(Long reservaId);
     Optional<Pago> findByReservaId(Long reservaId);
+    Optional<Pago> findByStripeSessionId(String stripeSessionId);
     List<Pago> findByReservaUsuarioCorreoIgnoreCaseOrderByCreadoEnDesc(String correo);
 }

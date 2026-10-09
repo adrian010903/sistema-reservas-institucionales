@@ -26,6 +26,9 @@ public class Pago {
     @Column(name = "referencia", nullable = false, unique = true, length = 50)
     private String referencia;
 
+    @Column(name = "stripe_session_id", unique = true, length = 255)
+    private String stripeSessionId;
+
     @Column(name = "creado_en", nullable = false)
     private Instant creadoEn;
 
@@ -41,5 +44,7 @@ public class Pago {
     public void setEstado(EstadoPago estado) { this.estado = estado; }
     public String getReferencia() { return referencia; }
     public void setReferencia(String referencia) { this.referencia = referencia; }
+    public String getStripeSessionId() { return stripeSessionId; }
+    public void setStripeSessionId(String stripeSessionId) { this.stripeSessionId = stripeSessionId; }
     public Instant getCreadoEn() { return creadoEn; }
 }
