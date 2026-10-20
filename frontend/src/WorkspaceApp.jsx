@@ -98,6 +98,7 @@ function WorkspaceApp() {
   } = useReservations({ token, authHeaders: auth, refreshKey: page })
   const [payments, setPayments] = useState([])
   const [paymentReservationId, setPaymentReservationId] = useState('')
+  const [paymentFocusIds, setPaymentFocusIds] = useState(null)
   const [paymentMethod, setPaymentMethod] = useState('STRIPE')
   const [paymentStep, setPaymentStep] = useState(1)
   const [paymentResult, setPaymentResult] = useState(null)
@@ -544,7 +545,9 @@ function WorkspaceApp() {
       return setMessage(error.message || 'No se pudo crear la reserva')
     }
     prependReservations(created)
-    setPaymentReservationId(String(created[0]?.id || ''))
+    const createdIds = created.map((reservation) => String(reservation.id))
+    setPaymentFocusIds(createdIds)
+    setPaymentReservationId(createdIds[0] || '')
     setPaymentResult(null)
     setShowSummary(false)
     navigate('payments')
@@ -2638,7 +2641,6 @@ function WorkspaceApp() {
           selectedPlaceId={selectedPlaceId}
           selectedSpace={selectedSpace}
           form={form}
-          hours={hours}
           hourlyRate={hourlyRate}
           reservationAvailability={reservationAvailability}
           checkingReservation={checkingReservation}
@@ -2666,6 +2668,7 @@ function WorkspaceApp() {
         <PaymentsPage
           reservations={reservations}
           payments={payments}
+          focusedReservationIds={paymentFocusIds}
           paymentReservationId={paymentReservationId}
           paymentMethod={paymentMethod}
           paymentStep={paymentStep}
@@ -2674,11 +2677,12 @@ function WorkspaceApp() {
           hourlyRate={hourlyRate}
           message={message}
           onReservationChange={setPaymentReservationId}
+          onShowAllReservations={() => setPaymentFocusIds(null)}
           onMethodChange={setPaymentMethod}
           onStepChange={setPaymentStep}
           onResultChange={setPaymentResult}
           onSubmit={submitPayment}
-          onNavigateReservations={() => navigate('reservations')}
+          onNavigateReservations={() => { setPaymentFocusIds(null); navigate('reservations') }}
           onDownloadReceipt={downloadReceipt}
         />
       )}

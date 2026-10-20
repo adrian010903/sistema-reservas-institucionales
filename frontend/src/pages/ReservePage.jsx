@@ -1,17 +1,14 @@
 import { BACKEND } from '../services/api'
 import { CustomReservationSchedule } from '../components/ReservationSchedule'
-import { reservationDates } from '../utils/reservations'
-import { formatCurrency } from '../utils/formatters'
 
 export default function ReservePage({
-  places, spaces, selectedPlaceId, selectedSpace, form, hours, hourlyRate, reservationAvailability, checkingReservation, message,
+  places, spaces, selectedPlaceId, selectedSpace, form, hourlyRate, reservationAvailability, checkingReservation, message,
   onPlaceChange, onSpaceChange, onFormChange, onClearAvailability, onReview,
 }) {
   const reservablePlaces = places.filter((place) => place.estado === 'ACTIVO')
   const selectedReservePlace = reservablePlaces.find((place) => String(place.id) === String(selectedPlaceId))
   const placeSpaces = spaces.filter((space) => String(space.lugarId) === String(selectedPlaceId) && space.estado === 'DISPONIBLE')
   const placeCover = (place) => place.imagenUrl || spaces.find((space) => String(space.lugarId) === String(place.id) && space.imagenUrl)?.imagenUrl
-  const selectedDays = reservationDates(form.fecha, form.fechaFin).length
   const complete = Boolean(selectedSpace && form.fecha && form.fechaFin && form.fechaFin >= form.fecha && form.horaInicio && form.horaFin && Number(form.cantidadPersonas) > 0)
   const hint = !selectedSpace ? 'Selecciona un espacio para continuar.' : !form.fecha || !form.fechaFin ? 'Completa la fecha de inicio y la fecha de fin.' : form.fechaFin < form.fecha ? 'La fecha final debe ser igual o posterior a la fecha inicial.' : !form.horaInicio || !form.horaFin ? 'Completa el horario para continuar.' : ''
   const updateForm = (changes) => { onFormChange({ ...form, ...changes }); onClearAvailability() }
@@ -32,8 +29,6 @@ export default function ReservePage({
           <CustomReservationSchedule form={form} setForm={(nextForm) => { onFormChange(nextForm); onClearAvailability() }} hourlyRate={hourlyRate} availability={reservationAvailability} />
         </>}
         <label>Personas<input type="number" min="1" max={selectedSpace?.capacidad || undefined} required value={form.cantidadPersonas} onChange={(event) => updateForm({ cantidadPersonas: event.target.value })} /></label>
-        <div className="live-total reservation-live-total"><div><span>Duración diaria</span><strong>{hours || 0} hora(s)</strong></div><div><span>Días seleccionados</span><strong>{selectedDays || 0}</strong></div><div><span>Total provisional</span><strong>{formatCurrency(hours * hourlyRate * selectedDays)}</strong></div></div>
-        {reservationAvailability === 'available' && <div className="availability-result available">✓ Horario disponible en todas las fechas</div>}{reservationAvailability === 'unavailable' && <div className="availability-result unavailable">× Una de las fechas está ocupada</div>}
         <button className="primary-button reserve-review-button" disabled={!complete || checkingReservation}>{checkingReservation ? 'Comprobando fechas…' : 'Comprobar y revisar reserva'}</button>{hint && <p className="reservation-form-hint">{hint}</p>}
       </form>
       {message && <p className="form-error">{message}</p>}
