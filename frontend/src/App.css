@@ -2889,7 +2889,7 @@ html.dark-theme .catalog-title::after, html.dark-theme .dashboard-welcome::after
 
 /* Horario compacto: selección a la izquierda y rango completo siempre visible. */
 .custom-schedule { gap: 12px; }
-.reservation-time-layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(285px, .85fr); gap: 14px; align-items: stretch; }
+.reservation-time-layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(285px, .85fr); gap: 14px; align-items: start; }
 .reservation-time-panel, .reservation-time-details { min-width: 0; padding: 14px; border: 1px solid #e2e5ee; border-radius: 15px; background: #fff; }
 .reservation-time-panel { display: grid; align-content: start; gap: 10px; }
 .reservation-time-heading { align-items: center; }
