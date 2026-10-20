@@ -29,7 +29,7 @@ export default function ReservePage({
         {selectedSpace && <div className="selected-space-summary"><span>✓</span><div><small>ESPACIO SELECCIONADO</small><strong>{selectedSpace.nombre}</strong><p>{selectedReservePlace?.nombre} · {selectedSpace.categoria} · hasta {selectedSpace.capacidad} personas</p></div></div>}
         {selectedSpace && <>
           <div className="selector-heading schedule-heading"><span>3</span><div><strong>Define fechas y horario</strong><small>El mismo horario se reservará en cada día seleccionado</small></div></div>
-          <CustomReservationSchedule form={form} setForm={(nextForm) => { onFormChange(nextForm); onClearAvailability() }} />
+          <CustomReservationSchedule form={form} setForm={(nextForm) => { onFormChange(nextForm); onClearAvailability() }} hourlyRate={hourlyRate} availability={reservationAvailability} />
         </>}
         <label>Personas<input type="number" min="1" max={selectedSpace?.capacidad || undefined} required value={form.cantidadPersonas} onChange={(event) => updateForm({ cantidadPersonas: event.target.value })} /></label>
         <div className="live-total reservation-live-total"><div><span>Duración diaria</span><strong>{hours || 0} hora(s)</strong></div><div><span>Días seleccionados</span><strong>{selectedDays || 0}</strong></div><div><span>Total provisional</span><strong>{formatCurrency(hours * hourlyRate * selectedDays)}</strong></div></div>

@@ -35,7 +35,7 @@ export function AvailabilityDateStrip({ value, onChange }) {
   )
 }
 
-export function CustomReservationSchedule({ form, setForm }) {
+export function CustomReservationSchedule({ form, setForm, hourlyRate = 0, availability = null }) {
   const today = new Date()
   today.setHours(12, 0, 0, 0)
   const [calendarOpen, setCalendarOpen] = useState(false)
@@ -51,13 +51,21 @@ export function CustomReservationSchedule({ form, setForm }) {
   const durationMinutes = Math.max(30, endMinutes - startMinutes)
   const remainingMinutes = 17 * 60 - startMinutes
   const startTimes = Array.from({ length: 17 }, (_, index) => 8 * 60 + index * 30)
-  const durationOptions = Array.from({ length: 8 }, (_, index) => (index + 1) * 60).filter((minutes) => minutes <= remainingMinutes)
-  if (remainingMinutes >= 30 && !durationOptions.includes(remainingMinutes)) durationOptions.push(remainingMinutes)
+  const untilCloseIsDifferent = remainingMinutes % 60 !== 0 || remainingMinutes > 8 * 60
   const endTimes = Array.from({ length: Math.floor(remainingMinutes / 30) }, (_, index) => startMinutes + (index + 1) * 30)
   if (endMinutes > startMinutes && !endTimes.includes(endMinutes)) endTimes.push(endMinutes)
   endTimes.sort((firstTime, secondTime) => firstTime - secondTime)
   const formatTime = (minutes) => `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
   const formatDuration = (minutes) => minutes % 60 ? `${Math.floor(minutes / 60)} h ${minutes % 60} min` : `${minutes / 60} ${minutes === 60 ? 'hora' : 'horas'}`
+  const selectedDays = form.fecha && form.fechaFin && form.fechaFin >= form.fecha
+    ? Math.floor((new Date(`${form.fechaFin}T12:00:00`).getTime() - new Date(`${form.fecha}T12:00:00`).getTime()) / 86400000) + 1
+    : 0
+  const estimatedTotal = Math.round(hourlyRate * durationMinutes / 60 * selectedDays)
+  const rangeLabel = form.fechaFin && form.fechaFin !== form.fecha
+    ? `${formatDate(form.fecha)} → ${formatDate(form.fechaFin)}`
+    : formatDate(form.fecha)
+  const timelineStart = Math.max(0, Math.min(100, ((startMinutes - 8 * 60) / (9 * 60)) * 100))
+  const timelineWidth = Math.max(0, Math.min(100 - timelineStart, (durationMinutes / (9 * 60)) * 100))
   const chooseDate = (date) => {
     const value = iso(date)
     if (!selectingEnd || !form.fecha || value < form.fecha) {
@@ -112,6 +120,18 @@ export function CustomReservationSchedule({ form, setForm }) {
               }}>{value}</button>
             })}
           </div>
+          <div className="reservation-time-overview">
+            <div className="reservation-day-timeline">
+              <div className="reservation-day-timeline-labels"><span>08:00</span><span>17:00</span></div>
+              <div className="reservation-day-timeline-track"><i style={{ left: `${timelineStart}%`, width: `${timelineWidth}%` }} /></div>
+              <p><strong>{form.horaInicio || '08:00'}–{form.horaFin || '09:00'}</strong><span>Horario elegido dentro de la jornada</span></p>
+            </div>
+            <div className="reservation-request-facts">
+              <div><small>Fechas</small><strong>{rangeLabel}</strong></div>
+              <div><small>Días</small><strong>{selectedDays || '—'}</strong></div>
+              <div><small>Personas</small><strong>{form.cantidadPersonas || 1}</strong></div>
+            </div>
+          </div>
         </section>
         <aside className="reservation-time-details" aria-label="Resumen del horario seleccionado">
           <div className="reservation-time-details-heading"><span>HORARIO SELECCIONADO</span><small>{formatDuration(durationMinutes)}</small></div>
@@ -124,10 +144,18 @@ export function CustomReservationSchedule({ form, setForm }) {
           </div>
           <div className="reservation-duration-heading"><strong>Duración</strong><small>La hora final se ajusta sola</small></div>
           <div className="reservation-duration-options" aria-label="Selecciona la duración">
-            {durationOptions.map((minutes) => {
+            {Array.from({ length: 8 }, (_, index) => (index + 1) * 60).map((minutes) => {
               const untilClose = minutes === remainingMinutes && (minutes > 480 || minutes % 60 !== 0)
-              return <button type="button" key={minutes} className={`reservation-duration-choice ${durationMinutes === minutes ? 'active' : ''} ${untilClose ? 'until-close' : ''}`} aria-pressed={durationMinutes === minutes} onClick={() => setForm({ ...form, horaFin: formatTime(startMinutes + minutes) })}>{untilClose ? `Hasta 17:00 · ${formatDuration(minutes)}` : formatDuration(minutes)}</button>
+              const unavailable = minutes > remainingMinutes
+              return <button type="button" key={minutes} disabled={unavailable} className={`reservation-duration-choice ${durationMinutes === minutes ? 'active' : ''}`} aria-pressed={durationMinutes === minutes} onClick={() => setForm({ ...form, horaFin: formatTime(startMinutes + minutes) })}>{formatDuration(minutes)}</button>
             })}
+            <button type="button" disabled={!untilCloseIsDifferent} className={`reservation-duration-choice until-close ${durationMinutes === remainingMinutes ? 'active' : ''}`} aria-pressed={durationMinutes === remainingMinutes} onClick={() => setForm({ ...form, horaFin: '17:00' })}>Hasta 17:00 · {formatDuration(remainingMinutes)}</button>
+          </div>
+          <div className="reservation-time-cost">
+            <div><small>Total provisional</small><strong>₡{estimatedTotal.toLocaleString('es-CR')}</strong></div>
+            <span className={`reservation-availability-state ${availability || 'pending'}`}>
+              {availability === 'available' ? 'Disponible' : availability === 'unavailable' ? 'No disponible' : 'Por verificar'}
+            </span>
           </div>
           <p className="reservation-time-footnote">Este horario se repetirá en cada fecha seleccionada.</p>
         </aside>
