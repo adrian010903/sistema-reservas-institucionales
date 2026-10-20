@@ -9,3 +9,10 @@ export function reservationDates(fechaInicio, fechaFin) {
   }
   return fechas
 }
+
+export function reservationHasEnded(reservation, now = new Date()) {
+  if (!reservation?.fecha) return false
+  const endTime = String(reservation.horaFin || '23:59').slice(0, 5)
+  const end = new Date(`${reservation.fecha}T${endTime}:00`)
+  return !Number.isNaN(end.getTime()) && end < now
+}

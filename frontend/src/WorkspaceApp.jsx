@@ -33,7 +33,7 @@ import {
   updateReservation as updateReservationRequest,
 } from './services/reservationService'
 import { isStrongPassword, PASSWORD_MESSAGE } from './utils/password'
-import { reservationDates } from './utils/reservations'
+import { reservationDates, reservationHasEnded } from './utils/reservations'
 
 const INITIAL_RESET_TOKEN = new URLSearchParams(window.location.search).get('resetToken') || ''
 const ROUTES = {
@@ -559,6 +559,8 @@ function WorkspaceApp() {
     setMessage('')
     setPaymentResult(null)
     if (!paymentReservationId) return setMessage('Selecciona una reserva pendiente de pago')
+    const selectedReservation = reservations.find((reservation) => String(reservation.id) === String(paymentReservationId))
+    if (!selectedReservation || reservationHasEnded(selectedReservation)) return setMessage('Esta reserva ya expiró y no se puede pagar.')
     setPaying(true)
     if (paymentMethod === 'STRIPE') {
       try {

@@ -1,4 +1,5 @@
 import { formatCurrency, formatStatus } from '../utils/formatters'
+import { reservationHasEnded } from '../utils/reservations'
 
 const paymentOptions = [
   ['STRIPE', '▣', 'Tarjeta con Stripe (prueba)', 'Checkout seguro alojado por Stripe. No se realiza ningún cobro real.'],
@@ -11,12 +12,12 @@ export default function PaymentsPage({
   reservations, payments, focusedReservationIds, paymentReservationId, paymentMethod, paymentStep, paymentResult, paying, hourlyRate, message,
   onReservationChange, onShowAllReservations, onMethodChange, onStepChange, onResultChange, onSubmit, onNavigateReservations, onDownloadReceipt,
 }) {
-  const allPayableReservations = reservations.filter((reservation) => !payments.some((payment) => payment.reservaId === reservation.id && payment.estado !== 'RECHAZADO') && !['CANCELADA', 'RECHAZADA'].includes(reservation.estado))
+  const allPayableReservations = reservations.filter((reservation) => !reservationHasEnded(reservation) && !payments.some((payment) => payment.reservaId === reservation.id && payment.estado !== 'RECHAZADO') && !['CANCELADA', 'RECHAZADA'].includes(reservation.estado))
   const payableReservations = focusedReservationIds?.length
     ? allPayableReservations.filter((reservation) => focusedReservationIds.includes(String(reservation.id)))
     : allPayableReservations
   const hasOtherPayableReservations = payableReservations.length < allPayableReservations.length
-  const selected = reservations.find((reservation) => String(reservation.id) === String(paymentReservationId))
+  const selected = payableReservations.find((reservation) => String(reservation.id) === String(paymentReservationId))
   const paymentHours = selected ? Math.max(0, (Number(String(selected.horaFin).slice(0, 2)) * 60 + Number(String(selected.horaFin).slice(3, 5)) - (Number(String(selected.horaInicio).slice(0, 2)) * 60 + Number(String(selected.horaInicio).slice(3, 5)))) / 60) : 0
   const paymentTotal = paymentHours * hourlyRate
 
@@ -27,7 +28,7 @@ export default function PaymentsPage({
         <section className="payment-wizard">
           <div className="payment-progress">{[['1', 'Reserva'], ['2', 'Método'], ['3', 'Confirmación']].map(([number, label], index) => <div className={paymentStep >= index + 1 ? 'active' : ''} key={number}><span>{paymentStep > index + 1 ? '✓' : number}</span><small>{label}</small></div>)}</div>
           {paymentStep === 1 && <div className="payment-stage"><p className="eyebrow">Paso 1 de 3</p><h2>{focusedReservationIds?.length ? 'Tu nueva reserva' : 'Selecciona la reserva'}</h2><p>{focusedReservationIds?.length ? 'Te mostramos solo la reserva recién creada para que puedas completar el pago.' : 'Elige cuál solicitud deseas completar.'}</p>
-            {payableReservations.length === 0 ? <div className="payment-empty">No tienes reservas pendientes de pago.</div> : <div className="payable-list">{payableReservations.map((reservation) => <button className={String(paymentReservationId) === String(reservation.id) ? 'selected' : ''} key={reservation.id} onClick={() => { onReservationChange(String(reservation.id)); onResultChange(null) }}><span className="payment-calendar"><strong>{new Date(`${reservation.fecha}T12:00`).getDate()}</strong><small>{new Date(`${reservation.fecha}T12:00`).toLocaleDateString('es-CR', { month: 'short' }).replace('.', '')}</small></span><span><strong>{reservation.espacio}</strong><small>Reserva #{reservation.id} · {String(reservation.horaInicio).slice(0, 5)} - {String(reservation.horaFin).slice(0, 5)}</small></span><b>{String(paymentReservationId) === String(reservation.id) ? '✓' : '›'}</b></button>)}</div>}
+            {payableReservations.length === 0 ? <div className="payment-empty">No hay reservas vigentes pendientes de pago. Las reservas expiradas ya no se pueden pagar.</div> : <div className="payable-list">{payableReservations.map((reservation) => <button className={String(paymentReservationId) === String(reservation.id) ? 'selected' : ''} key={reservation.id} onClick={() => { onReservationChange(String(reservation.id)); onResultChange(null) }}><span className="payment-calendar"><strong>{new Date(`${reservation.fecha}T12:00`).getDate()}</strong><small>{new Date(`${reservation.fecha}T12:00`).toLocaleDateString('es-CR', { month: 'short' }).replace('.', '')}</small></span><span><strong>{reservation.espacio}</strong><small>Reserva #{reservation.id} · {String(reservation.horaInicio).slice(0, 5)} - {String(reservation.horaFin).slice(0, 5)}</small></span><b>{String(paymentReservationId) === String(reservation.id) ? '✓' : '›'}</b></button>)}</div>}
             <div className="wizard-actions">{hasOtherPayableReservations ? <button type="button" className="secondary-button" onClick={onShowAllReservations}>Elegir otra reserva pendiente</button> : <span />}<button className="primary-button" disabled={!selected} onClick={() => onStepChange(2)}>Continuar al método →</button></div></div>}
           {paymentStep === 2 && <form className="payment-stage" onSubmit={onSubmit}><p className="eyebrow">Paso 2 de 3</p><h2>Selecciona cómo pagar</h2>
             {selected && <div className="compact-payment-summary"><div><strong>{selected.espacio}</strong><small>{selected.fecha} · {String(selected.horaInicio).slice(0, 5)} - {String(selected.horaFin).slice(0, 5)} ({paymentHours} h)</small></div><strong>{formatCurrency(paymentTotal)}</strong></div>}

@@ -2978,3 +2978,12 @@ html.dark-theme .admin-pagination-controls > button.active { border-color: var(-
   .admin-pagination { align-items: flex-start; flex-direction: column; gap: 9px; }
   .admin-pagination-controls { flex-wrap: wrap; justify-content: flex-start; width: 100%; }
 }
+
+/* Las reservas pasadas permanecen en el historial, marcadas y sin acciones. */
+.reservation-mini-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.reservation-mini-stats div:nth-child(4) { border-left-color: #8790a2; }
+.reservation-status.expirada { color: #596273; background: #e9edf2; }
+html.dark-theme .reservation-status.expirada { color: #d0d5df; background: #3c4351; }
+@media (max-width: 560px) {
+  .reservation-mini-stats { grid-template-columns: 1fr; }
+}
