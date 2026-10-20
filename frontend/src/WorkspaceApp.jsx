@@ -2052,6 +2052,15 @@ function WorkspaceApp() {
 
   function renderAdminPage() {
     const reportMonths = Object.entries(reportSummary.porMes || {})
+    const topUsedSpaces = (reportSummary.espaciosUso || []).slice(0, 6)
+    const topUsedPlaces = (reportSummary.lugaresUso || []).slice(0, 6)
+    const maxSpaceHours = Math.max(0, ...topUsedSpaces.map((item) => Number(item.horas) || 0))
+    const maxPlaceHours = Math.max(0, ...topUsedPlaces.map((item) => Number(item.horas) || 0))
+    const seasonUsage = Object.entries(reportSummary.porTemporada || {})
+    const maxSeasonHours = Math.max(0, ...seasonUsage.map(([, value]) => Number(value) || 0))
+    const relativeBarWidth = (value, maximum) => Number(value) > 0
+      ? `${Math.max(2, (Number(value) / Math.max(maximum, 1)) * 100)}%`
+      : '0%'
     const activeReportMonths = reportMonths.filter(([, hours]) => hours > 0)
     const busiestMonth = activeReportMonths.reduce((best, current) => !best || current[1] > best[1] ? current : best, null)
     const quietestMonth = activeReportMonths.reduce((best, current) => !best || current[1] < best[1] ? current : best, null)
@@ -2331,39 +2340,42 @@ function WorkspaceApp() {
             <div className="report-insights">
               <section className="report-chart">
                 <h2>Espacios más utilizados</h2>
-                {(reportSummary.espaciosUso || []).slice(0, 6).map((item) => (
+                <p className="chart-unit-note">Horas reservadas · barra relativa al máximo del panel</p>
+                {topUsedSpaces.map((item) => (
                   <div className="chart-row" key={item.id}>
                     <span title={item.nombre}>{item.nombre}</span>
                     <div>
-                      <i style={{ width: `${item.porcentajeOcupacion}%` }} />
+                      <i style={{ width: relativeBarWidth(item.horas, maxSpaceHours) }} />
                     </div>
-                    <strong>{item.horas}h</strong>
+                    <strong>{item.horas} h</strong>
                   </div>
                 ))}
                 {!reportSummary.espaciosUso?.length && <p>No hay datos todavía.</p>}
               </section>
               <section className="report-chart">
                 <h2>Uso por lugar / oficina</h2>
-                {(reportSummary.lugaresUso || []).slice(0, 6).map((item) => (
+                <p className="chart-unit-note">Horas reservadas · barra relativa al máximo del panel</p>
+                {topUsedPlaces.map((item) => (
                   <div className="chart-row" key={item.id}>
                     <span title={item.nombre}>{item.nombre}</span>
                     <div>
-                      <i style={{ width: `${item.porcentajeOcupacion}%` }} />
+                      <i style={{ width: relativeBarWidth(item.horas, maxPlaceHours) }} />
                     </div>
-                    <strong>{item.horas}h</strong>
+                    <strong>{item.horas} h</strong>
                   </div>
                 ))}
                 {!reportSummary.lugaresUso?.length && <p>No hay lugares para mostrar.</p>}
               </section>
               <section className="report-chart">
                 <h2>Uso por temporada</h2>
-                {Object.entries(reportSummary.porTemporada || {}).map(([name, hours]) => (
+                <p className="chart-unit-note">Horas reservadas · barra relativa al máximo del panel</p>
+                {seasonUsage.map(([name, hours]) => (
                   <div className="chart-row" key={name}>
                     <span>{name}</span>
                     <div>
-                      <i style={{ width: `${(hours / Math.max(...Object.values(reportSummary.porTemporada || { total: 1 }), 1)) * 100}%` }} />
+                      <i style={{ width: relativeBarWidth(hours, maxSeasonHours) }} />
                     </div>
-                    <strong>{hours}h</strong>
+                    <strong>{hours} h</strong>
                   </div>
                 ))}
               </section>
