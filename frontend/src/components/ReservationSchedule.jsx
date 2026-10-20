@@ -40,13 +40,24 @@ export function CustomReservationSchedule({ form, setForm }) {
   today.setHours(12, 0, 0, 0)
   const [calendarOpen, setCalendarOpen] = useState(false)
   const [selectingEnd, setSelectingEnd] = useState(false)
-  const [timeOpen, setTimeOpen] = useState(null)
   const [month, setMonth] = useState(() => new Date(`${form.fecha || today.toISOString().slice(0, 10)}T12:00:00`))
   const iso = (date) => date.toISOString().slice(0, 10)
   const formatDate = (value) => (value ? DATE_LABEL.format(new Date(`${value}T12:00:00`)).replace('.', '') : 'Seleccionar fecha')
   const first = new Date(month.getFullYear(), month.getMonth(), 1, 12)
   const offset = (first.getDay() + 6) % 7
   const calendarDays = Array.from({ length: 42 }, (_, index) => new Date(month.getFullYear(), month.getMonth(), index - offset + 1, 12))
+  const startMinutes = (Number(form.horaInicio?.slice(0, 2)) || 8) * 60 + (Number(form.horaInicio?.slice(3, 5)) || 0)
+  const endMinutes = (Number(form.horaFin?.slice(0, 2)) || 9) * 60 + (Number(form.horaFin?.slice(3, 5)) || 0)
+  const durationMinutes = Math.max(30, endMinutes - startMinutes)
+  const remainingMinutes = 17 * 60 - startMinutes
+  const startTimes = Array.from({ length: 17 }, (_, index) => 8 * 60 + index * 30)
+  const durationOptions = Array.from({ length: 8 }, (_, index) => (index + 1) * 60).filter((minutes) => minutes <= remainingMinutes)
+  if (remainingMinutes >= 30 && !durationOptions.includes(remainingMinutes)) durationOptions.push(remainingMinutes)
+  const endTimes = Array.from({ length: Math.floor(remainingMinutes / 30) }, (_, index) => startMinutes + (index + 1) * 30)
+  if (endMinutes > startMinutes && !endTimes.includes(endMinutes)) endTimes.push(endMinutes)
+  endTimes.sort((firstTime, secondTime) => firstTime - secondTime)
+  const formatTime = (minutes) => `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
+  const formatDuration = (minutes) => minutes % 60 ? `${Math.floor(minutes / 60)} h ${minutes % 60} min` : `${minutes / 60} ${minutes === 60 ? 'hora' : 'horas'}`
   const chooseDate = (date) => {
     const value = iso(date)
     if (!selectingEnd || !form.fecha || value < form.fecha) {
@@ -58,16 +69,11 @@ export function CustomReservationSchedule({ form, setForm }) {
       setCalendarOpen(false)
     }
   }
-  const adjustTime = (field, amount) => {
-    const [hours, minutes] = String(form[field] || (field === 'horaInicio' ? '08:00' : '09:00')).split(':').map(Number)
-    const total = Math.min(17 * 60, Math.max(8 * 60, hours * 60 + minutes + amount))
-    setForm({ ...form, [field]: `${String(Math.floor(total / 60)).padStart(2, '0')}:${String(total % 60).padStart(2, '0')}` })
-  }
   const dateRangeLabel = form.fechaFin && form.fechaFin !== form.fecha ? `${formatDate(form.fecha)} → ${formatDate(form.fechaFin)}` : formatDate(form.fecha)
   return (
     <section className="custom-schedule" aria-label="Fechas y horario de la reserva">
       <label>Fechas</label>
-      <button type="button" className="custom-picker-trigger" aria-expanded={calendarOpen} onClick={() => { setCalendarOpen((value) => !value); setTimeOpen(null) }}>
+      <button type="button" className="custom-picker-trigger" aria-expanded={calendarOpen} onClick={() => setCalendarOpen((value) => !value)}>
         <span className="picker-icon">▣</span><strong>{dateRangeLabel}</strong><span className="picker-chevron">⌄</span>
       </button>
       {calendarOpen && (
@@ -94,24 +100,38 @@ export function CustomReservationSchedule({ form, setForm }) {
           </footer>
         </div>
       )}
-      {['horaInicio', 'horaFin'].map((field, index) => (
-        <div className="custom-time-field" key={field}>
-          <label>{index ? 'Hora de fin' : 'Hora de inicio'}</label>
-          <button type="button" className="custom-picker-trigger" aria-expanded={timeOpen === field} onClick={() => { setTimeOpen(timeOpen === field ? null : field); setCalendarOpen(false) }}>
-            <span className="picker-icon">◷</span><strong>{form[field] || (index ? '09:00' : '08:00')}</strong><span className="picker-chevron">⌄</span>
-          </button>
-          {timeOpen === field && (
-            <div className="custom-time-picker">
-              <button type="button" aria-label="Aumentar una hora" onClick={() => adjustTime(field, 60)}>+</button>
-              <button type="button" aria-label="Aumentar treinta minutos" onClick={() => adjustTime(field, 30)}>+</button>
-              <strong>{String(form[field] || (index ? '09:00' : '08:00')).slice(0, 2)}<span>:</span>{String(form[field] || (index ? '09:00' : '08:00')).slice(3, 5)}</strong>
-              <button type="button" aria-label="Reducir una hora" onClick={() => adjustTime(field, -60)}>−</button>
-              <button type="button" aria-label="Reducir treinta minutos" onClick={() => adjustTime(field, -30)}>−</button>
-              <small>Horario permitido: 08:00–17:00</small>
-            </div>
-          )}
-        </div>
-      ))}
+      <div className="reservation-time-layout">
+        <section className="reservation-time-panel" aria-label="Selecciona la hora de inicio">
+          <div className="reservation-time-heading"><label>Hora de inicio</label><small>08:00–17:00</small></div>
+          <div className="reservation-time-grid">
+            {startTimes.map((minutes) => {
+              const value = formatTime(minutes)
+              return <button type="button" key={value} className={`reservation-time-choice ${form.horaInicio === value ? 'active' : ''}`} aria-pressed={form.horaInicio === value} onClick={() => {
+                const nextDuration = Math.min(durationMinutes, 17 * 60 - minutes)
+                setForm({ ...form, horaInicio: value, horaFin: formatTime(minutes + nextDuration) })
+              }}>{value}</button>
+            })}
+          </div>
+        </section>
+        <aside className="reservation-time-details" aria-label="Resumen del horario seleccionado">
+          <div className="reservation-time-details-heading"><span>HORARIO SELECCIONADO</span><small>{formatDuration(durationMinutes)}</small></div>
+          <div className="reservation-time-range" aria-live="polite">
+            <div><small>Inicio</small><strong>{form.horaInicio || '08:00'}</strong></div>
+            <span aria-hidden="true">→</span>
+            <label className="reservation-end-field"><small htmlFor="reservation-end-time">Hora fin</small><select id="reservation-end-time" className="reservation-end-select" value={form.horaFin} onChange={(event) => setForm({ ...form, horaFin: event.target.value })} aria-label="Selecciona la hora de fin">
+              {endTimes.map((minutes) => <option key={minutes} value={formatTime(minutes)}>{formatTime(minutes)}</option>)}
+            </select></label>
+          </div>
+          <div className="reservation-duration-heading"><strong>Duración</strong><small>La hora final se ajusta sola</small></div>
+          <div className="reservation-duration-options" aria-label="Selecciona la duración">
+            {durationOptions.map((minutes) => {
+              const untilClose = minutes === remainingMinutes && (minutes > 480 || minutes % 60 !== 0)
+              return <button type="button" key={minutes} className={`reservation-duration-choice ${durationMinutes === minutes ? 'active' : ''} ${untilClose ? 'until-close' : ''}`} aria-pressed={durationMinutes === minutes} onClick={() => setForm({ ...form, horaFin: formatTime(startMinutes + minutes) })}>{untilClose ? `Hasta 17:00 · ${formatDuration(minutes)}` : formatDuration(minutes)}</button>
+            })}
+          </div>
+          <p className="reservation-time-footnote">Este horario se repetirá en cada fecha seleccionada.</p>
+        </aside>
+      </div>
     </section>
   )
 }

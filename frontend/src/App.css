@@ -90,7 +90,7 @@ body,.workspace-app,.dashboard-shell { color:var(--gys-ink); background:linear-g
 /* Corrección responsive final: una sola fuente de verdad para móvil y tablet. */
 .workspace-app { width: 100%; min-width: 0; overflow-x: clip; }
 .app-nav { width: auto; }
-.app-brand.official-brand { overflow: hidden; min-width: 218px; height: 64px; padding: 0; background: #fff; }
+.app-brand.official-brand { overflow: hidden; min-width: 218px; height: 64px; padding: 0; background: transparent; }
 .app-brand.official-brand img { width: 218px; height: 64px; object-fit: contain; transform: scale(1.32); }
 .header-social-links { display: flex; flex: 0 0 auto; gap: 5px; }
 .header-social-links a { width: 30px; height: 30px; border-radius: 9px; box-shadow: none; }
@@ -281,7 +281,6 @@ body,.workspace-app,.dashboard-shell { color:var(--gys-ink); background:linear-g
     grid-template-columns: minmax(150px, 1.25fr) minmax(105px, .8fr) minmax(110px, .8fr) minmax(145px, 1fr);
   }
 }
-
 /* Reportes analíticos */
 .report-filter-panel,
 .report-usage-section,
@@ -2149,6 +2148,76 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
   }
 }
 
+/* Selección rápida de horario dentro del formulario de reserva. */
+.custom-schedule {
+  display: grid;
+  grid-column: 1 / -1;
+  gap: 15px;
+  margin-top: 4px;
+}
+
+.custom-schedule > label,
+.reservation-time-heading label {
+  color: var(--gys-purple);
+  font-size: 14px;
+  font-weight: 850;
+}
+
+.custom-picker-trigger {
+  display: grid;
+  grid-template-columns: 34px minmax(0, 1fr) 24px;
+  align-items: center;
+  width: 100%;
+  min-height: 54px;
+  padding: 10px 15px;
+  border: 1px solid #e1e4ec;
+  border-radius: 14px;
+  color: #171726;
+  background: #fff;
+  text-align: left;
+  box-shadow: 0 6px 16px rgba(44,18,97,.07);
+}
+
+.custom-picker-trigger strong { overflow: hidden; font-size: 14px; text-overflow: ellipsis; white-space: nowrap; }
+.picker-icon, .picker-chevron { color: var(--gys-teal-dark); font-size: 20px; font-weight: 900; text-align: center; }
+.custom-calendar { position: relative; z-index: 4; width: min(100%, 420px); margin: 0 auto 8px; padding: 16px 14px 0; border: 1px solid #e8e9ef; border-radius: 18px; background: #fff; box-shadow: 0 12px 28px rgba(35,22,69,.12); }
+.custom-calendar header { display: grid; grid-template-columns: 40px 1fr 40px; align-items: center; }
+.custom-calendar header strong { color: var(--gys-purple); text-align: center; text-transform: capitalize; }
+.custom-calendar header button, .custom-calendar footer button { border: 0; color: var(--gys-teal-dark); background: transparent; font-size: 24px; font-weight: 900; }
+.custom-calendar > p { margin: 9px 0; color: #6d7488; font-size: 11px; text-align: center; }
+.calendar-week, .custom-calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; text-align: center; }
+.calendar-week { padding: 8px 0 5px; color: #7d8393; font-size: 9px; font-weight: 800; text-transform: uppercase; }
+.custom-calendar-grid button { aspect-ratio: 1; padding: 0; border: 0; border-radius: 50%; color: #222; background: transparent; font-size: 12px; }
+.custom-calendar-grid button.outside { color: #b9bdc7; }
+.custom-calendar-grid button.in-range { border-radius: 9px; background: #e6f9fb; }
+.custom-calendar-grid button.selected { color: #fff; background: var(--gys-teal); box-shadow: 0 5px 12px rgba(0,176,198,.25); }
+.custom-calendar-grid button:disabled { color: #d4d6dc; cursor: not-allowed; }
+.custom-calendar footer { display: flex; justify-content: space-around; margin: 12px -14px 0; padding: 11px; border-top: 1px solid #eceef3; }
+.custom-calendar footer button { font-size: 13px; }
+.reservation-time-group { display: grid; gap: 9px; }
+.reservation-time-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.reservation-time-heading small { color: #737b8e; font-size: 11px; }
+.reservation-time-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(76px, 1fr)); gap: 8px; }
+.reservation-time-choice, .reservation-duration-choice { min-height: 42px; padding: 8px 12px; border: 1px solid #dfe3ed; border-radius: 11px; color: #4e5366; background: #fff; font-size: 13px; font-weight: 750; transition: color .16s ease, background .16s ease, border-color .16s ease, transform .16s ease; }
+.reservation-time-choice:hover, .reservation-duration-choice:hover { border-color: var(--gys-purple); transform: translateY(-1px); }
+.reservation-time-choice.active, .reservation-duration-choice.active { border-color: var(--gys-purple); color: #fff; background: var(--gys-purple); box-shadow: 0 5px 12px rgba(44,18,97,.16); }
+.reservation-duration-options { display: flex; flex-wrap: wrap; gap: 8px; }
+.reservation-time-summary { margin: 0; padding: 10px 13px; border-radius: 10px; color: #586177; background: #f4f1f9; font-size: 12px; }
+.reservation-time-summary strong { color: var(--gys-purple); }
+
+html.dark-theme .custom-picker-trigger, html.dark-theme .custom-calendar, html.dark-theme .reservation-time-choice, html.dark-theme .reservation-duration-choice { color: #eee9f6; border-color: #4a3c68; background: #28213b; }
+html.dark-theme .reservation-time-choice.active, html.dark-theme .reservation-duration-choice.active { color: #fff; background: var(--gys-purple); }
+html.dark-theme .reservation-time-summary { color: #ddd5eb; background: #28213b; }
+html.dark-theme .reservation-time-summary strong { color: #e7d5ff; }
+
+@media (max-width: 700px) {
+  .custom-schedule { gap: 13px; }
+  .reservation-time-heading { align-items: flex-start; flex-direction: column; gap: 2px; }
+  .reservation-time-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
+  .reservation-time-choice { min-height: 42px; padding-inline: 5px; }
+  .reservation-duration-choice { flex: 1 1 calc(50% - 8px); }
+}
+
 /* Mantiene el mismo acabado cuando la sesión termina de cargar en móvil/tablet. */
 @media (max-width: 700px) {
   .app-nav nav.authenticated-nav .nav-link,
@@ -2216,6 +2285,22 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .home-carousel-arrow { border-color: rgba(255,255,255,.55); backdrop-filter: blur(10px); }
 .home-carousel-dots button { height: 8px; }
 .home-carousel-dots button.active { width: 34px; background: linear-gradient(90deg, var(--gys-purple), var(--gys-teal)); }
+/* En escritorios de poca altura, mantener el llamado a la acción dentro del primer pliegue. */
+@media (min-width: 1051px) and (max-height: 800px) {
+  .new-hero.home-with-carousel {
+    min-height: calc(100svh - 140px);
+    padding-block: clamp(18px, 3vh, 28px);
+  }
+
+  .new-hero.home-with-carousel > .home-intro {
+    padding-top: 0;
+  }
+
+  .home-carousel-stage {
+    aspect-ratio: 1.48 / 1;
+  }
+}
+
 @media (max-width: 700px) {
   .new-hero.home-with-carousel { background: linear-gradient(160deg, #faf9fd 0%, #f1fbfc 100%); }
   .home-intro::before { margin-bottom: 16px; }
@@ -2558,7 +2643,7 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 
 /* Overrides finales: prevalecen sobre las capas históricas del archivo. */
 .workspace-app { width: 100%; min-width: 0; overflow-x: clip; }
-.app-brand.official-brand { overflow: hidden; min-width: 218px; height: 64px; padding: 0; background: #fff; }
+.app-brand.official-brand { overflow: hidden; min-width: 218px; height: 64px; padding: 0; background: transparent; }
 .app-brand.official-brand img { width: 218px; height: 64px; object-fit: contain; transform: scale(1.32); }
 .header-social-links { display: flex; flex: 0 0 auto; gap: 5px; }
 .header-social-links a { width: 30px; height: 30px; border-radius: 9px; box-shadow: none; }
@@ -2778,4 +2863,89 @@ html.dark-theme .catalog-title::after, html.dark-theme .dashboard-welcome::after
   .admin-page .admin-tabs { overflow-x:auto; justify-content:flex-start; scrollbar-width:none; }
   .admin-page .admin-tabs::-webkit-scrollbar { display:none; }
   .admin-page .admin-tabs button { flex:0 0 auto; }
+}
+
+/* La barra sticky conserva la misma silueta redondeada de la cinta institucional. */
+@media (min-width: 701px) {
+  .app-nav,
+  .siempre-listos-ribbon {
+    width: calc(100% - clamp(36px, 6vw, 88px));
+    margin-right: auto;
+    margin-left: auto;
+  }
+
+  .app-nav {
+    border-radius: 0 0 22px 22px;
+  }
+
+  /* La cinta pasa por detrás del borde redondeado para que ambos bloques se unan. */
+  .siempre-listos-ribbon {
+    position: relative;
+    z-index: 1;
+    margin-top: -22px;
+    padding-top: 33px;
+  }
+}
+
+/* Horario compacto: selección a la izquierda y rango completo siempre visible. */
+.custom-schedule { gap: 12px; }
+.reservation-time-layout { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(285px, .85fr); gap: 14px; align-items: stretch; }
+.reservation-time-panel, .reservation-time-details { min-width: 0; padding: 14px; border: 1px solid #e2e5ee; border-radius: 15px; background: #fff; }
+.reservation-time-panel { display: grid; align-content: start; gap: 10px; }
+.reservation-time-heading { align-items: center; }
+.reservation-time-heading small { padding: 4px 8px; border-radius: 99px; color: #5d6476; background: #f2f4f8; font-size: 10px; font-weight: 700; }
+.reservation-time-grid { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 7px; }
+.reservation-time-choice { min-height: 39px; padding: 6px 4px; border-radius: 9px; font-size: 12px; }
+.reservation-time-details { display: flex; flex-direction: column; gap: 12px; background: linear-gradient(145deg, #fbfaff, #f3f9fa); }
+.reservation-time-details-heading, .reservation-duration-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.reservation-time-details-heading > span { color: #777187; font-size: 9px; font-weight: 900; letter-spacing: .1em; }
+.reservation-time-details-heading > small { padding: 4px 8px; border-radius: 99px; color: var(--gys-purple); background: #ece5f7; font-size: 10px; font-weight: 800; white-space: nowrap; }
+.reservation-time-range { display: grid; grid-template-columns: minmax(0, 1fr) 24px minmax(0, 1fr); align-items: center; gap: 8px; padding: 12px; border: 1px solid rgba(44,18,97,.1); border-radius: 12px; background: #fff; text-align: center; }
+.reservation-time-range > div { display: grid; gap: 3px; }
+.reservation-end-field { display: grid; justify-items: center; gap: 3px; min-width: 0; }
+.reservation-end-select { max-width: 100%; padding: 2px 4px; border: 1px solid #e0d9eb; border-radius: 8px; color: var(--gys-purple); background: #fff; font: inherit; font-size: clamp(18px, 2vw, 25px); font-weight: 900; text-align: center; cursor: pointer; }
+.reservation-time-range small { color: #7b8498; font-size: 10px; font-weight: 700; }
+.reservation-time-range strong { color: var(--gys-purple); font-size: clamp(20px, 2.2vw, 28px); line-height: 1.1; }
+.reservation-time-range > span { color: var(--gys-teal-dark); font-size: 18px; font-weight: 900; }
+.reservation-duration-heading strong { color: var(--gys-purple); font-size: 12px; }
+.reservation-duration-heading small { color: #7b8498; font-size: 9px; }
+.reservation-duration-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.reservation-duration-choice { min-height: 37px; padding: 6px 8px; border-radius: 9px; font-size: 11px; }
+.reservation-duration-choice.until-close { grid-column: 1 / -1; }
+.reservation-time-footnote { margin: auto 0 0; padding-top: 3px; color: #737b8e; font-size: 10px; line-height: 1.4; }
+html.dark-theme .reservation-time-panel, html.dark-theme .reservation-time-details { border-color: #443858; background: #211c30; }
+html.dark-theme .reservation-time-heading small { color: #ddd5eb; background: #302842; }
+html.dark-theme .reservation-time-details-heading > span, html.dark-theme .reservation-duration-heading small, html.dark-theme .reservation-time-footnote { color: #bdb4d0; }
+html.dark-theme .reservation-time-details-heading > small { color: #e7d5ff; background: #38294f; }
+html.dark-theme .reservation-time-range { border-color: #493c60; background: #28213b; }
+html.dark-theme .reservation-end-select { border-color: #514468; color: #e7d5ff; background: #302842; }
+
+@media (max-width: 950px) {
+  .reservation-time-layout { grid-template-columns: minmax(0, 1.1fr) minmax(260px, .9fr); }
+  .reservation-time-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+@media (max-width: 700px) {
+  .reservation-time-layout { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .reservation-time-panel, .reservation-time-details { padding: 12px; }
+  .reservation-time-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+  .reservation-time-details { gap: 10px; }
+  .reservation-duration-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+.admin-pagination { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-top: 12px; padding: 13px 4px 2px; border-top: 1px solid #e7e9f0; color: #687187; font-size: 12px; }
+.admin-pagination > span { white-space: nowrap; }
+.admin-pagination > span strong { color: #33304c; }
+.admin-pagination-controls { display: flex; align-items: center; justify-content: flex-end; gap: 5px; }
+.admin-pagination-controls > button { min-width: 34px; min-height: 34px; padding: 6px 9px; border: 1px solid #e1e4ec; border-radius: 9px; color: #514a68; background: #fff; font-size: 12px; font-weight: 750; }
+.admin-pagination-controls > button.active { border-color: var(--gys-purple); color: #fff; background: var(--gys-purple); }
+.admin-pagination-controls > button:disabled { opacity: .45; cursor: not-allowed; }
+.admin-pagination-controls > span { padding-inline: 2px; color: #80879a; }
+html.dark-theme .admin-pagination { border-color: #3b3152; color: #bdb4d0; }
+html.dark-theme .admin-pagination > span strong { color: #eee9f6; }
+html.dark-theme .admin-pagination-controls > button { border-color: #4a3c68; color: #ddd5eb; background: #28213b; }
+html.dark-theme .admin-pagination-controls > button.active { border-color: var(--gys-purple); color: #fff; background: var(--gys-purple); }
+@media (max-width: 600px) {
+  .admin-pagination { align-items: flex-start; flex-direction: column; gap: 9px; }
+  .admin-pagination-controls { flex-wrap: wrap; justify-content: flex-start; width: 100%; }
 }

@@ -49,6 +49,29 @@ const ROUTES = {
   admin: '/admin',
 }
 const PAGE_BY_PATH = Object.fromEntries(Object.entries(ROUTES).map(([page, path]) => [path, page]))
+const ADMIN_PAGE_SIZE = 10
+
+function AdminPagination({ page, totalPages, totalItems, onPageChange }) {
+  const firstVisible = totalItems ? (page - 1) * ADMIN_PAGE_SIZE + 1 : 0
+  const lastVisible = Math.min(page * ADMIN_PAGE_SIZE, totalItems)
+  const visiblePages = Array.from(
+    { length: Math.max(0, Math.min(totalPages, page + 1) - Math.max(1, page - 1) + 1) },
+    (_, index) => Math.max(1, page - 1) + index,
+  )
+
+  return (
+    <nav className="admin-pagination" aria-label="Paginación de registros">
+      <span>Mostrando <strong>{firstVisible}–{lastVisible}</strong> de <strong>{totalItems}</strong></span>
+      <div className="admin-pagination-controls">
+        <button type="button" disabled={page <= 1} onClick={() => onPageChange(page - 1)}>Anterior</button>
+        {visiblePages[0] > 1 && <><button type="button" onClick={() => onPageChange(1)}>1</button>{visiblePages[0] > 2 && <span aria-hidden="true">…</span>}</>}
+        {visiblePages.map((pageNumber) => <button type="button" key={pageNumber} className={pageNumber === page ? 'active' : ''} aria-current={pageNumber === page ? 'page' : undefined} onClick={() => onPageChange(pageNumber)}>{pageNumber}</button>)}
+        {visiblePages.at(-1) < totalPages && <>{visiblePages.at(-1) < totalPages - 1 && <span aria-hidden="true">…</span>}<button type="button" onClick={() => onPageChange(totalPages)}>{totalPages}</button></>}
+        <button type="button" disabled={page >= totalPages} onClick={() => onPageChange(page + 1)}>Siguiente</button>
+      </div>
+    </nav>
+  )
+}
 
 function pageFromLocation() {
   return PAGE_BY_PATH[window.location.pathname] || 'home'
@@ -110,6 +133,7 @@ function WorkspaceApp() {
   const [availabilityTypeId, setAvailabilityTypeId] = useState('')
   const [availableSpaceIds, setAvailableSpaceIds] = useState(null)
   const [adminTab, setAdminTab] = useState('usuarios')
+  const [adminPages, setAdminPages] = useState({ reservas: 1, pagos: 1, usuarios: 1, auditoria: 1 })
   const [adminUsers, setAdminUsers] = useState([])
   const [showUserCreator, setShowUserCreator] = useState(false)
   const [savingUser, setSavingUser] = useState(false)
@@ -342,7 +366,7 @@ function WorkspaceApp() {
 
   useEffect(() => {
     if (!['admin', 'dashboard'].includes(page) || !user || !['ADMIN', 'SUPERADMIN'].includes(user.rol)) return
-    Promise.all([fetch(`${API}/admin/usuarios`, { headers: auth }).then(readJsonArray), fetch(`${API}/admin/reservas`, { headers: auth }).then(readJsonArray), fetch(`${API}/admin/pagos`, { headers: auth }).then(readJsonArray), fetch(`${API}/admin/reportes/resumen`, { headers: auth }).then(readJson), fetch(`${API}/admin/auditoria?limite=100`, { headers: auth }).then(readJsonArray)])
+    Promise.all([fetch(`${API}/admin/usuarios`, { headers: auth }).then(readJsonArray), fetch(`${API}/admin/reservas`, { headers: auth }).then(readJsonArray), fetch(`${API}/admin/pagos`, { headers: auth }).then(readJsonArray), fetch(`${API}/admin/reportes/resumen`, { headers: auth }).then(readJson), fetch(`${API}/admin/auditoria?limite=200`, { headers: auth }).then(readJsonArray)])
       .then(([usersData, reservationsData, paymentsData, summaryData, auditData]) => {
         setAdminUsers(usersData)
         setAdminReservations(reservationsData)
@@ -355,7 +379,7 @@ function WorkspaceApp() {
 
   useEffect(() => {
     if (page !== 'admin' || adminTab !== 'auditoria' || !user || !['ADMIN', 'SUPERADMIN'].includes(user.rol)) return
-    fetch(`${API}/admin/auditoria?limite=100`, { headers: auth })
+    fetch(`${API}/admin/auditoria?limite=200`, { headers: auth })
       .then(readJsonArray)
       .then(setAuditEntries)
       .catch(() => setMessage('No se pudo actualizar la bitácora'))
@@ -2032,11 +2056,25 @@ function WorkspaceApp() {
     const variationLabel = (value) => reportSummary.tienePeriodoAnterior
       ? `${Number(value) > 0 ? '+' : ''}${Number(value || 0)}%`
       : 'Sin datos anteriores para comparar'
+    const filteredAdminReservations = adminReservations.filter((reservation) => !adminFilters.reserva || [reservation.id, reservation.espacio, reservation.correoUsuario, reservation.estado].join(' ').toLowerCase().includes(adminFilters.reserva.toLowerCase()))
+    const filteredAdminPayments = adminPayments.filter((payment) => !adminFilters.pago || [payment.referencia, payment.reservaId, payment.estado, payment.metodo].join(' ').toLowerCase().includes(adminFilters.pago.toLowerCase()))
+    const filteredAdminUsers = adminUsers.filter((target) => !adminFilters.usuario || [target.nombre, target.correo, target.rol, target.estado].join(' ').toLowerCase().includes(adminFilters.usuario.toLowerCase()))
+    const filteredAuditEntries = auditEntries.filter((entry) => !adminFilters.bitacora || [entry.actor, entry.accion, entry.recurso, entry.recursoId, entry.detalle].join(' ').toLowerCase().includes(adminFilters.bitacora.toLowerCase()))
+    const paginateAdminRows = (items, section) => {
+      const totalPages = Math.max(1, Math.ceil(items.length / ADMIN_PAGE_SIZE))
+      const currentPage = Math.min(adminPages[section] || 1, totalPages)
+      const startIndex = (currentPage - 1) * ADMIN_PAGE_SIZE
+      return { items: items.slice(startIndex, startIndex + ADMIN_PAGE_SIZE), currentPage, totalPages, totalItems: items.length }
+    }
+    const reservationPage = paginateAdminRows(filteredAdminReservations, 'reservas')
+    const paymentPage = paginateAdminRows(filteredAdminPayments, 'pagos')
+    const userPage = paginateAdminRows(filteredAdminUsers, 'usuarios')
+    const auditPage = paginateAdminRows(filteredAuditEntries, 'auditoria')
     return (
       <main className="page-container admin-page">
         <p className="eyebrow">Acceso administrativo</p>
         <h1>Administración</h1>
-        <AdminTabs value={adminTab} showDemoControls={showDemoControls} onChange={(tab) => { setAdminTab(tab); setMessage('') }} />
+        <AdminTabs value={adminTab} showDemoControls={showDemoControls} onChange={(tab) => { setAdminTab(tab); setAdminPages((current) => ({ ...current, [tab]: 1 })); setMessage('') }} />
         {message && <p className="form-message">{message}</p>}
         {adminTab === 'precios' && (
           <form className="admin-rate-panel" onSubmit={saveRate}>
@@ -2073,14 +2111,14 @@ function WorkspaceApp() {
                   value={adminFilters.reserva}
                   placeholder="Espacio, correo o número…"
                   onChange={(e) =>
-                    setAdminFilters({
-                      ...adminFilters,
-                      reserva: e.target.value,
-                    })
+                    {
+                      setAdminFilters({ ...adminFilters, reserva: e.target.value })
+                      setAdminPages((current) => ({ ...current, reservas: 1 }))
+                    }
                   }
                 />
               </label>
-              <button type="button" onClick={() => setAdminFilters({ ...adminFilters, reserva: '' })}>
+              <button type="button" onClick={() => { setAdminFilters({ ...adminFilters, reserva: '' }); setAdminPages((current) => ({ ...current, reservas: 1 })) }}>
                 Limpiar
               </button>
             </div>
@@ -2090,12 +2128,10 @@ function WorkspaceApp() {
               <span>Fecha</span>
               <span>Estado / Acciones</span>
             </div>
-            {adminReservations.length === 0 ? (
-              <p className="admin-empty">No hay reservas registradas.</p>
+            {filteredAdminReservations.length === 0 ? (
+              <p className="admin-empty">{adminReservations.length === 0 ? 'No hay reservas registradas.' : 'No hay reservas que coincidan con la búsqueda.'}</p>
             ) : (
-              adminReservations
-                .filter((reservation) => !adminFilters.reserva || [reservation.id, reservation.espacio, reservation.correoUsuario, reservation.estado].join(' ').toLowerCase().includes(adminFilters.reserva.toLowerCase()))
-                .map((reservation) => (
+              reservationPage.items.map((reservation) => (
                   <article key={reservation.id}>
                     <div>
                       <strong>
@@ -2124,6 +2160,7 @@ function WorkspaceApp() {
                   </article>
                 ))
             )}
+            {filteredAdminReservations.length > 0 && <AdminPagination page={reservationPage.currentPage} totalPages={reservationPage.totalPages} totalItems={reservationPage.totalItems} onPageChange={(nextPage) => setAdminPages((current) => ({ ...current, reservas: nextPage }))} />}
           </div>
         )}
         {adminTab === 'pagos' && (
@@ -2131,9 +2168,9 @@ function WorkspaceApp() {
             <div className="admin-filter-bar">
               <label>
                 Buscar pago o reserva
-                <input value={adminFilters.pago} placeholder="Referencia, reserva o estado…" onChange={(e) => setAdminFilters({ ...adminFilters, pago: e.target.value })} />
+                <input value={adminFilters.pago} placeholder="Referencia, reserva o estado…" onChange={(e) => { setAdminFilters({ ...adminFilters, pago: e.target.value }); setAdminPages((current) => ({ ...current, pagos: 1 })) }} />
               </label>
-              <button type="button" onClick={() => setAdminFilters({ ...adminFilters, pago: '' })}>
+              <button type="button" onClick={() => { setAdminFilters({ ...adminFilters, pago: '' }); setAdminPages((current) => ({ ...current, pagos: 1 })) }}>
                 Limpiar
               </button>
             </div>
@@ -2143,12 +2180,10 @@ function WorkspaceApp() {
               <span>Monto</span>
               <span>Estado / Acciones</span>
             </div>
-            {adminPayments.length === 0 ? (
-              <p className="admin-empty">No hay pagos registrados.</p>
+            {filteredAdminPayments.length === 0 ? (
+              <p className="admin-empty">{adminPayments.length === 0 ? 'No hay pagos registrados.' : 'No hay pagos que coincidan con la búsqueda.'}</p>
             ) : (
-              adminPayments
-                .filter((payment) => !adminFilters.pago || [payment.referencia, payment.reservaId, payment.estado, payment.metodo].join(' ').toLowerCase().includes(adminFilters.pago.toLowerCase()))
-                .map((payment) => (
+              paymentPage.items.map((payment) => (
                   <article key={payment.id}>
                     <div>
                       <strong>{payment.referencia}</strong>
@@ -2170,6 +2205,7 @@ function WorkspaceApp() {
                   </article>
                 ))
             )}
+            {filteredAdminPayments.length > 0 && <AdminPagination page={paymentPage.currentPage} totalPages={paymentPage.totalPages} totalItems={paymentPage.totalItems} onPageChange={(nextPage) => setAdminPages((current) => ({ ...current, pagos: nextPage }))} />}
           </div>
         )}
         {adminTab === 'usuarios' && (
@@ -2221,14 +2257,14 @@ function WorkspaceApp() {
                   value={adminFilters.usuario}
                   placeholder="Nombre, correo, rol…"
                   onChange={(e) =>
-                    setAdminFilters({
-                      ...adminFilters,
-                      usuario: e.target.value,
-                    })
+                    {
+                      setAdminFilters({ ...adminFilters, usuario: e.target.value })
+                      setAdminPages((current) => ({ ...current, usuarios: 1 }))
+                    }
                   }
                 />
               </label>
-              <button type="button" onClick={() => setAdminFilters({ ...adminFilters, usuario: '' })}>
+              <button type="button" onClick={() => { setAdminFilters({ ...adminFilters, usuario: '' }); setAdminPages((current) => ({ ...current, usuarios: 1 })) }}>
                 Limpiar
               </button>
             </div>
@@ -2238,9 +2274,9 @@ function WorkspaceApp() {
               <span>Rol</span>
               <span>Estado</span>
             </div>
-            {adminUsers
-              .filter((target) => !adminFilters.usuario || [target.nombre, target.correo, target.rol, target.estado].join(' ').toLowerCase().includes(adminFilters.usuario.toLowerCase()))
-              .map((target) => (
+            {filteredAdminUsers.length === 0 ? (
+              <p className="admin-empty">{adminUsers.length === 0 ? 'No hay usuarios registrados.' : 'No hay usuarios que coincidan con la búsqueda.'}</p>
+            ) : userPage.items.map((target) => (
                 <article key={target.id}>
                   <strong>{target.nombre}</strong>
                   <span>{target.correo}</span>
@@ -2261,6 +2297,7 @@ function WorkspaceApp() {
                   </div>}
                 </article>
               ))}
+            {filteredAdminUsers.length > 0 && <AdminPagination page={userPage.currentPage} totalPages={userPage.totalPages} totalItems={userPage.totalItems} onPageChange={(nextPage) => setAdminPages((current) => ({ ...current, usuarios: nextPage }))} />}
           </div>
         )}
         {adminTab === 'reportes' && (
@@ -2459,16 +2496,23 @@ function WorkspaceApp() {
         )}
         {adminTab === 'auditoria' && (
           <div className="admin-table audit-table">
+            <div className="admin-filter-bar">
+              <label>
+                Buscar en la bitácora
+                <input value={adminFilters.bitacora} placeholder="Actor, acción, recurso o detalle…" onChange={(event) => { setAdminFilters({ ...adminFilters, bitacora: event.target.value }); setAdminPages((current) => ({ ...current, auditoria: 1 })) }} />
+              </label>
+              <button type="button" onClick={() => { setAdminFilters({ ...adminFilters, bitacora: '' }); setAdminPages((current) => ({ ...current, auditoria: 1 })) }}>Limpiar</button>
+            </div>
             <div className="admin-table-head">
               <span>Fecha</span>
               <span>Actor</span>
               <span>Acción</span>
               <span>Recurso / Detalle</span>
             </div>
-            {auditEntries.length === 0 ? (
-              <p className="admin-empty">Aún no hay operaciones registradas en la bitácora.</p>
+            {filteredAuditEntries.length === 0 ? (
+              <p className="admin-empty">{auditEntries.length === 0 ? 'Aún no hay operaciones registradas en la bitácora.' : 'No hay registros que coincidan con la búsqueda.'}</p>
             ) : (
-              auditEntries.map((entry) => (
+              auditPage.items.map((entry) => (
                 <article key={entry.id}>
                   <span>{new Date(entry.creadaEn).toLocaleString('es-CR')}</span>
                   <span>{entry.actor}</span>
@@ -2483,6 +2527,7 @@ function WorkspaceApp() {
                 </article>
               ))
             )}
+            {filteredAuditEntries.length > 0 && <AdminPagination page={auditPage.currentPage} totalPages={auditPage.totalPages} totalItems={auditPage.totalItems} onPageChange={(nextPage) => setAdminPages((current) => ({ ...current, auditoria: nextPage }))} />}
           </div>
         )}
       </main>
