@@ -86,6 +86,16 @@ El avance detallado de los requerimientos se encuentra en [docs/ESTADO_REQUERIMI
 
 El backend incluye pruebas unitarias de reservas, pagos, seguridad, recuperación, imágenes y reportes, además de una prueba de arranque con H2 en memoria. Se ejecutan desde `backend` con `mvn test` o directamente desde IntelliJ IDEA. Las pruebas nunca utilizan la base MySQL local.
 
+La prueba E2E usa Playwright con Chromium y recorre el registro, el inicio de sesión y la consulta de «Mis reservas» en un navegador real. Playwright levanta automáticamente el backend con H2 temporal y el frontend en los puertos `8081` y `5173`; no usa MySQL, TiDB ni cuentas reales. Requiere Java 17 y Node.js 22. Desde `frontend`:
+
+```bash
+npm ci
+npx playwright install chromium
+npm run test:e2e
+```
+
+El workflow `E2E` ejecuta el mismo escenario en cada PR hacia `main` y guarda el reporte HTML y las trazas de fallos como artefactos de GitHub Actions. Este es el primer flujo crítico automatizado; quedan por agregar escenarios de creación de reservas y pagos.
+
 Última verificación: 40 pruebas ejecutadas, sin fallos ni errores, con Java 17 y Spring Boot 4.1.0. La suite incluye catálogo público con sus relaciones e imágenes, registro, login, perfil con JWT, reservas, pagos en CRC, prevención de solapamientos, propiedad de recursos y respuestas 401/403/409.
 
 > Los pagos con tarjeta son una simulación. El sistema no solicita ni almacena información bancaria real.
