@@ -145,7 +145,6 @@ export function CustomReservationSchedule({ form, setForm, hourlyRate = 0, avail
           <div className="reservation-duration-heading"><strong>Duración</strong><small>La hora final se ajusta sola</small></div>
           <div className="reservation-duration-options" aria-label="Selecciona la duración">
             {Array.from({ length: 8 }, (_, index) => (index + 1) * 60).map((minutes) => {
-              const untilClose = minutes === remainingMinutes && (minutes > 480 || minutes % 60 !== 0)
               const unavailable = minutes > remainingMinutes
               return <button type="button" key={minutes} disabled={unavailable} className={`reservation-duration-choice ${durationMinutes === minutes ? 'active' : ''}`} aria-pressed={durationMinutes === minutes} onClick={() => setForm({ ...form, horaFin: formatTime(startMinutes + minutes) })}>{formatDuration(minutes)}</button>
             })}
