@@ -1,0 +1,48 @@
+name: Docker
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - main
+      - "feature/**"
+      - "bugfix/**"
+
+permissions:
+  contents: read
+
+jobs:
+  compose-smoke:
+    name: Construir y arrancar contenedores
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DB_PASSWORD: ci-only-database-password
+      DB_ROOT_PASSWORD: ci-only-root-password
+      APP_JWT_SECRET: ci-only-jwt-secret-for-docker-smoke-test-2026
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validar Compose
+        run: docker compose config --quiet
+      - name: Construir imágenes
+        run: docker compose build
+      - name: Arrancar servicios
+        run: docker compose up -d --no-build
+      - name: Comprobar frontend y API
+        run: |
+          for attempt in {1..60}; do
+            if curl --fail --silent http://127.0.0.1:5173/api/v1/status > /dev/null; then
+              curl --fail --silent http://127.0.0.1:5173/login | grep -q 'id="root"'
+              exit 0
+            fi
+            sleep 3
+          done
+          docker compose logs --no-color --tail=100
+          exit 1
+      - name: Mostrar logs si falla
+        if: failure()
+        run: docker compose logs --no-color --tail=100
+      - name: Detener servicios de CI
+        if: always()
+        run: docker compose down -v
