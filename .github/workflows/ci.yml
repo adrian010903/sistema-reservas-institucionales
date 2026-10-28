@@ -65,4 +65,4 @@ jobs:
           cache-dependency-path: backend/pom.xml
 
       - name: Run backend tests
-        run: ./mvnw --batch-mode --no-transfer-progress test
+        run: bash ./mvnw --batch-mode --no-transfer-progress test
