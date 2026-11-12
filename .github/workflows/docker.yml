@@ -13,10 +13,57 @@ permissions:
   contents: read
 
 jobs:
+  backend-tests:
+    name: Pruebas backend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+      - name: Ejecutar pruebas
+        run: bash ./mvnw --batch-mode --no-transfer-progress test
+      - name: Guardar resultados
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-test-results
+          path: backend/target/surefire-reports/
+          if-no-files-found: ignore
+
+  frontend-checks:
+    name: Validaciones frontend
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+      - name: Guardar build
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: frontend/dist/
+
   compose-smoke:
     name: Construir y arrancar contenedores
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    needs: [backend-tests, frontend-checks]
     env:
       DB_PASSWORD: ci-only-database-password
       DB_ROOT_PASSWORD: ci-only-root-password
