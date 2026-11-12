@@ -16,6 +16,7 @@ frontend/test-results/
 *.log
 
 # Configuración local con secretos
+/.env
 backend/src/main/resources/application-local.properties
 backend/uploads/
 render-backend.env

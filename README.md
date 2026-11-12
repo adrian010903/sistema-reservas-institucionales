@@ -23,6 +23,22 @@ npm run dev
 
 6. Abre `http://localhost:5173`.
 
+## Ejecución aislada con Docker
+
+Esta opción levanta frontend, backend y MySQL sin usar la base de datos de IntelliJ ni TiDB. Requiere Docker con Compose.
+
+1. Copia `.env.example` como `.env` en la raíz del repositorio.
+2. Completa `DB_PASSWORD`, `DB_ROOT_PASSWORD` y `APP_JWT_SECRET` con valores locales distintos y seguros. El archivo `.env` está excluido de Git.
+3. Ejecuta desde la raíz:
+
+```bash
+docker compose up --build -d
+```
+
+Abre `http://localhost:5173`. El frontend sirve las rutas de la aplicación y envía `/api` y `/uploads` al backend dentro de la red de Compose. MySQL y el backend no publican puertos al exterior; el frontend escucha solo en `127.0.0.1`. Los datos de MySQL y las imágenes subidas persisten en volúmenes.
+
+Para ver los logs usa `docker compose logs -f`. `docker compose down` detiene los servicios sin borrar los datos. **No uses `docker compose down -v` si quieres conservar la base de datos y las imágenes**, porque elimina los volúmenes de este entorno. El workflow `Docker` construye ambas imágenes y comprueba el arranque y las rutas en una instancia temporal de GitHub Actions.
+
 ## Compartir una demostración sin dominio
 
 El frontend utiliza un proxy local para enviar `/api` y `/uploads` al backend del puerto `8081`, por lo que basta con publicar un único puerto. Con MySQL, backend y frontend encendidos, instala `cloudflared` y ejecuta:

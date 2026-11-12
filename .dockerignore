@@ -1,0 +1,13 @@
+.git
+.github
+.idea
+.env*
+**/.env*
+**/node_modules
+**/dist
+**/target
+**/uploads
+**/playwright-report
+**/test-results
+**/application-local.properties
+*.zip
