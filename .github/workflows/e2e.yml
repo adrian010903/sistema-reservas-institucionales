@@ -1,0 +1,50 @@
+name: E2E
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - main
+      - "feature/**"
+      - "bugfix/**"
+
+permissions:
+  contents: read
+
+jobs:
+  browser-test:
+    name: Registro, login y reservas
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+          cache-dependency-path: backend/pom.xml
+      - name: Instalar dependencias del frontend
+        run: npm ci
+        working-directory: frontend
+      - name: Instalar Chromium
+        run: npx playwright install --with-deps chromium
+        working-directory: frontend
+      - name: Ejecutar pruebas E2E
+        run: npm run test:e2e
+        working-directory: frontend
+      - name: Guardar resultados E2E
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+          retention-days: 14

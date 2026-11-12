@@ -10,6 +10,8 @@
 # React / Node / Vite
 **/node_modules/
 **/dist/
+frontend/playwright-report/
+frontend/test-results/
 *.local
 *.log
 
