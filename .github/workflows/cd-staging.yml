@@ -1,0 +1,76 @@
+name: CD staging (Render)
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: render-staging
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Desplegar staging
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    environment: staging
+    env:
+      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+      BACKEND_SERVICE_ID: ${{ vars.RENDER_STAGING_BACKEND_SERVICE_ID }}
+      FRONTEND_SERVICE_ID: ${{ vars.RENDER_STAGING_FRONTEND_SERVICE_ID }}
+      BACKEND_URL: ${{ vars.RENDER_STAGING_BACKEND_URL }}
+      FRONTEND_URL: ${{ vars.RENDER_STAGING_FRONTEND_URL }}
+    steps:
+      - name: Verificar configuración de staging
+        shell: bash
+        run: |
+          for name in RENDER_API_KEY BACKEND_SERVICE_ID FRONTEND_SERVICE_ID BACKEND_URL FRONTEND_URL; do
+            if [[ -z "${!name}" ]]; then
+              echo "Falta configurar $name en el entorno staging de GitHub"
+              exit 1
+            fi
+          done
+          if [[ "$BACKEND_SERVICE_ID" == "$FRONTEND_SERVICE_ID" ]]; then
+            echo 'Los servicios backend y frontend deben ser distintos'
+            exit 1
+          fi
+
+      - name: Desplegar el commit y esperar ambos servicios
+        shell: bash
+        run: |
+          set -euo pipefail
+          deploy_and_wait() {
+            local service_id="$1" label="$2" response deploy_id status
+            response=$(curl --fail-with-body --silent --show-error \
+              --request POST "https://api.render.com/v1/services/${service_id}/deploys" \
+              --header "Authorization: Bearer ${RENDER_API_KEY}" \
+              --header 'Content-Type: application/json' \
+              --data "{\"commitId\":\"${GITHUB_SHA}\"}")
+            deploy_id=$(jq -r '.id // empty' <<< "$response")
+            if [[ -z "$deploy_id" ]]; then
+              echo "Render no devolvió el ID del despliegue de $label"
+              exit 1
+            fi
+            echo "Despliegue de $label iniciado: $deploy_id"
+            for attempt in {1..90}; do
+              status=$(curl --fail-with-body --silent --show-error --retry 3 --retry-all-errors \
+                "https://api.render.com/v1/services/${service_id}/deploys/${deploy_id}" \
+                --header "Authorization: Bearer ${RENDER_API_KEY}" | jq -r '.status')
+              case "$status" in
+                live) echo "$label está live"; return 0 ;;
+                build_failed|update_failed|pre_deploy_failed|canceled|deactivated)
+                  echo "Despliegue de $label falló: $status"; return 1 ;;
+              esac
+              sleep 15
+            done
+            echo "Tiempo de espera agotado para $label"
+            return 1
+          }
+          deploy_and_wait "$BACKEND_SERVICE_ID" backend
+          curl --fail --silent --show-error "${BACKEND_URL%/}/api/v1/status" > /dev/null
+          deploy_and_wait "$FRONTEND_SERVICE_ID" frontend
+          curl --fail --silent --show-error "${FRONTEND_URL%/}/login" | grep -q 'id="root"'
+          echo "Staging validado en el commit $GITHUB_SHA"
