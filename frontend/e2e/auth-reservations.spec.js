@@ -46,6 +46,7 @@ test('staging: crear y cancelar una reserva libera el horario', async ({ page })
   const reservationDate = new Date()
   reservationDate.setDate(reservationDate.getDate() + 120)
   const dateValue = `${reservationDate.getFullYear()}-${String(reservationDate.getMonth() + 1).padStart(2, '0')}-${String(reservationDate.getDate()).padStart(2, '0')}`
+  const displayedDate = new Intl.DateTimeFormat('es-CR', { day: '2-digit', month: 'short', year: 'numeric' }).format(reservationDate).replace('.', '')
 
   await page.goto('/')
   await page.getByRole('button', { name: 'Iniciar sesión' }).click()
@@ -66,6 +67,7 @@ test('staging: crear y cancelar una reserva libera el horario', async ({ page })
   await page.getByRole('button', { name: 'Consultar disponibilidad' }).click()
   const availableSpace = page.locator('.space-card').first()
   await expect(availableSpace).toBeVisible({ timeout: 30_000 })
+  const spaceName = await availableSpace.locator('h3').innerText()
   await availableSpace.getByRole('button', { name: 'Reservar' }).click()
   await expect(page.getByRole('heading', { name: 'Configura tu visita' })).toBeVisible()
 
@@ -75,19 +77,35 @@ test('staging: crear y cancelar una reserva libera el horario', async ({ page })
   await page.getByRole('button', { name: 'Comprobar y revisar reserva' }).click()
   await expect(page.getByRole('dialog')).toBeVisible()
   await page.getByRole('button', { name: 'Confirmar y continuar al pago' }).click()
-  await expect(page).toHaveURL(/\/pagos$/)
+  try {
+    await expect(page).toHaveURL(/\/pagos$/)
+    await page.goto('/reservas')
+    await expect(page.getByRole('heading', { name: 'Mis reservas' })).toBeVisible()
+    const reservationCard = page.locator('.reservation-modern-card')
+      .filter({ hasText: spaceName }).filter({ hasText: displayedDate })
+    await expect(reservationCard).toBeVisible()
+    page.once('dialog', (dialog) => dialog.accept())
+    await reservationCard.getByRole('button', { name: 'Cancelar' }).click()
+    await expect(page.getByText('Reserva cancelada. El horario quedó disponible nuevamente.')).toBeVisible()
+    await expect(reservationCard.getByText('CANCELADA')).toBeVisible()
 
-  await page.goto('/reservas')
-  await expect(page.getByRole('heading', { name: 'Mis reservas' })).toBeVisible()
-  const reservationCard = page.locator('.reservation-modern-card').first()
-  await expect(reservationCard).toBeVisible()
-  page.once('dialog', (dialog) => dialog.accept())
-  await reservationCard.getByRole('button', { name: 'Cancelar' }).click()
-  await expect(page.getByText('Reserva cancelada. El horario quedó disponible nuevamente.')).toBeVisible()
-  await expect(reservationCard.getByText('CANCELADA')).toBeVisible()
-
-  await page.goto('/espacios')
-  await page.locator('.availability-bar input[type="date"]').fill(dateValue)
-  await page.getByRole('button', { name: 'Consultar disponibilidad' }).click()
-  await expect(page.locator('.space-card').first()).toBeVisible()
+    await page.goto('/espacios')
+    await page.locator('.availability-bar input[type="date"]').fill(dateValue)
+    await page.getByRole('button', { name: 'Consultar disponibilidad' }).click()
+    await expect(page.locator('.space-card').first()).toBeVisible()
+  } finally {
+    // Si una aserción posterior al alta falla, no dejes una reserva E2E ocupando el horario.
+    await page.goto('/reservas').catch(() => {})
+    const cleanupCards = page.locator('.reservation-modern-card')
+      .filter({ hasText: spaceName }).filter({ hasText: displayedDate })
+    if (await cleanupCards.count() === 1 && await cleanupCards.first().isVisible().catch(() => false)) {
+      const cleanupCard = cleanupCards.first()
+      const cancelButton = cleanupCard.getByRole('button', { name: 'Cancelar' })
+      if (await cancelButton.isVisible().catch(() => false)) {
+        page.once('dialog', (dialog) => dialog.accept())
+        await cancelButton.click().catch(() => {})
+        await cleanupCard.getByText('CANCELADA').waitFor({ state: 'visible', timeout: 10_000 }).catch(() => {})
+      }
+    }
+  }
 })
