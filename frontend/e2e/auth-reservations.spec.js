@@ -43,6 +43,7 @@ test('staging: crear y cancelar una reserva libera el horario', async ({ page })
   const name = 'Usuario E2E Reservas'
   const email = `e2e-reserva-${randomUUID()}@example.test`
   const password = 'PruebaE2E2026'
+  console.log(`Cuenta temporal E2E: ${email}`)
   const reservationDate = new Date()
   reservationDate.setDate(reservationDate.getDate() + 120)
   const dateValue = `${reservationDate.getFullYear()}-${String(reservationDate.getMonth() + 1).padStart(2, '0')}-${String(reservationDate.getDate()).padStart(2, '0')}`
@@ -92,7 +93,9 @@ test('staging: crear y cancelar una reserva libera el horario', async ({ page })
     await page.goto('/espacios')
     await page.locator('.availability-bar input[type="date"]').fill(dateValue)
     await page.getByRole('button', { name: 'Consultar disponibilidad' }).click()
-    await expect(page.locator('.space-card').first()).toBeVisible()
+    const releasedSpace = page.locator('.space-card').filter({ hasText: spaceName })
+    await expect(releasedSpace).toBeVisible()
+    await expect(releasedSpace.getByRole('button', { name: 'Reservar' })).toBeEnabled()
   } finally {
     // Si una aserción posterior al alta falla, no dejes una reserva E2E ocupando el horario.
     await page.goto('/reservas').catch(() => {})
