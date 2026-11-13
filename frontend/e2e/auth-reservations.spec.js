@@ -3,6 +3,7 @@ import { randomUUID } from 'node:crypto'
 import process from 'node:process'
 
 test('registro, inicio de sesión y consulta de mis reservas', async ({ page }) => {
+  test.setTimeout(process.env.E2E_BASE_URL ? 120_000 : 30_000)
   const name = 'Usuario E2E'
   const email = `e2e-${randomUUID()}@example.test`
   const password = 'PruebaE2E2026'
@@ -19,7 +20,7 @@ test('registro, inicio de sesión y consulta de mis reservas', async ({ page }) 
   await page.getByLabel('Confirmar contraseña').fill(password)
   await page.getByRole('button', { name: 'Crear cuenta' }).click()
 
-  await expect(page.getByText('Registro exitoso. Ya puedes iniciar sesión.')).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByText('Registro exitoso. Ya puedes iniciar sesión.')).toBeVisible({ timeout: 60_000 })
   await page.getByLabel('Correo').fill(email)
   await page.getByLabel('Contraseña', { exact: true }).fill(password)
   await page.getByRole('button', { name: 'Entrar' }).click()
@@ -39,6 +40,7 @@ test('registro, inicio de sesión y consulta de mis reservas', async ({ page }) 
 
 test('staging: crear y cancelar una reserva libera el horario', async ({ page }) => {
   test.skip(!process.env.E2E_BASE_URL, 'Requiere un catálogo de espacios publicado en staging')
+  test.setTimeout(120_000)
 
   const name = 'Usuario E2E Reservas'
   const email = `e2e-reserva-${randomUUID()}@example.test`
@@ -57,7 +59,7 @@ test('staging: crear y cancelar una reserva libera el horario', async ({ page })
   await page.getByLabel('Contraseña', { exact: true }).fill(password)
   await page.getByLabel('Confirmar contraseña').fill(password)
   await page.getByRole('button', { name: 'Crear cuenta' }).click()
-  await expect(page.getByText('Registro exitoso. Ya puedes iniciar sesión.')).toBeVisible({ timeout: 30_000 })
+  await expect(page.getByText('Registro exitoso. Ya puedes iniciar sesión.')).toBeVisible({ timeout: 60_000 })
   await page.getByLabel('Correo').fill(email)
   await page.getByLabel('Contraseña', { exact: true }).fill(password)
   await page.getByRole('button', { name: 'Entrar' }).click()
