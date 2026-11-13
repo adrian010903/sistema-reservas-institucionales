@@ -23,6 +23,8 @@ import java.util.UUID;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -117,6 +119,75 @@ class ReservaPagoHttpIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(reservaId))
                 .andExpect(jsonPath("$[0].estado").value("PENDIENTE"));
+    }
+
+    @Test
+    void usuarioPuedeEditarSuReservaYUnUsuarioAjenoNo() throws Exception {
+        Espacio espacio = crearEspacio();
+        String tokenPropietario = registrarEIniciarSesion("edicion-propietario");
+        String tokenAjeno = registrarEIniciarSesion("edicion-ajeno");
+        LocalDate fechaOriginal = LocalDate.now().plusDays(63);
+        LocalDate fechaNueva = fechaOriginal.plusDays(1);
+        long reservaId = crearReserva(tokenPropietario, espacio.getId(), fechaOriginal, "09:00", "11:00");
+        String cambio = reservaJson(espacio.getId(), fechaNueva, "10:00", "12:00");
+
+        mockMvc.perform(put("/api/v1/reservas/{id}", reservaId)
+                        .header("Authorization", bearer(tokenAjeno))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(cambio))
+                .andExpect(status().isForbidden())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.detail").value("La reserva no pertenece al usuario"));
+
+        mockMvc.perform(put("/api/v1/reservas/{id}", reservaId)
+                        .header("Authorization", bearer(tokenPropietario))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(cambio))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(reservaId))
+                .andExpect(jsonPath("$.fecha").value(fechaNueva.toString()))
+                .andExpect(jsonPath("$.horaInicio").value("10:00:00"))
+                .andExpect(jsonPath("$.horaFin").value("12:00:00"))
+                .andExpect(jsonPath("$.estado").value("PENDIENTE"));
+    }
+
+    @Test
+    void cancelarReservaLaDevuelveComoDisponible() throws Exception {
+        Espacio espacio = crearEspacio();
+        String token = registrarEIniciarSesion("cancelacion");
+        LocalDate fecha = LocalDate.now().plusDays(64);
+        long reservaId = crearReserva(token, espacio.getId(), fecha, "13:00", "15:00");
+
+        mockMvc.perform(patch("/api/v1/reservas/{id}/cancelar", reservaId)
+                        .header("Authorization", bearer(token)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("CANCELADA"));
+
+        mockMvc.perform(get("/api/v1/reservas/disponibilidad")
+                        .header("Authorization", bearer(token))
+                        .param("fecha", fecha.toString())
+                        .param("horaInicio", "13:00")
+                        .param("horaFin", "15:00"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.id == %d)].id".formatted(espacio.getId()))
+                        .value(org.hamcrest.Matchers.contains(espacio.getId().intValue())));
+    }
+
+    @Test
+    void administradorPuedeAprobarReservaPendiente() throws Exception {
+        Espacio espacio = crearEspacio();
+        String tokenPropietario = registrarEIniciarSesion("aprobacion");
+        long reservaId = crearReserva(tokenPropietario, espacio.getId(), LocalDate.now().plusDays(65), "09:00", "11:00");
+
+        mockMvc.perform(patch("/api/v1/admin/reservas/{id}/aprobar", reservaId)
+                        .with(user("admin@example.com").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(reservaId))
+                .andExpect(jsonPath("$.estado").value("APROBADA"));
+
+        mockMvc.perform(get("/api/v1/reservas/mias").header("Authorization", bearer(tokenPropietario)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].estado").value("APROBADA"));
     }
 
     private long crearReserva(String token, Long espacioId, LocalDate fecha, String inicio, String fin) throws Exception {
