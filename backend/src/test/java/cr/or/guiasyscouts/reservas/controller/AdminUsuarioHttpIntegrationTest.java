@@ -20,6 +20,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -80,7 +81,9 @@ class AdminUsuarioHttpIntegrationTest {
                         .content("""
                                 {"correo":"%s","password":"ClaveSegura123"}
                                 """.formatted(objetivoCorreo)))
-                .andExpect(status().isUnauthorized());
+                .andExpect(status().isForbidden())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.detail").value("El usuario se encuentra bloqueado o inactivo"));
     }
 
     @Test
