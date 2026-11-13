@@ -103,7 +103,7 @@ El despliegue manual y aislado a staging en Render, junto con los pasos pendient
 
 ## Pruebas
 
-El backend incluye pruebas unitarias y de integración para reservas, pagos, seguridad, recuperación, imágenes y reportes, además de pruebas HTTP con H2 en memoria. Se ejecutan desde `backend` con `mvn test` o directamente desde IntelliJ IDEA. Las pruebas nunca utilizan la base MySQL local.
+El backend incluye pruebas unitarias y de integración para reservas, pagos, seguridad, recuperación, imágenes y reportes, además de pruebas HTTP con H2 en memoria. Se ejecutan desde `backend` con `mvn verify` o directamente desde IntelliJ IDEA. `verify` genera un reporte HTML y XML de cobertura en `target/site/jacoco/`; el CI lo conserva como artefacto. Las pruebas nunca utilizan la base MySQL local.
 
 La prueba E2E local usa Playwright con Chromium y recorre el registro, el inicio de sesión, el bloqueo de la ruta administrativa para un usuario común y la consulta de «Mis reservas». Playwright levanta automáticamente el backend con H2 temporal y el frontend en los puertos `8081` y `5173`; no usa MySQL, TiDB ni cuentas reales. Requiere Java 17 y Node.js 22. Desde `frontend`:
 
