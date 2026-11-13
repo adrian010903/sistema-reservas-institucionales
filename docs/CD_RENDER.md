@@ -25,7 +25,7 @@ No guardes la clave ni los IDs en el repositorio. Configura las variables de apl
 
 ### Prueba automatizada de staging
 
-Después de que el despliegue de staging esté live, ejecuta en GitHub Actions el workflow **E2E staging** desde `main`. Usa la URL `RENDER_STAGING_FRONTEND_URL` del entorno `staging`; no requiere la clave de Render. La prueba registra un usuario temporal con un correo `@example.test`, inicia sesión, abre **Mis reservas** y comprueba que la página sobrevive a una recarga. Cada ejecución crea una cuenta nueva en la base de datos de staging; no usa ni modifica producción. Guarda el run y su artefacto de resultados como evidencia. Los pagos no se prueban en este flujo.
+Después de que el despliegue de staging esté live, el workflow **E2E staging** puede ejecutarse manualmente desde `main` o automáticamente al subir cambios a `feature/e2e-staging`. Usa la URL `RENDER_STAGING_FRONTEND_URL` del entorno `staging`; no requiere la clave de Render. La prueba registra un usuario temporal con un correo `@example.test`, inicia sesión, abre **Mis reservas** y comprueba que la página sobrevive a una recarga. Cada ejecución crea una cuenta nueva en la base de datos de staging; no usa ni modifica producción. Guarda el run y su artefacto de resultados como evidencia. Los pagos no se prueban en este flujo.
 
 Si falta una variable, el workflow falla antes de contactar Render. Si falla un despliegue o la comprobación de salud, se detiene y no anuncia staging como validado.
 
