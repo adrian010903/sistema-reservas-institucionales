@@ -98,6 +98,8 @@ El archivo `frontend/.env.example` muestra la configuración local. Los archivos
 
 El avance detallado de los requerimientos se encuentra en [docs/ESTADO_REQUERIMIENTOS.md](docs/ESTADO_REQUERIMIENTOS.md).
 
+El despliegue manual y aislado a staging en Render, junto con los pasos pendientes para producción y rollback, se documenta en [docs/CD_RENDER.md](docs/CD_RENDER.md).
+
 ## Pruebas
 
 El backend incluye pruebas unitarias de reservas, pagos, seguridad, recuperación, imágenes y reportes, además de una prueba de arranque con H2 en memoria. Se ejecutan desde `backend` con `mvn test` o directamente desde IntelliJ IDEA. Las pruebas nunca utilizan la base MySQL local.
