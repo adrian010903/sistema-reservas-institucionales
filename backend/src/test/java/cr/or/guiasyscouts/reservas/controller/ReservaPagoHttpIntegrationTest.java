@@ -216,6 +216,34 @@ class ReservaPagoHttpIntegrationTest {
                 .andExpect(jsonPath("$[0].estado").value("CONFIRMADA"));
     }
 
+    @Test
+    void rechazoDeTransferenciaPermiteAlUsuarioVolverAIntentarElPago() throws Exception {
+        Espacio espacio = crearEspacio();
+        String tokenPropietario = registrarEIniciarSesion("reintento-pago");
+        long reservaId = crearReserva(tokenPropietario, espacio.getId(), LocalDate.now().plusDays(67), "09:00", "11:00");
+        String respuestaPago = mockMvc.perform(post("/api/v1/pagos/mock")
+                        .header("Authorization", bearer(tokenPropietario))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reservaId\":%d,\"metodo\":\"TRANSFERENCIA\"}".formatted(reservaId)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.estado").value("PENDIENTE_VERIFICACION"))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        long pagoId = ((Number) JsonPath.read(respuestaPago, "$.id")).longValue();
+
+        mockMvc.perform(patch("/api/v1/admin/pagos/{id}/rechazar", pagoId)
+                        .with(user("admin@example.com").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("RECHAZADO"));
+
+        mockMvc.perform(post("/api/v1/pagos/mock")
+                        .header("Authorization", bearer(tokenPropietario))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reservaId\":%d,\"metodo\":\"TRANSFERENCIA\"}".formatted(reservaId)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").value(pagoId))
+                .andExpect(jsonPath("$.estado").value("PENDIENTE_VERIFICACION"));
+    }
+
     private long crearReserva(String token, Long espacioId, LocalDate fecha, String inicio, String fin) throws Exception {
         String respuesta = mockMvc.perform(post("/api/v1/reservas")
                         .header("Authorization", bearer(token))
