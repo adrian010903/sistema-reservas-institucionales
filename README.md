@@ -63,6 +63,7 @@ Para publicar el sistema en un dominio no es necesario modificar el código. Con
 - `UPLOAD_DIR`: directorio persistente para fotografías de espacios.
 - `VITE_API_URL`: URL pública del backend terminada en `/api/v1`, definida al construir el frontend.
 - `FRONTEND_URL`: URL usada para construir enlaces de recuperación.
+- `SPRING_JPA_SHOW_SQL` y `SPRING_JPA_FORMAT_SQL`: por defecto `false` para evitar volcar consultas en los logs; actívalas solo en un entorno local si necesitas inspeccionarlas.
 - `MAIL_ENABLED`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD` y `MAIL_FROM`: integración SMTP opcional.
 
 El archivo `frontend/.env.example` muestra la configuración local. Los archivos `.env.local` y `application-local.properties` permanecen fuera de Git.
