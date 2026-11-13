@@ -38,6 +38,19 @@ test('registro, inicio de sesión y consulta de mis reservas', async ({ page }) 
   await expect(page.getByRole('heading', { name: 'Mis reservas' })).toBeVisible()
 })
 
+test('staging: el catálogo abre y se conserva al recargar su ruta directa', async ({ page }) => {
+  test.skip(!process.env.E2E_BASE_URL, 'Requiere el catálogo de staging publicado')
+  test.setTimeout(120_000)
+
+  await page.goto('/espacios')
+  await expect(page.getByRole('heading', { name: 'Lugares y espacios' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Salon de prueba/i })).toBeVisible({ timeout: 60_000 })
+
+  await page.reload()
+  await expect(page.getByRole('heading', { name: 'Lugares y espacios' })).toBeVisible()
+  await expect(page.getByRole('heading', { name: /Salon de prueba/i })).toBeVisible({ timeout: 60_000 })
+})
+
 test('staging: crear y cancelar una reserva libera el horario', async ({ page }) => {
   test.skip(!process.env.E2E_BASE_URL, 'Requiere un catálogo de espacios publicado en staging')
   test.setTimeout(120_000)
