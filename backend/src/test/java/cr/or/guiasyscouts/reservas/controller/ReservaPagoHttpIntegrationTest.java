@@ -18,6 +18,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -25,7 +27,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -214,6 +219,65 @@ class ReservaPagoHttpIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(reservaId))
                 .andExpect(jsonPath("$[0].estado").value("CONFIRMADA"));
+    }
+
+    @Test
+    void comprobanteSoloSeEntregaAlPropietarioTrasAprobarPagoYLaBitacoraLoRegistra() throws Exception {
+        Espacio espacio = crearEspacio();
+        String tokenPropietario = registrarEIniciarSesion("comprobante-propietario");
+        String tokenAjeno = registrarEIniciarSesion("comprobante-ajeno");
+        LocalDate fecha = LocalDate.now().plusDays(68);
+        long reservaId = crearReserva(tokenPropietario, espacio.getId(), fecha, "09:00", "11:00");
+        String respuestaPago = mockMvc.perform(post("/api/v1/pagos/mock")
+                        .header("Authorization", bearer(tokenPropietario))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reservaId\":%d,\"metodo\":\"TRANSFERENCIA\"}".formatted(reservaId)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.estado").value("PENDIENTE_VERIFICACION"))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        long pagoId = ((Number) JsonPath.read(respuestaPago, "$.id")).longValue();
+
+        mockMvc.perform(get("/api/v1/pagos/{id}/comprobante", pagoId)
+                        .header("Authorization", bearer(tokenAjeno)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.detail").value("El pago no pertenece al usuario"));
+
+        mockMvc.perform(get("/api/v1/pagos/{id}/comprobante", pagoId)
+                        .header("Authorization", bearer(tokenPropietario)))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.detail").value("El comprobante solo está disponible para pagos aprobados"));
+
+        mockMvc.perform(patch("/api/v1/admin/pagos/{id}/aprobar", pagoId)
+                        .with(user("auditor@example.com").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.estado").value("APROBADO"));
+
+        byte[] pdf = mockMvc.perform(get("/api/v1/pagos/{id}/comprobante", pagoId)
+                        .header("Authorization", bearer(tokenPropietario)))
+                .andExpect(status().isOk())
+                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PDF))
+                .andExpect(header().string("Content-Disposition",
+                        org.hamcrest.Matchers.containsString("comprobante-pago-" + pagoId + ".pdf")))
+                .andReturn().getResponse().getContentAsByteArray();
+        String documento = new String(pdf, StandardCharsets.ISO_8859_1);
+        assertTrue(documento.startsWith("%PDF-1.4"));
+        assertTrue(documento.contains("Comprobante de pago"));
+        assertTrue(documento.contains("Total: CRC 50000.00"));
+
+        String auditoriaJson = mockMvc.perform(get("/api/v1/admin/auditoria")
+                        .with(user("auditor@example.com").roles("ADMIN"))
+                        .param("limite", "200"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        List<Map<String, Object>> eventos = JsonPath.read(auditoriaJson, "$");
+        Map<String, Object> eventoPago = eventos.stream()
+                .filter(evento -> evento.get("recursoId") instanceof Number recursoId
+                        && recursoId.longValue() == pagoId)
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("No se registró la aprobación del pago en la bitácora"));
+        assertEquals("auditor@example.com", eventoPago.get("actor"));
+        assertEquals("APROBAR", eventoPago.get("accion"));
+        assertEquals("PAGO", eventoPago.get("recurso"));
     }
 
     @Test
