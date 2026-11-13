@@ -190,6 +190,32 @@ class ReservaPagoHttpIntegrationTest {
                 .andExpect(jsonPath("$[0].estado").value("APROBADA"));
     }
 
+    @Test
+    void administradorPuedeAprobarTransferenciaYConfirmarReserva() throws Exception {
+        Espacio espacio = crearEspacio();
+        String tokenPropietario = registrarEIniciarSesion("pago-admin");
+        long reservaId = crearReserva(tokenPropietario, espacio.getId(), LocalDate.now().plusDays(66), "09:00", "11:00");
+        String respuestaPago = mockMvc.perform(post("/api/v1/pagos/mock")
+                        .header("Authorization", bearer(tokenPropietario))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reservaId\":%d,\"metodo\":\"TRANSFERENCIA\"}".formatted(reservaId)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.estado").value("PENDIENTE_VERIFICACION"))
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        long pagoId = ((Number) JsonPath.read(respuestaPago, "$.id")).longValue();
+
+        mockMvc.perform(patch("/api/v1/admin/pagos/{id}/aprobar", pagoId)
+                        .with(user("admin@example.com").roles("ADMIN")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(pagoId))
+                .andExpect(jsonPath("$.estado").value("APROBADO"));
+
+        mockMvc.perform(get("/api/v1/reservas/mias").header("Authorization", bearer(tokenPropietario)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(reservaId))
+                .andExpect(jsonPath("$[0].estado").value("CONFIRMADA"));
+    }
+
     private long crearReserva(String token, Long espacioId, LocalDate fecha, String inicio, String fin) throws Exception {
         String respuesta = mockMvc.perform(post("/api/v1/reservas")
                         .header("Authorization", bearer(token))

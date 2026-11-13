@@ -57,4 +57,4 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 
 1. Configurar y verificar una cuenta SMTP institucional real.
 2. Verificación visual final del comprobante y la bitácora con backend ejecutándose.
-3. Ampliar progresivamente las pruebas HTTP de validación administrativa de usuarios y pagos; creación, edición, cancelación, propiedad, disponibilidad tras cancelar, aprobación de reservas y pago simulado ya están cubiertos.
+3. Ampliar pruebas HTTP de rechazo/reintento de pagos y acciones administrativas de usuarios; ya se verifican el control de acceso, creación, edición, cancelación, propiedad, liberación de disponibilidad, aprobación de reservas y aprobación de transferencias.
