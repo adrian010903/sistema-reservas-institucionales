@@ -99,6 +99,10 @@ El archivo `frontend/.env.example` muestra la configuración local. Los archivos
 
 El avance detallado de los requerimientos se encuentra en [docs/ESTADO_REQUERIMIENTOS.md](docs/ESTADO_REQUERIMIENTOS.md).
 
+La arquitectura del sistema y el flujo de contribución están descritos en
+[docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) y
+[docs/GUIA_CONTRIBUCION.md](docs/GUIA_CONTRIBUCION.md).
+
 El despliegue manual y aislado a staging en Render, junto con los pasos pendientes para producción y rollback, se documenta en [docs/CD_RENDER.md](docs/CD_RENDER.md).
 
 ## Pruebas
@@ -115,7 +119,7 @@ npm run test:e2e
 
 El workflow `E2E` ejecuta el escenario local en cada PR hacia `main` y guarda reportes y trazas como artefactos de GitHub Actions. El workflow `E2E staging` verifica además que el catálogo funcione al abrir y recargar su ruta directa, y recorre la creación y cancelación de una reserva, comprobando que el horario se libere. Este último utiliza cuentas de prueba y solo cancela la reserva creada por el propio test. El pago real de Stripe no forma parte del E2E: requiere configurar Stripe en el servidor; el pago simulado sí está cubierto por pruebas del backend.
 
-Última verificación local: 72 pruebas del backend ejecutadas, sin fallos ni errores, con Java 17 y Spring Boot 4.1.0. La suite incluye catálogo público con sus relaciones e imágenes, registro, login, perfil con JWT, creación/edición/cancelación y aprobación administrativa de reservas, aprobación/rechazo y reintento de transferencias, pagos en CRC, descarga de comprobantes PDF con controles de propietario y estado, bitácora administrativa, validación de firmas de webhook de Stripe, prevención de solapamientos, administración de usuarios (creación, desactivación, eliminación y restricciones de permisos), diagnóstico administrativo y autorización con respuestas 401/403/409. El estado más reciente de las ejecuciones automatizadas está disponible en la pestaña Actions del repositorio.
+Verificación más reciente: el commit `280aa38` pasó los workflows **CI**, **Docker**, **E2E** y **E2E staging**. CI publicó el artefacto `backend-coverage-report`; E2E staging utiliza el ambiente de pruebas y no producción. La suite del backend contiene pruebas para catálogo, autenticación, perfil, reservas, pagos, comprobantes, auditoría, usuarios y diagnóstico. Los resultados están disponibles en [CI](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/43388903452), [Docker](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/43388903505), [E2E](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/43388903382) y [E2E staging](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/43388903380).
 
 ### Diagnóstico y soporte
 
