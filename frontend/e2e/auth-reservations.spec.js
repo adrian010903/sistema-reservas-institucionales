@@ -28,6 +28,14 @@ test('registro, inicio de sesión y consulta de mis reservas', async ({ page }) 
   await expect(page).toHaveURL(/\/dashboard$/)
   await expect(page.getByRole('heading', { name: `Hola, ${name}` })).toBeVisible()
 
+  // El E2E regular arranca el frontend desde esta rama; staging podría seguir
+  // sirviendo una versión anterior hasta que se despliegue el cambio.
+  if (!process.env.E2E_BASE_URL) {
+    await page.goto('/admin')
+    await expect(page).toHaveURL(/\/dashboard$/)
+    await expect(page.getByRole('heading', { name: `Hola, ${name}` })).toBeVisible()
+  }
+
   await page.getByRole('button', { name: 'Menú' }).click()
   await page.getByRole('menuitem', { name: 'Mis reservas' }).click()
   await expect(page).toHaveURL(/\/reservas$/)

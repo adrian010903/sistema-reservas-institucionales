@@ -266,6 +266,12 @@ function WorkspaceApp() {
   }, [page, token])
 
   useEffect(() => {
+    if (page !== 'admin' || !user || ['ADMIN', 'SUPERADMIN'].includes(user.rol)) return
+    const redirect = window.setTimeout(() => navigate('dashboard'), 0)
+    return () => window.clearTimeout(redirect)
+  }, [page, user])
+
+  useEffect(() => {
     document.documentElement.classList.toggle('dark-theme', darkMode)
     localStorage.setItem('reservas_dark_mode', String(darkMode))
   }, [darkMode])
