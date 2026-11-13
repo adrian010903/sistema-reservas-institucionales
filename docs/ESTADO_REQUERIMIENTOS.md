@@ -55,7 +55,8 @@ Matriz de seguimiento basada en el documento de procesos y requerimientos del Si
 
 ## Próximos bloques
 
-1. Configurar y verificar una cuenta SMTP institucional real.
-2. Verificación visual final del comprobante y la bitácora con backend ejecutándose.
-3. Las acciones administrativas de usuarios ahora tienen pruebas HTTP para creación normalizada, inicio de sesión con la cuenta creada, desactivación y bloqueo de acceso, y eliminación con controles de privilegios. También hay pruebas unitarias para impedir autoeliminación, borrar cuentas administrativas y eliminar cuentas con registros asociados.
-4. Realizar verificación visual final del comprobante y la bitácora con el backend ejecutándose.
+1. **Herramienta de troubleshooting (avance parcial):** Administración > Diagnóstico muestra estado de aplicación, base de datos y almacenamiento, e indica si correo/Stripe están opcionalmente configurados. El monitor interno revisa cada 60 segundos; la pantalla se actualiza cada 30 segundos mientras está abierta. Las respuestas HTTP 5xx generan incidentes con correlación y recomendaciones; los incidentes de salud se actualizan o se cierran automáticamente al recuperarse el componente. Un administrador puede resolver incidentes y esa acción queda en la bitácora. Detalle y limitaciones: `docs/TROUBLESHOOTING.md`.
+2. **Pendiente para completar troubleshooting del PDF:** integrar alertas externas y centralización real de logs, probar fallos y recuperación de dependencias en un entorno controlado y definir retención de incidentes. Si la base está caída, el sistema no puede guardar el historial de esa caída; los logs de Render siguen siendo el respaldo.
+3. Configurar y verificar una cuenta SMTP institucional real; la pantalla solo detecta configuración, no envía un correo de prueba.
+4. Realizar verificación visual final del comprobante, bitácora y nuevo panel con backend ejecutándose.
+5. Las acciones administrativas de usuarios cuentan con pruebas HTTP para creación normalizada, inicio de sesión, desactivación y bloqueo de acceso, eliminación y controles de privilegios; también hay pruebas unitarias de restricciones.

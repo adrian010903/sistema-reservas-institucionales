@@ -7,6 +7,7 @@ import AdminTabs from './components/AdminTabs'
 import PasswordField from './components/PasswordField'
 import ReportFilters from './components/ReportFilters'
 import ReportMetrics from './components/ReportMetrics'
+import TroubleshootingPanel from './components/TroubleshootingPanel'
 import AuthPage from './pages/AuthPage'
 import HomePage from './pages/HomePage'
 import NotificationsPage from './pages/NotificationsPage'
@@ -2553,6 +2554,7 @@ function WorkspaceApp() {
             {filteredAuditEntries.length > 0 && <AdminPagination page={auditPage.currentPage} totalPages={auditPage.totalPages} totalItems={auditPage.totalItems} onPageChange={(nextPage) => setAdminPages((current) => ({ ...current, auditoria: nextPage }))} />}
           </div>
         )}
+        {adminTab === 'diagnostico' && <TroubleshootingPanel auth={auth} />}
       </main>
     )
   }

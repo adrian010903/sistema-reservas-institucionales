@@ -95,6 +95,7 @@ El archivo `frontend/.env.example` muestra la configuración local. Los archivos
 - Indicadores administrativos, gráfico por estados y reportes de reservas exportables a CSV/PDF.
 - Comprobantes PDF descargables para pagos aprobados.
 - Bitácora administrativa de cambios sensibles con actor y fecha.
+- Panel administrativo de diagnóstico con comprobaciones de salud, incidentes técnicos, recomendaciones y cierres auditados.
 
 El avance detallado de los requerimientos se encuentra en [docs/ESTADO_REQUERIMIENTOS.md](docs/ESTADO_REQUERIMIENTOS.md).
 
@@ -114,7 +115,11 @@ npm run test:e2e
 
 El workflow `E2E` ejecuta el escenario local en cada PR hacia `main` y guarda reportes y trazas como artefactos de GitHub Actions. El workflow `E2E staging` verifica además que el catálogo funcione al abrir y recargar su ruta directa, y recorre la creación y cancelación de una reserva, comprobando que el horario se libere. Este último utiliza cuentas de prueba y solo cancela la reserva creada por el propio test. El pago real de Stripe no forma parte del E2E: requiere configurar Stripe en el servidor; el pago simulado sí está cubierto por pruebas del backend.
 
-Última verificación local: 67 pruebas del backend ejecutadas, sin fallos ni errores, con Java 17 y Spring Boot 4.1.0. La suite incluye catálogo público con sus relaciones e imágenes, registro, login, perfil con JWT, creación/edición/cancelación y aprobación administrativa de reservas, aprobación/rechazo y reintento de transferencias, pagos en CRC, descarga de comprobantes PDF con controles de propietario y estado, bitácora administrativa, validación de firmas de webhook de Stripe, prevención de solapamientos, administración de usuarios (creación, desactivación, eliminación y restricciones de permisos) y autorización administrativa con respuestas 401/403/409. El estado más reciente de las ejecuciones automatizadas está disponible en la pestaña Actions del repositorio.
+Última verificación local: 72 pruebas del backend ejecutadas, sin fallos ni errores, con Java 17 y Spring Boot 4.1.0. La suite incluye catálogo público con sus relaciones e imágenes, registro, login, perfil con JWT, creación/edición/cancelación y aprobación administrativa de reservas, aprobación/rechazo y reintento de transferencias, pagos en CRC, descarga de comprobantes PDF con controles de propietario y estado, bitácora administrativa, validación de firmas de webhook de Stripe, prevención de solapamientos, administración de usuarios (creación, desactivación, eliminación y restricciones de permisos), diagnóstico administrativo y autorización con respuestas 401/403/409. El estado más reciente de las ejecuciones automatizadas está disponible en la pestaña Actions del repositorio.
+
+### Diagnóstico y soporte
+
+El módulo **Administración > Diagnóstico** consulta el estado de la aplicación, base de datos, almacenamiento de imágenes y configuración opcional de correo y Stripe. El backend revisa componentes cada 60 segundos y el panel se actualiza cada 30 segundos mientras está abierto. Los errores internos se registran como incidentes con referencia de correlación, recomendaciones y cantidad de ocurrencias; administración puede cerrarlos y la acción queda en la bitácora. Las comprobaciones no muestran claves ni prueban el envío real de correo o pagos. Consulta [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) para límites, uso y siguientes pasos.
 
 > Los pagos con tarjeta son una simulación. El sistema no solicita ni almacena información bancaria real.
 
