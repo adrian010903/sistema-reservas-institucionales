@@ -5,7 +5,8 @@ import process from 'node:process'
 
 const frontendDirectory = path.dirname(fileURLToPath(import.meta.url))
 const backendDirectory = path.resolve(frontendDirectory, '../backend')
-const baseURL = 'http://127.0.0.1:5173'
+const stagingBaseURL = process.env.E2E_BASE_URL?.replace(/\/$/, '')
+const baseURL = stagingBaseURL || 'http://127.0.0.1:5173'
 const backendCommand = process.platform === 'win32'
   ? 'mvnw.cmd --batch-mode --no-transfer-progress -DskipTests test-compile spring-boot:test-run'
   : 'bash ./mvnw --batch-mode --no-transfer-progress -DskipTests test-compile spring-boot:test-run'
@@ -22,7 +23,7 @@ export default defineConfig({
     screenshot: 'only-on-failure',
     ...devices['Desktop Chrome'],
   },
-  webServer: [
+  webServer: stagingBaseURL ? undefined : [
     {
       command: backendCommand,
       cwd: backendDirectory,

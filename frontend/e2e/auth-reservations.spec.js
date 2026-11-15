@@ -18,7 +18,7 @@ test('registro, inicio de sesión y consulta de mis reservas', async ({ page }) 
   await page.getByLabel('Confirmar contraseña').fill(password)
   await page.getByRole('button', { name: 'Crear cuenta' }).click()
 
-  await expect(page.getByText('Registro exitoso. Ya puedes iniciar sesión.')).toBeVisible()
+  await expect(page.getByText('Registro exitoso. Ya puedes iniciar sesión.')).toBeVisible({ timeout: 30_000 })
   await page.getByLabel('Correo').fill(email)
   await page.getByLabel('Contraseña', { exact: true }).fill(password)
   await page.getByRole('button', { name: 'Entrar' }).click()
