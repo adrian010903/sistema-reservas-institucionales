@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <springProperty scope="context" name="applicationName" source="spring.application.name" defaultValue="reservas-backend"/>
+
+    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{yyyy-MM-dd'T'HH:mm:ss.SSSXXX} %-5level [%thread] %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <springProfile name="!betterstack">
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+        </root>
+    </springProfile>
+
+    <springProfile name="betterstack">
+        <appender name="BETTER_STACK" class="com.logtail.logback.LogtailAppender">
+            <appName>${applicationName}</appName>
+            <sourceToken>${BETTERSTACK_SOURCE_TOKEN}</sourceToken>
+            <ingestUrl>https://${BETTERSTACK_INGESTING_HOST}</ingestUrl>
+        </appender>
+        <root level="INFO">
+            <appender-ref ref="CONSOLE"/>
+            <appender-ref ref="BETTER_STACK"/>
+        </root>
+    </springProfile>
+</configuration>
