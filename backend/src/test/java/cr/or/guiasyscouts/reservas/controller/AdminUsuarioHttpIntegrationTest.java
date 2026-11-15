@@ -26,6 +26,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 class AdminUsuarioHttpIntegrationTest {
 
+    private static final String TEST_PASSWORD = "Test-" + UUID.randomUUID() + "A1";
+
     @Autowired private MockMvc mockMvc;
     @Autowired private UsuarioRepository usuarios;
     @Autowired private PasswordEncoder passwordEncoder;
@@ -36,7 +38,7 @@ class AdminUsuarioHttpIntegrationTest {
         crearUsuarioPersistido(adminCorreo, RolUsuario.ADMIN);
         String correoNuevo = "Persona-" + UUID.randomUUID() + "@Example.com";
         String correoNormalizado = correoNuevo.toLowerCase();
-        String password = "ClaveSegura123";
+        String password = TEST_PASSWORD;
 
         mockMvc.perform(post("/api/v1/admin/usuarios")
                         .with(user(adminCorreo).roles("ADMIN"))
@@ -79,8 +81,8 @@ class AdminUsuarioHttpIntegrationTest {
         mockMvc.perform(post("/api/v1/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"correo":"%s","password":"ClaveSegura123"}
-                                """.formatted(objetivoCorreo)))
+                                {"correo":"%s","password":"%s"}
+                                """.formatted(objetivoCorreo, TEST_PASSWORD)))
                 .andExpect(status().isForbidden())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
                 .andExpect(jsonPath("$.detail").value("El usuario se encuentra bloqueado o inactivo"));
@@ -113,7 +115,7 @@ class AdminUsuarioHttpIntegrationTest {
         Usuario usuario = new Usuario();
         usuario.setNombre("Usuario de integración");
         usuario.setCorreo(correo);
-        usuario.setPasswordHash(passwordEncoder.encode("ClaveSegura123"));
+        usuario.setPasswordHash(passwordEncoder.encode(TEST_PASSWORD));
         usuario.setEstado(EstadoUsuario.ACTIVO);
         usuario.setRol(rol);
         return usuarios.save(usuario);
