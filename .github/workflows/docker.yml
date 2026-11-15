@@ -28,13 +28,15 @@ jobs:
           cache: maven
           cache-dependency-path: backend/pom.xml
       - name: Ejecutar pruebas
-        run: bash ./mvnw --batch-mode --no-transfer-progress test
+        run: bash ./mvnw --batch-mode --no-transfer-progress verify
       - name: Guardar resultados
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: backend-test-results
-          path: backend/target/surefire-reports/
+          path: |
+            backend/target/surefire-reports/
+            backend/target/site/jacoco/
           if-no-files-found: ignore
 
   frontend-checks:

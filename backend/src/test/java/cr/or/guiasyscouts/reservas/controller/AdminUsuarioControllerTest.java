@@ -6,6 +6,7 @@ import cr.or.guiasyscouts.reservas.model.*;
 import cr.or.guiasyscouts.reservas.repository.UsuarioRepository;
 import cr.or.guiasyscouts.reservas.service.AuditoriaService;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -107,6 +108,62 @@ class AdminUsuarioControllerTest {
                 autenticacion(actor), actor.getId(), new AdminUsuarioUpdateRequest(EstadoUsuario.ACTIVO, RolUsuario.ADMIN)));
 
         assertEquals(HttpStatus.CONFLICT, error.getStatusCode());
+    }
+
+    @Test
+    void administradorPuedeEliminarUsuarioComunYRegistraAuditoria() {
+        Usuario actor = usuario(1L, "admin@ejemplo.cr", RolUsuario.ADMIN);
+        Usuario objetivo = usuario(2L, "persona@ejemplo.cr", RolUsuario.USUARIO);
+        preparar(actor, objetivo);
+
+        assertDoesNotThrow(() -> controller.eliminar(autenticacion(actor), objetivo.getId()));
+
+        verify(repository).delete(objetivo);
+        verify(repository).flush();
+        verify(auditoria).registrar(actor.getCorreo(), "ELIMINAR", "USUARIO", objetivo.getId(),
+                "Cuenta eliminada por un administrador");
+    }
+
+    @Test
+    void administradorNoPuedeEliminarSuPropiaCuenta() {
+        Usuario actor = usuario(1L, "admin@ejemplo.cr", RolUsuario.ADMIN);
+        preparar(actor, actor);
+
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> controller.eliminar(autenticacion(actor), actor.getId()));
+
+        assertEquals(HttpStatus.CONFLICT, error.getStatusCode());
+        verify(repository, never()).delete(any());
+        verify(auditoria, never()).registrar(anyString(), anyString(), anyString(), any(), anyString());
+    }
+
+    @Test
+    void administradorNoPuedeEliminarOtraCuentaAdministrativa() {
+        Usuario actor = usuario(1L, "admin1@ejemplo.cr", RolUsuario.ADMIN);
+        Usuario objetivo = usuario(2L, "admin2@ejemplo.cr", RolUsuario.ADMIN);
+        preparar(actor, objetivo);
+
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> controller.eliminar(autenticacion(actor), objetivo.getId()));
+
+        assertEquals(HttpStatus.FORBIDDEN, error.getStatusCode());
+        verify(repository, never()).delete(any());
+    }
+
+    @Test
+    void eliminaCuentaConRegistrosAsociadosSeRechazaSinRegistrarAuditoria() {
+        Usuario actor = usuario(1L, "admin@ejemplo.cr", RolUsuario.ADMIN);
+        Usuario objetivo = usuario(2L, "persona@ejemplo.cr", RolUsuario.USUARIO);
+        preparar(actor, objetivo);
+        doThrow(new DataIntegrityViolationException("foreign key")).when(repository).flush();
+
+        ResponseStatusException error = assertThrows(ResponseStatusException.class,
+                () -> controller.eliminar(autenticacion(actor), objetivo.getId()));
+
+        assertEquals(HttpStatus.CONFLICT, error.getStatusCode());
+        assertEquals("No se puede eliminar esta cuenta porque tiene reservas, pagos o registros asociados",
+                error.getReason());
+        verify(auditoria, never()).registrar(anyString(), anyString(), anyString(), any(), anyString());
     }
 
     private void preparar(Usuario actor, Usuario objetivo) {

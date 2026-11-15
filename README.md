@@ -63,6 +63,7 @@ Para publicar el sistema en un dominio no es necesario modificar el código. Con
 - `UPLOAD_DIR`: directorio persistente para fotografías de espacios.
 - `VITE_API_URL`: URL pública del backend terminada en `/api/v1`, definida al construir el frontend.
 - `FRONTEND_URL`: URL usada para construir enlaces de recuperación.
+- `SPRING_JPA_SHOW_SQL` y `SPRING_JPA_FORMAT_SQL`: por defecto `false` para evitar volcar consultas en los logs; actívalas solo en un entorno local si necesitas inspeccionarlas.
 - `MAIL_ENABLED`, `MAIL_HOST`, `MAIL_PORT`, `MAIL_USERNAME`, `MAIL_PASSWORD` y `MAIL_FROM`: integración SMTP opcional.
 
 El archivo `frontend/.env.example` muestra la configuración local. Los archivos `.env.local` y `application-local.properties` permanecen fuera de Git.
@@ -95,16 +96,21 @@ El archivo `frontend/.env.example` muestra la configuración local. Los archivos
 - Indicadores administrativos, gráfico por estados y reportes de reservas exportables a CSV/PDF.
 - Comprobantes PDF descargables para pagos aprobados.
 - Bitácora administrativa de cambios sensibles con actor y fecha.
+- Panel administrativo de diagnóstico con comprobaciones de salud, incidentes técnicos, recomendaciones y cierres auditados.
 
 El avance detallado de los requerimientos se encuentra en [docs/ESTADO_REQUERIMIENTOS.md](docs/ESTADO_REQUERIMIENTOS.md).
+
+La arquitectura del sistema y el flujo de contribución están descritos en
+[docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) y
+[docs/GUIA_CONTRIBUCION.md](docs/GUIA_CONTRIBUCION.md).
 
 El despliegue manual y aislado a staging en Render, junto con los pasos pendientes para producción y rollback, se documenta en [docs/CD_RENDER.md](docs/CD_RENDER.md).
 
 ## Pruebas
 
-El backend incluye pruebas unitarias de reservas, pagos, seguridad, recuperación, imágenes y reportes, además de una prueba de arranque con H2 en memoria. Se ejecutan desde `backend` con `mvn test` o directamente desde IntelliJ IDEA. Las pruebas nunca utilizan la base MySQL local.
+El backend incluye pruebas unitarias y de integración para reservas, pagos, seguridad, recuperación, imágenes y reportes, además de pruebas HTTP con H2 en memoria. Se ejecutan desde `backend` con `mvn verify` o directamente desde IntelliJ IDEA. `verify` genera un reporte HTML y XML de cobertura en `target/site/jacoco/`; el CI lo conserva como artefacto. Las pruebas nunca utilizan la base MySQL local.
 
-La prueba E2E usa Playwright con Chromium y recorre el registro, el inicio de sesión y la consulta de «Mis reservas» en un navegador real. Playwright levanta automáticamente el backend con H2 temporal y el frontend en los puertos `8081` y `5173`; no usa MySQL, TiDB ni cuentas reales. Requiere Java 17 y Node.js 22. Desde `frontend`:
+La prueba E2E local usa Playwright con Chromium y recorre el registro, el inicio de sesión, el bloqueo de la ruta administrativa para un usuario común y la consulta de «Mis reservas». Playwright levanta automáticamente el backend con H2 temporal y el frontend en los puertos `8081` y `5173`; no usa MySQL, TiDB ni cuentas reales. Requiere Java 17 y Node.js 22. Desde `frontend`:
 
 ```bash
 npm ci
@@ -112,9 +118,13 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-El workflow `E2E` ejecuta el mismo escenario en cada PR hacia `main` y guarda el reporte HTML y las trazas de fallos como artefactos de GitHub Actions. Este es el primer flujo crítico automatizado; quedan por agregar escenarios de creación de reservas y pagos.
+El workflow `E2E` ejecuta el escenario local en cada PR hacia `main` y guarda reportes y trazas como artefactos de GitHub Actions. El workflow `E2E staging` verifica además que el catálogo funcione al abrir y recargar su ruta directa, y recorre la creación y cancelación de una reserva, comprobando que el horario se libere. Este último utiliza cuentas de prueba y solo cancela la reserva creada por el propio test. El pago real de Stripe no forma parte del E2E: requiere configurar Stripe en el servidor; el pago simulado sí está cubierto por pruebas del backend.
 
-Última verificación: 40 pruebas ejecutadas, sin fallos ni errores, con Java 17 y Spring Boot 4.1.0. La suite incluye catálogo público con sus relaciones e imágenes, registro, login, perfil con JWT, reservas, pagos en CRC, prevención de solapamientos, propiedad de recursos y respuestas 401/403/409.
+Verificación más reciente: el commit `280aa38` pasó los workflows **CI**, **Docker**, **E2E** y **E2E staging**. CI publicó el artefacto `backend-coverage-report`; E2E staging utiliza el ambiente de pruebas y no producción. La suite del backend contiene pruebas para catálogo, autenticación, perfil, reservas, pagos, comprobantes, auditoría, usuarios y diagnóstico. Los resultados están disponibles en [CI](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/43388903452), [Docker](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/43388903505), [E2E](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/43388903382) y [E2E staging](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/43388903380).
+
+### Diagnóstico y soporte
+
+El módulo **Administración > Diagnóstico** consulta el estado de la aplicación, base de datos, almacenamiento de imágenes y configuración opcional de correo y Stripe. El backend revisa componentes cada 60 segundos y el panel se actualiza cada 30 segundos mientras está abierto. Los errores internos se registran como incidentes con referencia de correlación, recomendaciones y cantidad de ocurrencias; administración puede cerrarlos y la acción queda en la bitácora. Las comprobaciones no muestran claves ni prueban el envío real de correo o pagos. Consulta [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) para límites, uso y siguientes pasos.
 
 > Los pagos con tarjeta son una simulación. El sistema no solicita ni almacena información bancaria real.
 

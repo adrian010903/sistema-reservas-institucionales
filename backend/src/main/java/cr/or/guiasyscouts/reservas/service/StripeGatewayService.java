@@ -25,8 +25,11 @@ public class StripeGatewayService {
     private final String secretKey;
     private final String webhookSecret;
     private final String frontendUrl;
-    private final HttpClient http = HttpClient.newHttpClient();
     private final ObjectMapper mapper = new ObjectMapper();
+
+    private static final class StripeHttpClientHolder {
+        private static final HttpClient INSTANCE = HttpClient.newHttpClient();
+    }
 
     public StripeGatewayService(@Value("${stripe.secret-key:}") String secretKey,
                                 @Value("${stripe.webhook-secret:}") String webhookSecret,
@@ -106,7 +109,8 @@ public class StripeGatewayService {
             HttpRequest request = method.equals("GET")
                     ? builder.GET().build()
                     : builder.POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8)).build();
-            HttpResponse<String> response = http.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            HttpResponse<String> response = StripeHttpClientHolder.INSTANCE.send(
+                    request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
             JsonNode json = mapper.readTree(response.body());
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 String message = json.path("error").path("message").asText("Stripe rechazó la solicitud");

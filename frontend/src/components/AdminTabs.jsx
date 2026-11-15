@@ -5,6 +5,7 @@ const ADMIN_SECTIONS = [
   ['precios', 'Precios'],
   ['reportes', 'Reportes'],
   ['auditoria', 'Bitácora'],
+  ['diagnostico', 'Diagnóstico'],
 ]
 
 export default function AdminTabs({ value, onChange, showDemoControls }) {

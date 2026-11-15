@@ -27,8 +27,13 @@ public class CorreoService {
     private final String remitente;
     private final String resendApiKey;
     private final String resendFrom;
-    private final HttpClient httpClient = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build();
     private final ObjectMapper objectMapper = new ObjectMapper();
+
+    private static final class ResendHttpClientHolder {
+        private static final HttpClient INSTANCE = HttpClient.newBuilder()
+                .connectTimeout(Duration.ofSeconds(10))
+                .build();
+    }
 
     public CorreoService(ObjectProvider<JavaMailSender> mailSenderProvider,
                          @Value("${app.mail.enabled:false}") boolean habilitado,
@@ -71,7 +76,8 @@ public class CorreoService {
                     .header("Content-Type", "application/json")
                     .POST(HttpRequest.BodyPublishers.ofString(body, StandardCharsets.UTF_8))
                     .build();
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
+            HttpResponse<String> response = ResendHttpClientHolder.INSTANCE.send(
+                    request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
             if (response.statusCode() < 200 || response.statusCode() >= 300) {
                 LOGGER.error("Resend rechazó el correo '{}' con HTTP {}", asunto, response.statusCode());
                 return false;

@@ -1,6 +1,9 @@
 name: E2E staging
 
 on:
+  push:
+    branches:
+      - "feature/e2e-staging"
   workflow_dispatch:
 
 permissions:
@@ -13,7 +16,7 @@ concurrency:
 jobs:
   browser-test:
     name: Probar registro y reservas en staging
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/e2e-staging'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: staging

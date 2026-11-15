@@ -13,6 +13,7 @@ import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -54,12 +55,35 @@ class SecurityHttpIntegrationTest {
     }
 
     @Test
-    void usuarioComunNoPuedeAccederAlPanelAdministrativo() throws Exception {
-        mockMvc.perform(get("/api/v1/admin/reservas")
-                        .with(user("usuario@example.com").roles("USUARIO")))
+    void usuarioComunNoPuedeAccederALasSeccionesAdministrativas() throws Exception {
+        String[] rutasAdministrativas = {
+                "/api/v1/admin/usuarios",
+                "/api/v1/admin/reservas",
+                "/api/v1/admin/reservas/pendientes",
+                "/api/v1/admin/pagos",
+                "/api/v1/admin/catalogo/tipos",
+                "/api/v1/admin/catalogo/categorias",
+                "/api/v1/admin/catalogo/espacios",
+                "/api/v1/admin/catalogo/lugares",
+                "/api/v1/admin/auditoria",
+                "/api/v1/admin/reportes/resumen"
+        };
+
+        for (String ruta : rutasAdministrativas) {
+            mockMvc.perform(get(ruta)
+                            .with(user("usuario@example.com").roles("USUARIO")))
+                    .andExpect(status().isForbidden())
+                    .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
+                    .andExpect(jsonPath("$.title").value("Acceso denegado"))
+                    .andExpect(jsonPath("$.status").value(403));
+        }
+
+        mockMvc.perform(put("/api/v1/admin/configuracion/tarifa-hora")
+                        .with(user("usuario@example.com").roles("USUARIO"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"tarifaHora\":12500}"))
                 .andExpect(status().isForbidden())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_PROBLEM_JSON))
-                .andExpect(jsonPath("$.title").value("Acceso denegado"))
                 .andExpect(jsonPath("$.status").value(403));
     }
 

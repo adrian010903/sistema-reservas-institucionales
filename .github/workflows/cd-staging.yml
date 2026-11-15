@@ -2,6 +2,23 @@ name: CD staging (Render)
 
 on:
   workflow_dispatch:
+    inputs:
+      operation:
+        description: Operación manual sobre staging
+        type: choice
+        options: [deploy, rollback]
+        default: deploy
+        required: true
+      rollback_service:
+        description: Servicio que se revertirá (solo para rollback)
+        type: choice
+        options: [frontend, backend]
+        default: frontend
+        required: true
+      rollback_deploy_id:
+        description: ID de un despliegue exitoso anterior (solo para rollback)
+        type: string
+        required: false
 
 permissions:
   contents: read
@@ -12,8 +29,8 @@ concurrency:
 
 jobs:
   deploy:
-    name: Desplegar staging
-    if: github.ref == 'refs/heads/main'
+    name: Desplegar o revertir staging
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/e2e-staging'
     runs-on: ubuntu-latest
     timeout-minutes: 50
     environment: staging
@@ -37,8 +54,20 @@ jobs:
             echo 'Los servicios backend y frontend deben ser distintos'
             exit 1
           fi
+          for entry in "${BACKEND_SERVICE_ID}|reservas-backend-staging|${BACKEND_URL}" "${FRONTEND_SERVICE_ID}|reservas-frontend-staging|${FRONTEND_URL}"; do
+            IFS='|' read -r service_id expected_name expected_url <<< "$entry"
+            service=$(curl --fail-with-body --silent --show-error --retry 3 --retry-all-errors \
+              "https://api.render.com/v1/services/${service_id}" \
+              --header "Authorization: Bearer ${RENDER_API_KEY}")
+            if ! jq -e --arg id "$service_id" --arg name "$expected_name" --arg url "${expected_url%/}" \
+              '.id == $id and .name == $name and (.serviceDetails.url | rtrimstr("/")) == $url and (.autoDeployTrigger == "off" or (.autoDeployTrigger == null and .autoDeploy == "no"))' <<< "$service" > /dev/null; then
+              echo "El servicio $expected_name no coincide con el ID, URL o autodeploy esperado para staging"
+              exit 1
+            fi
+          done
 
       - name: Desplegar el commit y esperar ambos servicios
+        if: inputs.operation == 'deploy'
         shell: bash
         run: |
           set -euo pipefail
@@ -74,3 +103,57 @@ jobs:
           deploy_and_wait "$FRONTEND_SERVICE_ID" frontend
           curl --fail --silent --show-error "${FRONTEND_URL%/}/login" | grep -q 'id="root"'
           echo "Staging validado en el commit $GITHUB_SHA"
+
+      - name: Revertir un servicio de staging
+        if: inputs.operation == 'rollback'
+        shell: bash
+        env:
+          ROLLBACK_SERVICE: ${{ inputs.rollback_service }}
+          ROLLBACK_DEPLOY_ID: ${{ inputs.rollback_deploy_id }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$ROLLBACK_DEPLOY_ID" =~ ^dep-[a-zA-Z0-9]+$ ]]; then
+            echo 'Indica un ID de despliegue válido de Render (dep-...)'
+            exit 1
+          fi
+          if [[ "$ROLLBACK_SERVICE" == frontend ]]; then
+            service_id="$FRONTEND_SERVICE_ID"
+            health_url="${FRONTEND_URL%/}/login"
+          else
+            service_id="$BACKEND_SERVICE_ID"
+            health_url="${BACKEND_URL%/}/api/v1/status"
+          fi
+          target=$(curl --fail-with-body --silent --show-error --retry 3 --retry-all-errors \
+            "https://api.render.com/v1/services/${service_id}/deploys/${ROLLBACK_DEPLOY_ID}" \
+            --header "Authorization: Bearer ${RENDER_API_KEY}")
+          target_status=$(jq -r '.status' <<< "$target")
+          if [[ "$target_status" != live && "$target_status" != deactivated ]]; then
+            echo 'El despliegue elegido no es uno exitoso anterior de este servicio'
+            exit 1
+          fi
+          response=$(curl --fail-with-body --silent --show-error \
+            --request POST "https://api.render.com/v1/services/${service_id}/rollback" \
+            --header "Authorization: Bearer ${RENDER_API_KEY}" \
+            --header 'Content-Type: application/json' \
+            --data "$(jq -n --arg deployId "$ROLLBACK_DEPLOY_ID" '{deployId: $deployId}')")
+          new_deploy_id=$(jq -r '.id // empty' <<< "$response")
+          if [[ -z "$new_deploy_id" ]]; then
+            echo 'Render no devolvió el ID del rollback'
+            exit 1
+          fi
+          echo "Rollback de $ROLLBACK_SERVICE iniciado: $new_deploy_id (origen: $ROLLBACK_DEPLOY_ID)"
+          for attempt in {1..90}; do
+            status=$(curl --fail-with-body --silent --show-error --retry 3 --retry-all-errors \
+              "https://api.render.com/v1/services/${service_id}/deploys/${new_deploy_id}" \
+              --header "Authorization: Bearer ${RENDER_API_KEY}" | jq -r '.status')
+            case "$status" in
+              live) curl --fail --silent --show-error "$health_url" > /dev/null
+                    echo "Rollback de $ROLLBACK_SERVICE validado: $new_deploy_id"
+                    exit 0 ;;
+              build_failed|update_failed|pre_deploy_failed|canceled|deactivated)
+                    echo "Rollback falló: $status"; exit 1 ;;
+            esac
+            sleep 15
+          done
+          echo 'Tiempo de espera agotado para el rollback'
+          exit 1

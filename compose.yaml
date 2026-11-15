@@ -24,7 +24,8 @@ services:
       SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/reservas_institucionales?useSSL=false&serverTimezone=America/Costa_Rica&allowPublicKeyRetrieval=true
       SPRING_DATASOURCE_USERNAME: reservas
       SPRING_DATASOURCE_PASSWORD: ${DB_PASSWORD:?Configura DB_PASSWORD en .env}
-      SPRING_JPA_SHOW_SQL: "false"
+      SPRING_JPA_SHOW_SQL: "${SPRING_JPA_SHOW_SQL:-false}"
+      SPRING_JPA_FORMAT_SQL: "${SPRING_JPA_FORMAT_SQL:-false}"
       APP_JWT_SECRET: ${APP_JWT_SECRET:?Configura APP_JWT_SECRET en .env}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
       CORS_ALLOWED_ORIGINS: ${FRONTEND_URL:-http://localhost:5173}
