@@ -20,6 +20,7 @@ Revisan una parte del código por separado. Están en `backend/src/test/java`.
 | ReservaServiceTest | 6 | Horario permitido, capacidad del espacio y que no se crucen reservas |
 | PagoServiceTest | 5 | Pagos con tarjeta y transferencia, y que no se pague una reserva ajena o cancelada |
 | StripeGatewayServiceTest | 5 | Validación de los avisos que manda la pasarela de pago |
+| StripePaymentServiceTest | 6 | Cobro con Stripe: cálculo del monto, pagos no permitidos, pago aprobado y pago vencido |
 | TarifaServiceTest | 2 | Leer y cambiar la tarifa |
 | AdminUsuarioControllerTest | 10 | Qué puede hacer un administrador con los usuarios |
 | JwtServiceTest | 2 | Validez del token de sesión |
@@ -32,7 +33,7 @@ Revisan una parte del código por separado. Están en `backend/src/test/java`.
 | ReportePdfVisualServiceTest | 3 | Generación del reporte en PDF |
 | ImagenEspacioServiceTest | 3 | Subida de imágenes de los espacios |
 
-Total: 49 pruebas unitarias.
+Total: 55 pruebas unitarias.
 
 ## Pruebas de integración
 
@@ -72,7 +73,7 @@ Partes del sistema que no tienen pruebas propias. Se priorizaron las de los fluj
 
 | Parte | Tipo de prueba que falta | Decisión |
 |-------|--------------------------|----------|
-| Cobro con Stripe (`StripePaymentService`) | Unitaria | Se agrega |
+| Cobro con Stripe (`StripePaymentService`) | Unitaria | Agregada en `StripePaymentServiceTest` (6 pruebas) |
 | Administrador aprueba una reserva | E2E | Se agrega |
 | Notificaciones (`NotificacionService`) | Unitaria | Pendiente. Se usa dentro de las pruebas de reservas y pagos |
 | Pago desde la página | E2E | Pendiente. El pago ya se revisa en `ReservaPagoHttpIntegrationTest` |
