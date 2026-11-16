@@ -103,7 +103,9 @@ npm run test:e2e
 |-------|-------|-----------|-----------|
 | Backend (unitarias + integración) | 16/11/2026 | 78 de 78 aprobadas | `./mvnw verify` local y CI de la rama `feature/pruebas-finales` |
 | Cobertura JaCoCo | 16/11/2026 | 72.1 % de líneas, 50.6 % de ramas | Reporte `backend/target/site/jacoco/index.html` y artefacto del CI |
-| CI, E2E local y Docker en GitHub Actions | 16/11/2026 | Aprobados en cada push de la rama | Pestaña Actions de la rama `feature/pruebas-finales` |
-| E2E staging | 16/11/2026 | 3 aprobadas, 1 fallida | [Ejecución en Actions](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/43975705765) |
+| CI, E2E local y Docker en GitHub Actions | 16/11/2026 | Aprobados en cada push de la rama | Pestaña Actions de la rama `feature/pruebas-finales`; [reporte Playwright E2E](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/43977628417/artifacts/14282360526) |
+| E2E staging | 16/11/2026 | 3 aprobadas, 1 fallida | [Ejecución en Actions](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/43980479427); [reporte Playwright](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/43980479427/artifacts/14283172414) |
 
-La prueba E2E del administrador falló porque la cuenta admin de prueba no existe en la base de datos de staging ("Correo o contraseña incorrectos"). Se vuelve a ejecutar cuando la cuenta esté creada.
+Los reportes de Playwright se descargan como archivo `.zip` desde la ejecución. Al abrir `index.html` se ve cada escenario marcado como aprobado o fallido, con capturas y traza de los que fallan.
+
+La prueba E2E del administrador falla porque la cuenta admin de prueba no puede iniciar sesión en staging (la API responde "Credenciales invalidas"). Se vuelve a ejecutar cuando la cuenta esté creada correctamente.
