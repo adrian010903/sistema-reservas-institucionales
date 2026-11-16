@@ -58,6 +58,7 @@ Usan un navegador automático (Playwright) que entra a la página como lo haría
 | Registrarse, iniciar sesión y ver mis reservas | Local y staging |
 | Abrir el catálogo y recargar la página | Staging |
 | Crear una reserva y cancelarla | Staging |
+| Un administrador aprueba la reserva pendiente de un usuario (`admin-aprobacion.spec.js`) | Staging (requiere `E2E_ADMIN_EMAIL` y `E2E_ADMIN_PASSWORD`) |
 
 ## Cobertura
 
@@ -74,7 +75,7 @@ Partes del sistema que no tienen pruebas propias. Se priorizaron las de los fluj
 | Parte | Tipo de prueba que falta | Decisión |
 |-------|--------------------------|----------|
 | Cobro con Stripe (`StripePaymentService`) | Unitaria | Agregada en `StripePaymentServiceTest` (6 pruebas) |
-| Administrador aprueba una reserva | E2E | Se agrega |
+| Administrador aprueba una reserva | E2E | Agregada en `admin-aprobacion.spec.js`. Falta que exista la cuenta admin de prueba en staging |
 | Notificaciones (`NotificacionService`) | Unitaria | Pendiente. Se usa dentro de las pruebas de reservas y pagos |
 | Pago desde la página | E2E | Pendiente. El pago ya se revisa en `ReservaPagoHttpIntegrationTest` |
 
@@ -95,3 +96,14 @@ npm ci
 npx playwright install
 npm run test:e2e
 ```
+
+## Resultados
+
+| Suite | Fecha | Resultado | Evidencia |
+|-------|-------|-----------|-----------|
+| Backend (unitarias + integración) | 16/11/2026 | 78 de 78 aprobadas | `./mvnw verify` local y CI de la rama `feature/pruebas-finales` |
+| Cobertura JaCoCo | 16/11/2026 | 72.1 % de líneas, 50.6 % de ramas | Reporte `backend/target/site/jacoco/index.html` y artefacto del CI |
+| CI, E2E local y Docker en GitHub Actions | 16/11/2026 | Aprobados en cada push de la rama | Pestaña Actions de la rama `feature/pruebas-finales` |
+| E2E staging | 16/11/2026 | 3 aprobadas, 1 fallida | [Ejecución en Actions](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/43975705765) |
+
+La prueba E2E del administrador falló porque la cuenta admin de prueba no existe en la base de datos de staging ("Correo o contraseña incorrectos"). Se vuelve a ejecutar cuando la cuenta esté creada.
