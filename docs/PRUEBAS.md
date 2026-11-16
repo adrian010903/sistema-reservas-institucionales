@@ -66,6 +66,17 @@ La cobertura indica qué porcentaje del código del backend ejecutan las pruebas
 |-------------|------------------|-------------|
 | JaCoCo | Al correr las pruebas del backend | En el CI de GitHub Actions, como artefacto |
 
+## Partes sin pruebas
+
+Partes del sistema que no tienen pruebas propias. Se priorizaron las de los flujos críticos (reservar, pagar y aprobar).
+
+| Parte | Tipo de prueba que falta | Decisión |
+|-------|--------------------------|----------|
+| Cobro con Stripe (`StripePaymentService`) | Unitaria | Se agrega |
+| Administrador aprueba una reserva | E2E | Se agrega |
+| Notificaciones (`NotificacionService`) | Unitaria | Pendiente. Se usa dentro de las pruebas de reservas y pagos |
+| Pago desde la página | E2E | Pendiente. El pago ya se revisa en `ReservaPagoHttpIntegrationTest` |
+
 ## Cómo ejecutarlas
 
 Backend (unitarias, integración y cobertura):
