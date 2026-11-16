@@ -16,12 +16,14 @@ concurrency:
 jobs:
   browser-test:
     name: Probar registro y reservas en staging
-    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/e2e-staging'
+    if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/feature/e2e-staging' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 20
     environment: staging
     env:
       E2E_BASE_URL: ${{ vars.RENDER_STAGING_FRONTEND_URL }}
+      E2E_ADMIN_EMAIL: ${{ secrets.E2E_ADMIN_EMAIL }}
+      E2E_ADMIN_PASSWORD: ${{ secrets.E2E_ADMIN_PASSWORD }}
     steps:
       - name: Verificar URL de staging
         shell: bash
