@@ -23,7 +23,8 @@ test('staging: un administrador aprueba la reserva pendiente de un usuario', asy
   const password = 'PruebaE2E2026'
   console.log(`Cuenta temporal E2E: ${email}`)
   const reservationDate = new Date()
-  reservationDate.setDate(reservationDate.getDate() + 130)
+  // Fecha distinta en cada ejecución para no chocar con reservas de corridas anteriores.
+  reservationDate.setDate(reservationDate.getDate() + 150 + Math.floor(Math.random() * 300))
   const dateValue = `${reservationDate.getFullYear()}-${String(reservationDate.getMonth() + 1).padStart(2, '0')}-${String(reservationDate.getDate()).padStart(2, '0')}`
   const displayedDate = new Intl.DateTimeFormat('es-CR', { day: '2-digit', month: 'short', year: 'numeric' }).format(reservationDate).replace('.', '')
 
@@ -93,6 +94,7 @@ test('staging: un administrador aprueba la reserva pendiente de un usuario', asy
       await userPage.goto('/reservas').catch(() => {})
       const cleanupCard = userPage.locator('.reservation-modern-card')
         .filter({ hasText: spaceName }).filter({ hasText: displayedDate }).first()
+      await cleanupCard.waitFor({ state: 'visible', timeout: 15_000 }).catch(() => {})
       const cancelButton = cleanupCard.getByRole('button', { name: 'Cancelar' })
       if (await cancelButton.isVisible().catch(() => false)) {
         userPage.once('dialog', (dialog) => dialog.accept())
