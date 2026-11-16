@@ -108,7 +108,9 @@ El despliegue manual y aislado a staging en Render, junto con los pasos pendient
 
 ## Pruebas
 
-El backend incluye pruebas unitarias y de integración para reservas, pagos, seguridad, recuperación, imágenes y reportes, además de pruebas HTTP con H2 en memoria. Se ejecutan desde `backend` con `mvn verify` o directamente desde IntelliJ IDEA. `verify` genera un reporte HTML y XML de cobertura en `target/site/jacoco/`; el CI lo conserva como artefacto. Las pruebas nunca utilizan la base MySQL local.
+El inventario completo de pruebas, las partes sin cobertura y los resultados más recientes están en [docs/PRUEBAS.md](docs/PRUEBAS.md).
+
+El backend incluye pruebas unitarias y de integración para reservas, pagos (incluido el cobro con Stripe simulado), seguridad, recuperación, imágenes y reportes, además de pruebas HTTP con H2 en memoria. Se ejecutan desde `backend` con `mvn verify` o directamente desde IntelliJ IDEA. `verify` genera un reporte HTML y XML de cobertura en `target/site/jacoco/`; el CI lo conserva como artefacto. Las pruebas nunca utilizan la base MySQL local.
 
 La prueba E2E local usa Playwright con Chromium y recorre el registro, el inicio de sesión, el bloqueo de la ruta administrativa para un usuario común y la consulta de «Mis reservas». Playwright levanta automáticamente el backend con H2 temporal y el frontend en los puertos `8081` y `5173`; no usa MySQL, TiDB ni cuentas reales. Requiere Java 17 y Node.js 22. Desde `frontend`:
 
@@ -118,7 +120,7 @@ npx playwright install chromium
 npm run test:e2e
 ```
 
-El workflow `E2E` ejecuta el escenario local en cada PR hacia `main` y guarda reportes y trazas como artefactos de GitHub Actions. El workflow `E2E staging` verifica además que el catálogo funcione al abrir y recargar su ruta directa, y recorre la creación y cancelación de una reserva, comprobando que el horario se libere. Este último utiliza cuentas de prueba y solo cancela la reserva creada por el propio test. El pago real de Stripe no forma parte del E2E: requiere configurar Stripe en el servidor; el pago simulado sí está cubierto por pruebas del backend.
+El workflow `E2E` ejecuta el escenario local en cada PR hacia `main` y guarda reportes y trazas como artefactos de GitHub Actions. El workflow `E2E staging` verifica además que el catálogo funcione al abrir y recargar su ruta directa, y recorre la creación y cancelación de una reserva, comprobando que el horario se libere. También incluye un escenario donde un administrador aprueba la reserva pendiente de un usuario; necesita los secrets `E2E_ADMIN_EMAIL` y `E2E_ADMIN_PASSWORD` con una cuenta admin de prueba de staging. El workflow se puede ejecutar manualmente desde cualquier rama. Este último utiliza cuentas de prueba y solo cancela la reserva creada por el propio test. El pago real de Stripe no forma parte del E2E: requiere configurar Stripe en el servidor; el pago simulado sí está cubierto por pruebas del backend.
 
 Verificación más reciente: el commit `280aa38` pasó los workflows **CI**, **Docker**, **E2E** y **E2E staging**. CI publicó el artefacto `backend-coverage-report`; E2E staging utiliza el ambiente de pruebas y no producción. La suite del backend contiene pruebas para catálogo, autenticación, perfil, reservas, pagos, comprobantes, auditoría, usuarios y diagnóstico. Los resultados están disponibles en [CI](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/43388903452), [Docker](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/43388903505), [E2E](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/43388903382) y [E2E staging](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/43388903380).
 
