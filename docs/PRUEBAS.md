@@ -105,6 +105,6 @@ npm run test:e2e
 | Backend (unitarias + integración) | 16/11/2026 | 83 de 83 aprobadas | `./mvnw verify` local y CI de la rama `feature/pruebas-finales` |
 | Cobertura JaCoCo | 16/11/2026 | 72.9 % de líneas, 50.9 % de ramas | Reporte `backend/target/site/jacoco/index.html` y artefacto del CI |
 | CI, E2E local y Docker en GitHub Actions | 16/11/2026 | Aprobados en cada push de la rama | Pestaña Actions de la rama `feature/pruebas-finales`; [reporte Playwright E2E](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/43977628417/artifacts/14282360526) |
-| E2E staging | 16/11/2026 | 4 de 4 aprobadas | [Ejecución en Actions](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/43982765933); [reporte Playwright](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/43982765933/artifacts/14282414855) |
+| E2E staging | 16/11/2026 | 4 de 4 aprobadas | [Ejecución en Actions](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44000560355); [reporte Playwright](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44000560355/artifacts/14291677652) |
 
 Los reportes de Playwright se descargan como archivo `.zip` desde la ejecución. Al abrir `index.html` se ve cada escenario marcado como aprobado o fallido, con capturas y traza de los que fallan.
