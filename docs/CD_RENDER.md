@@ -64,7 +64,7 @@ GitHub solo ejecuta los workflows `workflow_run` que están en `main`; un cambio
 
 ## 5. Staging: despliegue controlado
 
-`cd-staging.yml` es independiente de desarrollo y producción: usa el environment `staging`, sus propias variables `RENDER_STAGING_*`, exige los nombres `reservas-backend-staging` y `reservas-frontend-staging` y no usa los scripts compartidos de `.github/scripts`. No se ha modificado desde el PR #31; los cambios de CD posteriores (PR #33, #34 y este) no lo tocan. Las rutas que comprueba siguen existiendo: `/api/v1/status` (`StatusController`, pública en `SecurityConfig`) y `/login` (ruta del frontend, servida por el `try_files ... /index.html` de `frontend/nginx.conf`).
+`cd-staging.yml` es independiente de desarrollo y producción: usa el environment `staging`, sus propias variables `RENDER_STAGING_*`, exige los nombres `reservas-backend-staging` y `reservas-frontend-staging` y no usa los scripts compartidos de `.github/scripts`. No se ha modificado desde el PR #31; los cambios de CD posteriores (PR #33, #34 y este) no lo tocan. Las rutas que comprueba siguen existiendo: `/api/v1/status` (`StatusController`, pública en `SecurityConfig`) y `/login` (ruta del frontend). En Render el frontend es un sitio estático, así que abrir `/login` directamente depende de la regla de reescritura de Render hacia `/index.html` (configuración externa); en Docker lo cubre el `try_files ... /index.html` de `frontend/nginx.conf`. Por eso el workflow comprueba que `/login` devuelva la página (`id="root"`): si la regla de reescritura se pierde, staging falla en vez de darse por bueno.
 
 **Desplegar staging:**
 
