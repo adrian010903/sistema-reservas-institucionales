@@ -13,7 +13,7 @@ async function iniciarSesion(page, email, password) {
   await page.getByRole('button', { name: 'Entrar' }).click()
 }
 
-test('staging: un administrador aprueba la reserva pendiente de un usuario', async ({ browser }) => {
+test('staging: un administrador aprueba la reserva y el usuario la paga desde la página',async ({ browser }) => {
   test.skip(!process.env.E2E_BASE_URL, 'Requiere staging publicado')
   test.skip(!adminEmail || !adminPassword, 'Requiere E2E_ADMIN_EMAIL y E2E_ADMIN_PASSWORD')
   test.setTimeout(180_000)
@@ -88,6 +88,17 @@ test('staging: un administrador aprueba la reserva pendiente de un usuario', asy
     const reservationCard = userPage.locator('.reservation-modern-card')
       .filter({ hasText: spaceName }).filter({ hasText: displayedDate })
     await expect(reservationCard.getByText('APROBADA')).toBeVisible({ timeout: 30_000 })
+
+    // 5. El usuario paga desde la página con tarjeta simulada y la reserva queda CONFIRMADA.
+    await userPage.goto('/pagos')
+    await userPage.locator('.payable-list button').filter({ hasText: spaceName }).first().click()
+    await userPage.getByRole('button', { name: 'Continuar al método →' }).click()
+    await userPage.locator('.payment-methods label').filter({ hasText: 'Tarjeta simulada' }).click()
+    await userPage.getByRole('button', { name: 'Confirmar pago simulado' }).click()
+    await expect(userPage.getByRole('heading', { name: 'Reserva confirmada' })).toBeVisible({ timeout: 30_000 })
+
+    await userPage.goto('/reservas')
+    await expect(reservationCard.getByText('CONFIRMADA')).toBeVisible({ timeout: 30_000 })
   } finally {
     // Limpieza: cancelar la reserva de prueba para no dejar el horario ocupado en staging.
     if (spaceName) {
