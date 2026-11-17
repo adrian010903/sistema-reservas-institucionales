@@ -42,7 +42,7 @@ Configurar en **GitHub > Settings > Environments**. Las URL van sin `/api/v1` y 
 | `production` | Variable | `RENDER_PROD_BACKEND_SERVICE_ID`, `RENDER_PROD_FRONTEND_SERVICE_ID` | `srv-...` |
 | `production` | Variable | `RENDER_PROD_BACKEND_URL`, `RENDER_PROD_FRONTEND_URL` | `https://...onrender.com` |
 
-Protección del environment `production`: *Required reviewers* (Shirley o Dana), *Prevent self-review* y rama permitida `main`.
+Protección del environment `production`: *Required reviewers* (Shirley, Dana, Alejandra y Adrián), *Prevent self-review* y rama permitida `main`.
 
 En cada servicio de Render se configuran además las variables de la aplicación (backend) y `VITE_API_URL` (frontend) de su propio ambiente, con su propia base de datos. Ningún ambiente comparte base de datos ni variables con producción.
 
@@ -64,7 +64,7 @@ GitHub solo ejecuta los workflows `workflow_run` que están en `main`; un cambio
 
 ## 5. Staging: despliegue controlado
 
-`cd-staging.yml` es independiente de desarrollo y producción: usa el environment `staging`, sus propias variables `RENDER_STAGING_*`, exige los nombres `reservas-backend-staging` y `reservas-frontend-staging` y no usa los scripts compartidos de `.github/scripts`. No se ha modificado desde el PR #31; los cambios de CD posteriores (PR #33, #34 y este) no lo tocan. Las rutas que comprueba siguen existiendo: `/api/v1/status` (`StatusController`, pública en `SecurityConfig`) y `/login` (ruta del frontend, servida por el `try_files ... /index.html` de `frontend/nginx.conf`).
+`cd-staging.yml` es independiente de desarrollo y producción: usa el environment `staging`, sus propias variables `RENDER_STAGING_*`, exige los nombres `reservas-backend-staging` y `reservas-frontend-staging` y no usa los scripts compartidos de `.github/scripts`. No se ha modificado desde el PR #31; los cambios de CD posteriores (PR #33, #34 y este) no lo tocan. Las rutas que comprueba siguen existiendo: `/api/v1/status` (`StatusController`, pública en `SecurityConfig`) y `/login` (ruta del frontend). En Render el frontend es un sitio estático, así que abrir `/login` directamente depende de la regla de reescritura de Render hacia `/index.html` (configuración externa); en Docker lo cubre el `try_files ... /index.html` de `frontend/nginx.conf`. Por eso el workflow comprueba que `/login` devuelva la página (`id="root"`): si la regla de reescritura se pierde, staging falla en vez de darse por bueno.
 
 **Desplegar staging:**
 
@@ -186,15 +186,18 @@ Un Blue/Green completo mantiene dos copias de producción, despliega en la inact
 
 ## 12. Configuración externa (cuenta de Adrián)
 
-**Hecho** (informado por Adrián):
+**Hecho:**
 
-- Servicios `reservas-backend-dev` y `reservas-frontend-dev` creados con autodeploy apagado.
-- Environment `development` con `RENDER_API_KEY`, IDs y URL de ambos servicios.
+| Configuración | Cómo se confirmó | Fecha |
+|---|---|---|
+| Servicios `reservas-backend-dev` y `reservas-frontend-dev` con autodeploy apagado | Informado por Adrián; el workflow de desarrollo lo verifica en cada ejecución | 2026-11-17 |
+| Environment `development` con `RENDER_API_KEY`, IDs y URL | Informado por Adrián; despliegues exitosos de desarrollo | 2026-11-17 |
+| Autodeploy **apagado** en `sistema-reservas-backend` y `sistema-reservas-institucionales` | Confirmado por Adrián | 2026-11-17 |
+| Environment `production` con *Required reviewers* (Shirley, Dana, Alejandra y Adrián), *Prevent self-review* activado y despliegue permitido solo desde `main` | Verificado en la API pública de GitHub (`/environments/production`) | 2026-11-17 |
 
 **Pendiente de confirmar:**
 
-1. Autodeploy **apagado** en `sistema-reservas-backend` y `sistema-reservas-institucionales`. Si sigue encendido, un merge a `main` publicaría en producción sin aprobación.
-2. Environment `production` con *Required reviewers* (Shirley o Dana), *Prevent self-review*, rama permitida `main`, `RENDER_API_KEY` y las variables `RENDER_PROD_*`.
-3. Base de datos de desarrollo aislada de producción.
-4. Fecha y hora del ensayo de rollback en staging (sección 8).
-5. Opcional: agregar `Pruebas CD / Simulacros de scripts de despliegue` a los checks requeridos de la protección de `main`.
+1. `RENDER_API_KEY` y variables `RENDER_PROD_*` en el environment `production` (no son visibles sin permisos de administración; el workflow las exige antes de contactar Render).
+2. Base de datos de desarrollo aislada de producción.
+3. Fecha y hora del ensayo de rollback en staging (sección 8).
+4. Opcional: agregar `Pruebas CD / Simulacros de scripts de despliegue` a los checks requeridos de la protección de `main`.
