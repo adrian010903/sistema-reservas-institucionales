@@ -1,0 +1,127 @@
+name: CD producción (Render)
+
+# Solo se ejecuta a mano, desde Actions > CD producción > Run workflow.
+on:
+  workflow_dispatch:
+    inputs:
+      operation:
+        description: Operación sobre producción
+        type: choice
+        options: [deploy, rollback]
+        default: deploy
+        required: true
+      rollback_service:
+        description: Servicio que se revertirá (solo para rollback)
+        type: choice
+        options: [frontend, backend]
+        default: frontend
+        required: true
+      rollback_deploy_id:
+        description: ID de un despliegue exitoso anterior (solo para rollback)
+        type: string
+        required: false
+      confirmacion:
+        description: Escribe PRODUCCION para confirmar
+        type: string
+        required: true
+
+permissions:
+  contents: read
+  actions: read
+
+# Nunca dos operaciones de producción al mismo tiempo.
+concurrency:
+  group: render-production
+  cancel-in-progress: false
+
+jobs:
+  validar:
+    name: Validar antes de pedir aprobación
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Comprobar rama, confirmación y checks
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          CONFIRMACION: ${{ inputs.confirmacion }}
+        run: |
+          if [[ "$GITHUB_REF" != refs/heads/main ]]; then
+            echo 'Producción solo se despliega desde main'
+            exit 1
+          fi
+          if [[ "$CONFIRMACION" != PRODUCCION ]]; then
+            echo 'Debes escribir PRODUCCION en el campo de confirmación'
+            exit 1
+          fi
+          # Exige que CI, Docker y E2E hayan pasado para este mismo commit.
+          if ! bash .github/scripts/checks.sh "$GITHUB_SHA"; then
+            echo "El commit $GITHUB_SHA no tiene todos los checks en verde; no se puede llevar a producción"
+            exit 1
+          fi
+          echo "Checks confirmados para $GITHUB_SHA"
+
+  produccion:
+    name: Desplegar o revertir producción
+    needs: validar
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    # El environment production tiene revisores obligatorios:
+    # aquí GitHub se detiene hasta que una persona apruebe.
+    environment: production
+    env:
+      RENDER_API_KEY: ${{ secrets.RENDER_API_KEY }}
+      BACKEND_SERVICE_ID: ${{ vars.RENDER_PROD_BACKEND_SERVICE_ID }}
+      FRONTEND_SERVICE_ID: ${{ vars.RENDER_PROD_FRONTEND_SERVICE_ID }}
+      BACKEND_URL: ${{ vars.RENDER_PROD_BACKEND_URL }}
+      FRONTEND_URL: ${{ vars.RENDER_PROD_FRONTEND_URL }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Verificar configuración de producción
+        shell: bash
+        run: |
+          for name in RENDER_API_KEY BACKEND_SERVICE_ID FRONTEND_SERVICE_ID BACKEND_URL FRONTEND_URL; do
+            if [[ -z "${!name}" ]]; then
+              echo "Falta configurar $name en el environment production de GitHub"
+              exit 1
+            fi
+          done
+          if [[ "$BACKEND_SERVICE_ID" == "$FRONTEND_SERVICE_ID" ]]; then
+            echo 'Los servicios backend y frontend deben ser distintos'
+            exit 1
+          fi
+          # Producción son los servicios originales de Render. Solo se aceptan
+          # sus nombres exactos, y se exige autodeploy apagado para que nada
+          # llegue a producción sin la aprobación.
+          bash .github/scripts/render.sh verificar "$BACKEND_SERVICE_ID" "$BACKEND_URL" '^sistema-reservas-backend$'
+          bash .github/scripts/render.sh verificar "$FRONTEND_SERVICE_ID" "$FRONTEND_URL" '^sistema-reservas-institucionales$'
+
+      - name: Desplegar el commit aprobado
+        if: inputs.operation == 'deploy'
+        shell: bash
+        run: |
+          bash .github/scripts/render.sh desplegar "$BACKEND_SERVICE_ID" backend "$GITHUB_SHA"
+          bash .github/scripts/render.sh salud "${BACKEND_URL%/}/api/v1/status"
+          bash .github/scripts/render.sh desplegar "$FRONTEND_SERVICE_ID" frontend "$GITHUB_SHA"
+          bash .github/scripts/render.sh salud "${FRONTEND_URL%/}/login"
+          echo "Producción actualizada al commit $GITHUB_SHA"
+
+      - name: Revertir un servicio de producción
+        if: inputs.operation == 'rollback'
+        shell: bash
+        env:
+          ROLLBACK_SERVICE: ${{ inputs.rollback_service }}
+          ROLLBACK_DEPLOY_ID: ${{ inputs.rollback_deploy_id }}
+        run: |
+          if [[ "$ROLLBACK_SERVICE" == frontend ]]; then
+            bash .github/scripts/render.sh revertir "$FRONTEND_SERVICE_ID" frontend "$ROLLBACK_DEPLOY_ID"
+            bash .github/scripts/render.sh salud "${FRONTEND_URL%/}/login"
+          else
+            bash .github/scripts/render.sh revertir "$BACKEND_SERVICE_ID" backend "$ROLLBACK_DEPLOY_ID"
+            bash .github/scripts/render.sh salud "${BACKEND_URL%/}/api/v1/status"
+          fi
