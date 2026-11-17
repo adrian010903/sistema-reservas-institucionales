@@ -22,6 +22,7 @@ Revisan una parte del código por separado. Están en `backend/src/test/java`.
 | StripeGatewayServiceTest | 5 | Validación de los avisos que manda la pasarela de pago |
 | StripePaymentServiceTest | 6 | Cobro con Stripe: cálculo del monto, pagos no permitidos, pago aprobado y pago vencido |
 | TarifaServiceTest | 2 | Leer y cambiar la tarifa |
+| NotificacionServiceTest | 5 | Crear avisos y enviar correo, avisar a los administradores y marcar como leída solo la propia |
 | AdminUsuarioControllerTest | 10 | Qué puede hacer un administrador con los usuarios |
 | JwtServiceTest | 2 | Validez del token de sesión |
 | JwtAuthenticationFilterTest | 2 | Que un usuario deshabilitado no pueda entrar |
@@ -33,7 +34,7 @@ Revisan una parte del código por separado. Están en `backend/src/test/java`.
 | ReportePdfVisualServiceTest | 3 | Generación del reporte en PDF |
 | ImagenEspacioServiceTest | 3 | Subida de imágenes de los espacios |
 
-Total: 55 pruebas unitarias.
+Total: 60 pruebas unitarias.
 
 ## Pruebas de integración
 
@@ -58,7 +59,7 @@ Usan un navegador automático (Playwright) que entra a la página como lo haría
 | Registrarse, iniciar sesión y ver mis reservas | Local y staging |
 | Abrir el catálogo y recargar la página | Staging |
 | Crear una reserva y cancelarla | Staging |
-| Un administrador aprueba la reserva pendiente de un usuario (`admin-aprobacion.spec.js`) | Staging (requiere `E2E_ADMIN_EMAIL` y `E2E_ADMIN_PASSWORD`) |
+| Un administrador aprueba la reserva de un usuario y el usuario la paga con tarjeta simulada (`admin-aprobacion.spec.js`) | Staging (requiere `E2E_ADMIN_EMAIL` y `E2E_ADMIN_PASSWORD`) |
 
 ## Cobertura
 
@@ -70,14 +71,14 @@ La cobertura indica qué porcentaje del código del backend ejecutan las pruebas
 
 ## Partes sin pruebas
 
-Partes del sistema que no tienen pruebas propias. Se priorizaron las de los flujos críticos (reservar, pagar y aprobar).
+Partes del sistema que no tenían pruebas propias al revisar el proyecto, y qué se hizo con cada una.
 
 | Parte | Tipo de prueba que falta | Decisión |
 |-------|--------------------------|----------|
 | Cobro con Stripe (`StripePaymentService`) | Unitaria | Agregada en `StripePaymentServiceTest` (6 pruebas) |
 | Administrador aprueba una reserva | E2E | Agregada en `admin-aprobacion.spec.js` |
-| Notificaciones (`NotificacionService`) | Unitaria | Pendiente. Se usa dentro de las pruebas de reservas y pagos |
-| Pago desde la página | E2E | Pendiente. El pago ya se revisa en `ReservaPagoHttpIntegrationTest` |
+| Notificaciones (`NotificacionService`) | Unitaria | Agregada en `NotificacionServiceTest` (5 pruebas) |
+| Pago desde la página | E2E | Agregado en `admin-aprobacion.spec.js` (pago con tarjeta simulada) |
 
 ## Cómo ejecutarlas
 
@@ -101,8 +102,8 @@ npm run test:e2e
 
 | Suite | Fecha | Resultado | Evidencia |
 |-------|-------|-----------|-----------|
-| Backend (unitarias + integración) | 16/11/2026 | 78 de 78 aprobadas | `./mvnw verify` local y CI de la rama `feature/pruebas-finales` |
-| Cobertura JaCoCo | 16/11/2026 | 72.1 % de líneas, 50.6 % de ramas | Reporte `backend/target/site/jacoco/index.html` y artefacto del CI |
+| Backend (unitarias + integración) | 16/11/2026 | 83 de 83 aprobadas | `./mvnw verify` local y CI de la rama `feature/pruebas-finales` |
+| Cobertura JaCoCo | 16/11/2026 | 72.9 % de líneas, 50.9 % de ramas | Reporte `backend/target/site/jacoco/index.html` y artefacto del CI |
 | CI, E2E local y Docker en GitHub Actions | 16/11/2026 | Aprobados en cada push de la rama | Pestaña Actions de la rama `feature/pruebas-finales`; [reporte Playwright E2E](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/43977628417/artifacts/14282360526) |
 | E2E staging | 16/11/2026 | 4 de 4 aprobadas | [Ejecución en Actions](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/43982765933); [reporte Playwright](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/43982765933/artifacts/14282414855) |
 
