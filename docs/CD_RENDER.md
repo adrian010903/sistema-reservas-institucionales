@@ -6,7 +6,7 @@
 |---|---|---|---|---|
 | Desarrollo | `CD desarrollo (Render)` (`cd-desarrollo.yml`) | Automático después de un merge a `main`, cuando `CI`, `Docker` y `E2E` terminaron con éxito | Los tres checks deben pasar | `reservas-backend-dev`, `reservas-frontend-dev` |
 | Staging | `CD staging (Render)` (`cd-staging.yml`) | Manual (`Run workflow`) | Ejecución manual y verificación de servicios | `reservas-backend-staging`, `reservas-frontend-staging` |
-| Producción | `CD producción (Render)` (`cd-produccion.yml`) | Manual (`Run workflow`), solo desde `main` | Checks exitosos del commit, confirmación escrita y aprobación del environment `production` | Servicios originales: `sistema-reservas-backend`, `sistema-reservas-institucionales` |
+| Producción | `CD producción (Render)` (`cd-produccion.yml`) | Manual (`Run workflow`), solo desde `main` | Confirmación escrita y aprobación del environment `production`; para `deploy`, además, checks exitosos del commit | Servicios originales: `sistema-reservas-backend`, `sistema-reservas-institucionales` |
 
 Los tres ambientes usan servicios distintos. Cada workflow consulta la API de Render antes de desplegar y se detiene si el nombre, la URL o el autodeploy del servicio no son los esperados, de modo que un ID mal copiado no puede tocar otro ambiente. Las funciones comunes de los workflows de desarrollo y producción están en `.github/scripts/render.sh` (verificar, desplegar, revertir y comprobar salud; el token solo se envía en la cabecera de autorización y nunca se imprime) y `.github/scripts/checks.sh` (comprueba que `CI`, `Docker` y `E2E` pasaron para un commit).
 
@@ -66,7 +66,7 @@ GitHub solo ejecuta los workflows `workflow_run` que están en la rama principal
 
 `CD producción (Render)` es manual y tiene dos jobs:
 
-1. **Validar** (sin acceso a secretos): exige ejecutar desde `main`, escribir `PRODUCCION` en el campo de confirmación y que el commit tenga `CI`, `Docker` y `E2E` en verde. Si algo falla, no se llega a pedir aprobación. La palabra `PRODUCCION` solo evita ejecuciones accidentales: **no reemplaza la aprobación** del revisor.
+1. **Validar** (sin acceso a secretos): exige ejecutar desde `main` y escribir `PRODUCCION` en el campo de confirmación. Para `deploy` exige además que el commit tenga `CI`, `Docker` y `E2E` en verde. Para `rollback` **no** exige esos checks, porque el rollback sirve justamente para salir de una versión con fallos; solo comprueba que el ID tenga el formato `dep-...`. Si algo falla, no se llega a pedir aprobación. La palabra `PRODUCCION` solo evita ejecuciones accidentales: **no reemplaza la aprobación** del revisor.
 2. **Desplegar o revertir producción**: usa el environment `production`. Con *required reviewers* configurados, GitHub pausa el job en estado *Waiting* hasta que un revisor lo apruebe en Actions. Solo después se leen los secretos, se verifican los servicios y se despliega.
 
 Revisora requerida propuesta: Shirley (si tiene permisos de colaboradora para aprobar; si no, Dana). Con *Prevent self-review* activado, la persona que inicia el workflow no puede aprobarlo.
@@ -81,7 +81,7 @@ Producción son los servicios originales de Render: `sistema-reservas-backend` (
 |---|---|
 | Desarrollo | Revertir el PR problemático en GitHub (`Revert`) y fusionarlo: CI pasa y el workflow despliega la versión anterior. |
 | Staging | `CD staging (Render)` con `operation=rollback` (ver "Ensayo de rollback en staging"). |
-| Producción | `CD producción (Render)` con `operation=rollback`, `rollback_service` y `rollback_deploy_id`. Requiere la misma confirmación y aprobación que un despliegue. |
+| Producción | `CD producción (Render)` con `operation=rollback`, `rollback_service` y `rollback_deploy_id`. Requiere la misma confirmación y aprobación que un despliegue, pero no depende de los checks del commit actual. Después de la aprobación verifica que el servicio sea el de producción y que el despliegue elegido pertenezca a ese servicio y haya sido exitoso. |
 
 Pasos ante un fallo después de desplegar:
 
