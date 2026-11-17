@@ -50,33 +50,8 @@ jobs:
           CONFIRMACION: ${{ inputs.confirmacion }}
           OPERACION: ${{ inputs.operation }}
           ROLLBACK_DEPLOY_ID: ${{ inputs.rollback_deploy_id }}
-        run: |
-          if [[ "$GITHUB_REF" != refs/heads/main ]]; then
-            echo 'Producción solo se opera desde main'
-            exit 1
-          fi
-          if [[ "$CONFIRMACION" != PRODUCCION ]]; then
-            echo 'Debes escribir PRODUCCION en el campo de confirmación'
-            exit 1
-          fi
-          if [[ "$OPERACION" == deploy ]]; then
-            # Publicar: exige que CI, Docker y E2E hayan pasado para este commit.
-            if ! bash .github/scripts/checks.sh "$GITHUB_SHA"; then
-              echo "El commit $GITHUB_SHA no tiene todos los checks en verde; no se puede llevar a producción"
-              exit 1
-            fi
-            echo "Checks confirmados para $GITHUB_SHA"
-          else
-            # Rollback: no depende de los checks del commit actual, porque sirve
-            # justamente para salir de una versión con fallos. Solo se revisa
-            # aquí el formato del ID; en el siguiente job, después de la
-            # aprobación, se verifica que pertenezca al servicio y haya funcionado.
-            if [[ ! "$ROLLBACK_DEPLOY_ID" =~ ^dep-[a-zA-Z0-9]+$ ]]; then
-              echo 'Indica un ID de despliegue válido de Render (dep-...)'
-              exit 1
-            fi
-            echo "Rollback solicitado hacia $ROLLBACK_DEPLOY_ID; no se exigen los checks del commit actual"
-          fi
+        # Rama main, palabra PRODUCCION y, solo para deploy, checks en verde.
+        run: bash .github/scripts/validar-produccion.sh
 
   produccion:
     name: Desplegar o revertir producción
@@ -99,16 +74,7 @@ jobs:
       - name: Verificar configuración de producción
         shell: bash
         run: |
-          for name in RENDER_API_KEY BACKEND_SERVICE_ID FRONTEND_SERVICE_ID BACKEND_URL FRONTEND_URL; do
-            if [[ -z "${!name}" ]]; then
-              echo "Falta configurar $name en el environment production de GitHub"
-              exit 1
-            fi
-          done
-          if [[ "$BACKEND_SERVICE_ID" == "$FRONTEND_SERVICE_ID" ]]; then
-            echo 'Los servicios backend y frontend deben ser distintos'
-            exit 1
-          fi
+          bash .github/scripts/validar-config.sh production
           # Producción son los servicios originales de Render. Solo se aceptan
           # sus nombres exactos, y se exige autodeploy apagado para que nada
           # llegue a producción sin la aprobación.

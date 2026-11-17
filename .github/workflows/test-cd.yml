@@ -1,0 +1,56 @@
+name: Pruebas CD
+
+# Ejecuta los simulacros de los scripts de despliegue en cada Pull Request
+# y en cada push. No usa secretos, no se conecta a Render y no despliega nada.
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - main
+      - "feature/**"
+      - "bugfix/**"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pruebas-cd-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  scripts:
+    name: Simulacros de scripts de despliegue
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Revisar sintaxis de los scripts
+        shell: bash
+        run: |
+          for archivo in .github/scripts/*.sh; do
+            bash -n "$archivo"
+            echo "Sintaxis correcta: $archivo"
+          done
+
+      - name: Pruebas de checks.sh
+        shell: bash
+        run: bash .github/scripts/test-checks.sh | tee resultados-checks.txt
+
+      - name: Pruebas de render.sh
+        shell: bash
+        run: bash .github/scripts/test-render.sh | tee resultados-render.txt
+
+      - name: Pruebas de validaciones
+        shell: bash
+        run: bash .github/scripts/test-validaciones.sh | tee resultados-validaciones.txt
+
+      - name: Guardar resultados como evidencia
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: resultados-pruebas-cd
+          path: resultados-*.txt
+          if-no-files-found: ignore

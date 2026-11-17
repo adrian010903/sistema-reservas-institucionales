@@ -81,16 +81,7 @@ jobs:
       - name: Verificar configuración de desarrollo
         shell: bash
         run: |
-          for name in RENDER_API_KEY BACKEND_SERVICE_ID FRONTEND_SERVICE_ID BACKEND_URL FRONTEND_URL; do
-            if [[ -z "${!name}" ]]; then
-              echo "Falta configurar $name en el environment development de GitHub"
-              exit 1
-            fi
-          done
-          if [[ "$BACKEND_SERVICE_ID" == "$FRONTEND_SERVICE_ID" ]]; then
-            echo 'Los servicios backend y frontend deben ser distintos'
-            exit 1
-          fi
+          bash .github/scripts/validar-config.sh development
           # Los nombres exactos garantizan que desarrollo no use
           # los servicios de staging ni los de producción.
           bash .github/scripts/render.sh verificar "$BACKEND_SERVICE_ID" "$BACKEND_URL" '^reservas-backend-dev$'
