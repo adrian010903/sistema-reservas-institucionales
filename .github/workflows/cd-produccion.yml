@@ -48,21 +48,35 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           CONFIRMACION: ${{ inputs.confirmacion }}
+          OPERACION: ${{ inputs.operation }}
+          ROLLBACK_DEPLOY_ID: ${{ inputs.rollback_deploy_id }}
         run: |
           if [[ "$GITHUB_REF" != refs/heads/main ]]; then
-            echo 'Producción solo se despliega desde main'
+            echo 'Producción solo se opera desde main'
             exit 1
           fi
           if [[ "$CONFIRMACION" != PRODUCCION ]]; then
             echo 'Debes escribir PRODUCCION en el campo de confirmación'
             exit 1
           fi
-          # Exige que CI, Docker y E2E hayan pasado para este mismo commit.
-          if ! bash .github/scripts/checks.sh "$GITHUB_SHA"; then
-            echo "El commit $GITHUB_SHA no tiene todos los checks en verde; no se puede llevar a producción"
-            exit 1
+          if [[ "$OPERACION" == deploy ]]; then
+            # Publicar: exige que CI, Docker y E2E hayan pasado para este commit.
+            if ! bash .github/scripts/checks.sh "$GITHUB_SHA"; then
+              echo "El commit $GITHUB_SHA no tiene todos los checks en verde; no se puede llevar a producción"
+              exit 1
+            fi
+            echo "Checks confirmados para $GITHUB_SHA"
+          else
+            # Rollback: no depende de los checks del commit actual, porque sirve
+            # justamente para salir de una versión con fallos. Solo se revisa
+            # aquí el formato del ID; en el siguiente job, después de la
+            # aprobación, se verifica que pertenezca al servicio y haya funcionado.
+            if [[ ! "$ROLLBACK_DEPLOY_ID" =~ ^dep-[a-zA-Z0-9]+$ ]]; then
+              echo 'Indica un ID de despliegue válido de Render (dep-...)'
+              exit 1
+            fi
+            echo "Rollback solicitado hacia $ROLLBACK_DEPLOY_ID; no se exigen los checks del commit actual"
           fi
-          echo "Checks confirmados para $GITHUB_SHA"
 
   produccion:
     name: Desplegar o revertir producción
