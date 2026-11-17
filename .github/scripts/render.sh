@@ -34,19 +34,13 @@ render_post() {
 
 # Comprueba que el ID corresponde al servicio esperado antes de tocarlo:
 # misma URL, autodeploy apagado y un nombre que cumpla la regla del ambiente.
-# La regla es una expresión regular:
-#   '^reservas-backend-dev$'   el nombre DEBE cumplirla.
-#   '!(staging|dev)'           con "!" delante, el nombre NO debe cumplirla.
+# La regla es una expresión regular con el nombre exacto, por ejemplo
+# '^reservas-backend-dev$'.
 verificar() {
   local service_id="$1" url="$2" regla="$3" service nombre
   service=$(render_get "/services/${service_id}")
   nombre=$(jq -r '.name' <<< "$service")
-  if [[ "$regla" == '!'* ]]; then
-    if [[ "$nombre" =~ ${regla:1} ]]; then
-      echo "El servicio ${service_id} se llama '${nombre}' y parece de otro ambiente ('${regla:1}')"
-      exit 1
-    fi
-  elif [[ ! "$nombre" =~ $regla ]]; then
+  if [[ ! "$nombre" =~ $regla ]]; then
     echo "El servicio ${service_id} se llama '${nombre}' y no cumple la regla '${regla}'"
     exit 1
   fi

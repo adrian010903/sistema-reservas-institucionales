@@ -6,9 +6,11 @@
 |---|---|---|---|---|
 | Desarrollo | `CD desarrollo (Render)` (`cd-desarrollo.yml`) | Automático después de un merge a `main`, cuando `CI`, `Docker` y `E2E` terminaron con éxito | Los tres checks deben pasar | `reservas-backend-dev`, `reservas-frontend-dev` |
 | Staging | `CD staging (Render)` (`cd-staging.yml`) | Manual (`Run workflow`) | Ejecución manual y verificación de servicios | `reservas-backend-staging`, `reservas-frontend-staging` |
-| Producción | `CD producción (Render)` (`cd-produccion.yml`) | Manual (`Run workflow`), solo desde `main` | Checks exitosos del commit, confirmación escrita y aprobación del environment `production` | Servicios originales conectados a `main` |
+| Producción | `CD producción (Render)` (`cd-produccion.yml`) | Manual (`Run workflow`), solo desde `main` | Checks exitosos del commit, confirmación escrita y aprobación del environment `production` | Servicios originales: `sistema-reservas-backend`, `sistema-reservas-institucionales` |
 
-Los tres ambientes usan servicios distintos. Cada workflow consulta la API de Render antes de desplegar y se detiene si el nombre, la URL o el autodeploy del servicio no son los esperados, de modo que un ID mal copiado no puede tocar otro ambiente. Las funciones comunes de los workflows de desarrollo y producción están en `.github/scripts/render.sh` (verificar, desplegar, revertir y comprobar salud; el token solo se envía en la cabecera de autorización y nunca se imprime) y `.github/scripts/checks.sh` (comprueba que `CI`, `Docker` y `E2E` pasaron para un commit). `cd-staging.yml` conserva su lógica propia y no se modificó.
+Los tres ambientes usan servicios distintos. Cada workflow consulta la API de Render antes de desplegar y se detiene si el nombre, la URL o el autodeploy del servicio no son los esperados, de modo que un ID mal copiado no puede tocar otro ambiente. Las funciones comunes de los workflows de desarrollo y producción están en `.github/scripts/render.sh` (verificar, desplegar, revertir y comprobar salud; el token solo se envía en la cabecera de autorización y nunca se imprime) y `.github/scripts/checks.sh` (comprueba que `CI`, `Docker` y `E2E` pasaron para un commit).
+
+`checks.sh` tiene pruebas propias en `.github/scripts/test-checks.sh`, que simulan las respuestas de GitHub sin conectarse: tres checks exitosos (publica), uno fallido (no publica), uno en curso o sin ejecutar (espera), fallo y pendiente a la vez (gana el fallo) y una re-ejecución (vale la más reciente). Se ejecutan con `bash .github/scripts/test-checks.sh` y requieren `bash` y `jq`. `cd-staging.yml` conserva su lógica propia y no se modificó.
 
 ## Estado y límites
 
@@ -69,7 +71,7 @@ GitHub solo ejecuta los workflows `workflow_run` que están en la rama principal
 
 Revisora requerida propuesta: Shirley (si tiene permisos de colaboradora para aprobar; si no, Dana). Con *Prevent self-review* activado, la persona que inicia el workflow no puede aprobarlo.
 
-Producción son los servicios originales de Render conectados a `main`. El workflow rechaza cualquier servicio cuyo nombre contenga `staging` o termine en `-dev`, y también los que tengan autodeploy encendido. Así, un merge a `main` no puede llegar a producción sin la aprobación.
+Producción son los servicios originales de Render: `sistema-reservas-backend` (backend) y `sistema-reservas-institucionales` (frontend). El workflow solo acepta esos nombres exactos y rechaza los servicios que tengan autodeploy encendido. Así, un merge a `main` no puede llegar a producción sin la aprobación.
 
 **No se ha ejecutado ningún despliegue a producción.** El workflow queda preparado para cuando el equipo lo decida.
 

@@ -95,11 +95,11 @@ jobs:
             echo 'Los servicios backend y frontend deben ser distintos'
             exit 1
           fi
-          # Producción son los servicios originales de Render. Se rechaza
-          # cualquier servicio cuyo nombre indique staging o desarrollo, y se
-          # exige autodeploy apagado para que nada llegue sin la aprobación.
-          bash .github/scripts/render.sh verificar "$BACKEND_SERVICE_ID" "$BACKEND_URL" '!(staging|-dev$)'
-          bash .github/scripts/render.sh verificar "$FRONTEND_SERVICE_ID" "$FRONTEND_URL" '!(staging|-dev$)'
+          # Producción son los servicios originales de Render. Solo se aceptan
+          # sus nombres exactos, y se exige autodeploy apagado para que nada
+          # llegue a producción sin la aprobación.
+          bash .github/scripts/render.sh verificar "$BACKEND_SERVICE_ID" "$BACKEND_URL" '^sistema-reservas-backend$'
+          bash .github/scripts/render.sh verificar "$FRONTEND_SERVICE_ID" "$FRONTEND_URL" '^sistema-reservas-institucionales$'
 
       - name: Desplegar el commit aprobado
         if: inputs.operation == 'deploy'
