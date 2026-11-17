@@ -56,6 +56,8 @@ En cada servicio de Render se configuran además las variables de la aplicación
    - los tres en `success`: pasa al siguiente job.
 2. **Desplegar desarrollo**: `validar-config.sh development` comprueba que existan las cinco variables; `render.sh verificar` exige los nombres exactos `reservas-backend-dev` y `reservas-frontend-dev`, su URL y autodeploy apagado. Después despliega el commit exacto (`workflow_run.head_sha`): backend y `/api/v1/status`, luego frontend y `/login`.
 
+**Evitar publicar dos veces lo mismo:** si dos checks terminan al mismo tiempo, las dos ejecuciones podrían ver los tres checks en verde. Como van en fila (`concurrency`), la segunda empieza cuando la primera terminó; `render.sh desplegar_si_falta` consulta el último despliegue del servicio y, si ese commit ya está `live`, no lo repite. Si el último despliegue de ese commit había fallado, si es otro commit o si Render no devuelve la lista, despliega normalmente.
+
 **Cómo verificar:** en Actions > `CD desarrollo (Render)`, de las tres ejecuciones de un merge, dos deben mostrar el job de despliegue como *skipped* y una como *success*. Abrir la URL de desarrollo y comprobar `/login`.
 
 GitHub solo ejecuta los workflows `workflow_run` que están en `main`; un cambio a este workflow se puede probar únicamente después de fusionarlo.
@@ -143,7 +145,7 @@ El workflow `Pruebas CD` (`test-cd.yml`) se ejecuta en cada PR hacia `main` y en
 | Archivo de prueba | Qué simula |
 |---|---|
 | `test-checks.sh` | Checks exitosos, uno fallido, uno en curso, uno sin ejecutar, fallo y pendiente a la vez y una re-ejecución |
-| `test-render.sh` | Falta `RENDER_API_KEY`, comando desconocido, servicio correcto, nombre incorrecto, nombre con sufijo, URL distinta, ID inexistente, autodeploy encendido, despliegue `live`, build fallido, Render sin ID, salud correcta, error de salud, rollback con ID mal escrito, rollback a un despliegue fallido, rollback a un despliegue de otro servicio y rollback válido. Comprueba que en los rollbacks inválidos **no** se envíe ninguna petición `POST` y que la clave nunca se imprima |
+| `test-render.sh` | Falta `RENDER_API_KEY`, comando desconocido, servicio correcto, nombre incorrecto, nombre con sufijo, URL distinta, ID inexistente, autodeploy encendido, despliegue `live`, build fallido, Render sin ID, commit ya `live` (no repite), otro commit `live` (despliega), commit que había fallado (reintenta), Render sin lista (despliega), salud correcta, error de salud, rollback con ID mal escrito, rollback a un despliegue fallido, rollback a un despliegue de otro servicio y rollback válido. Comprueba que en los rollbacks inválidos **no** se envíe ninguna petición `POST` y que la clave nunca se imprima |
 | `test-validaciones.sh` | `validar-config.sh` (completa, falta la clave, falta una URL, sin variables, IDs iguales) y `validar-produccion.sh` (deploy con checks verdes, fallidos o pendientes; rollback con checks fallidos; ID mal escrito o vacío; sin `PRODUCCION`; rama distinta de `main`; operación desconocida) |
 
 Para ejecutarlas localmente (requiere `bash` y `jq`):

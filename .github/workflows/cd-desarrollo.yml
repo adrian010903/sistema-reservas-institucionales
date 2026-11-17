@@ -90,8 +90,10 @@ jobs:
       - name: Desplegar backend y frontend
         shell: bash
         run: |
-          bash .github/scripts/render.sh desplegar "$BACKEND_SERVICE_ID" backend "$COMMIT"
+          # Si dos checks terminaron a la vez, la segunda ejecución encuentra
+          # el commit ya live y no lo vuelve a desplegar.
+          bash .github/scripts/render.sh desplegar_si_falta "$BACKEND_SERVICE_ID" backend "$COMMIT"
           bash .github/scripts/render.sh salud "${BACKEND_URL%/}/api/v1/status"
-          bash .github/scripts/render.sh desplegar "$FRONTEND_SERVICE_ID" frontend "$COMMIT"
+          bash .github/scripts/render.sh desplegar_si_falta "$FRONTEND_SERVICE_ID" frontend "$COMMIT"
           bash .github/scripts/render.sh salud "${FRONTEND_URL%/}/login"
           echo "Desarrollo actualizado al commit $COMMIT"

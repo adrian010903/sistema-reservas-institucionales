@@ -14,6 +14,7 @@ mkdir -p "$temporal/bin"
 
 # curl falso. Responde según la ruta de la API de Render:
 #   GET  /services/<id>                 -> servicio-<id>.json
+#   GET  /services/<id>/deploys?limit=1 -> lista-<id>.json
 #   GET  /services/<id>/deploys/<dep>   -> deploy-<id>-<dep>.json
 #   POST /services/<id>/deploys         -> nuevo-deploy.json
 #   POST /services/<id>/rollback        -> nuevo-rollback.json
@@ -36,10 +37,11 @@ ruta="${url#https://api.render.com/v1}"
 if [[ "$ruta" == "$url" ]]; then
   exit "$(cat "$FALSO/salud" 2>/dev/null || echo 0)"
 fi
+ruta="${ruta%%\?*}"
 IFS=/ read -r _ _ servicio parte deploy <<< "$ruta"
 case "$metodo:$parte" in
   GET:)        archivo="servicio-${servicio}.json" ;;
-  GET:deploys) archivo="deploy-${servicio}-${deploy}.json" ;;
+  GET:deploys) if [[ -z "$deploy" ]]; then archivo="lista-${servicio}.json"; else archivo="deploy-${servicio}-${deploy}.json"; fi ;;
   POST:deploys) archivo="nuevo-deploy.json" ;;
   POST:rollback) archivo="nuevo-rollback.json" ;;
   *) archivo="" ;;
@@ -133,6 +135,30 @@ probar "Despliegue con build fallido" error "" desplegar srv-dev backend abc123
 nuevo_escenario
 responder nuevo-deploy.json '{"message":"sin id"}'
 probar "Render no devuelve ID de despliegue" error "" desplegar srv-dev backend abc123
+
+echo '--- Evitar publicar dos veces lo mismo (desarrollo)'
+ultimo() {
+  printf '[{"deploy":{"id":"dep-ultimo","status":"%s","commit":{"id":"%s"}}}]' "$1" "$2"
+}
+nuevo_escenario
+responder lista-srv-dev.json "$(ultimo live abc123)"
+probar "El mismo commit ya está live: no despliega otra vez" ok POST desplegar_si_falta srv-dev backend abc123
+nuevo_escenario
+responder lista-srv-dev.json "$(ultimo live viejo999)"
+responder nuevo-deploy.json '{"id":"dep-nuevo1"}'
+responder deploy-srv-dev-dep-nuevo1.json '{"id":"dep-nuevo1","status":"live"}'
+probar "Hay otro commit live: sí despliega" ok "" desplegar_si_falta srv-dev backend abc123
+grep -q POST "$temporal/falso/llamadas.log" || { echo "FALLA no pidió el despliegue del commit nuevo"; fallidas=$((fallidas + 1)); }
+nuevo_escenario
+responder lista-srv-dev.json "$(ultimo build_failed abc123)"
+responder nuevo-deploy.json '{"id":"dep-nuevo1"}'
+responder deploy-srv-dev-dep-nuevo1.json '{"id":"dep-nuevo1","status":"live"}'
+probar "El mismo commit había fallado: lo vuelve a intentar" ok "" desplegar_si_falta srv-dev backend abc123
+grep -q POST "$temporal/falso/llamadas.log" || { echo "FALLA no reintentó el despliegue"; fallidas=$((fallidas + 1)); }
+nuevo_escenario
+responder nuevo-deploy.json '{"id":"dep-nuevo1"}'
+responder deploy-srv-dev-dep-nuevo1.json '{"id":"dep-nuevo1","status":"live"}'
+probar "Render no devuelve la lista: despliega normalmente" ok "" desplegar_si_falta srv-dev backend abc123
 
 echo '--- Comprobación de salud'
 nuevo_escenario

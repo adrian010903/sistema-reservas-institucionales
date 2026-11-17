@@ -6,6 +6,7 @@
 # Uso:
 #   render.sh verificar <service_id> <url_publica> <regla_nombre>
 #   render.sh desplegar <service_id> <etiqueta> <commit>
+#   render.sh desplegar_si_falta <service_id> <etiqueta> <commit>
 #   render.sh revertir  <service_id> <etiqueta> <deploy_id_anterior>
 #   render.sh salud     <url>
 set -euo pipefail
@@ -93,6 +94,23 @@ desplegar() {
   esperar "$service_id" "$etiqueta" "$deploy_id"
 }
 
+# Despliega un commit solo si no es ya la versión live del servicio.
+# Evita publicar dos veces lo mismo cuando dos checks terminan a la vez:
+# las ejecuciones van en fila, así que la segunda encuentra el commit ya live.
+# Si Render no devuelve la lista o el commit es otro, despliega normalmente.
+desplegar_si_falta() {
+  local service_id="$1" etiqueta="$2" commit="$3" lista ultimo_commit ultimo_estado
+  if lista=$(render_get "/services/${service_id}/deploys?limit=1"); then
+    ultimo_commit=$(jq -r 'first(.[].deploy.commit.id) // empty' <<< "$lista" 2>/dev/null || true)
+    ultimo_estado=$(jq -r 'first(.[].deploy.status) // empty' <<< "$lista" 2>/dev/null || true)
+    if [[ "$ultimo_commit" == "$commit" && "$ultimo_estado" == live ]]; then
+      echo "${etiqueta} ya tiene live el commit ${commit}; no se repite el despliegue"
+      return 0
+    fi
+  fi
+  desplegar "$service_id" "$etiqueta" "$commit"
+}
+
 # Vuelve a un despliegue anterior que haya funcionado.
 revertir() {
   local service_id="$1" etiqueta="$2" anterior="$3" objetivo estado response nuevo
@@ -138,6 +156,7 @@ shift || true
 case "$comando" in
   verificar) verificar "$@" ;;
   desplegar) desplegar "$@" ;;
+  desplegar_si_falta) desplegar_si_falta "$@" ;;
   revertir)  revertir "$@" ;;
   salud)     salud "$@" ;;
   *) echo "Comando desconocido: ${comando}"; exit 1 ;;
