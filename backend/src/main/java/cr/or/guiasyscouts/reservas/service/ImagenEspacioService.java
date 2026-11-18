@@ -74,7 +74,14 @@ public class ImagenEspacioService {
 
     private void eliminarAnterior(String imagenAnterior, String nombreNuevo, Path destino, String prefijo) throws IOException {
         if (imagenAnterior == null || !imagenAnterior.startsWith(prefijo)) return;
-        String nombreAnterior = Path.of(imagenAnterior).getFileName().toString();
-        if (!nombreAnterior.equals(nombreNuevo)) Files.deleteIfExists(destino.resolve(nombreAnterior).normalize());
+
+        Path archivoAnterior = Path.of(imagenAnterior).getFileName();
+        if (archivoAnterior == null) return;
+
+        String nombreAnterior = archivoAnterior.toString();
+
+        if (!nombreAnterior.equals(nombreNuevo)) {
+            Files.deleteIfExists(destino.resolve(nombreAnterior).normalize());
+        }
     }
 }

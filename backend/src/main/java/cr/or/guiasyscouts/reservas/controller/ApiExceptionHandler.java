@@ -63,9 +63,10 @@ public class ApiExceptionHandler {
     ProblemDetail estadoRespuesta(ResponseStatusException exception, HttpServletRequest request) {
         HttpStatus status = HttpStatus.valueOf(exception.getStatusCode().value());
         if (status.is5xxServerError()) return errorInterno(exception, request);
-        String detalle = exception.getReason() == null || exception.getReason().isBlank()
+        String reason = exception.getReason();
+        String detalle = reason == null || reason.isBlank()
                 ? "No fue posible completar la solicitud"
-                : exception.getReason();
+                : reason;
         return problema(status, titulo(status), detalle, request);
     }
 
