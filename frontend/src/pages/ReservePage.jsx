@@ -9,8 +9,11 @@ export default function ReservePage({
   const selectedReservePlace = reservablePlaces.find((place) => String(place.id) === String(selectedPlaceId))
   const placeSpaces = spaces.filter((space) => String(space.lugarId) === String(selectedPlaceId) && space.estado === 'DISPONIBLE')
   const placeCover = (place) => place.imagenUrl || spaces.find((space) => String(space.lugarId) === String(place.id) && space.imagenUrl)?.imagenUrl
-  const complete = Boolean(selectedSpace && form.fecha && form.fechaFin && form.fechaFin >= form.fecha && form.horaInicio && form.horaFin && Number(form.cantidadPersonas) > 0)
-  const hint = !selectedSpace ? 'Selecciona un espacio para continuar.' : !form.fecha || !form.fechaFin ? 'Completa la fecha de inicio y la fecha de fin.' : form.fechaFin < form.fecha ? 'La fecha final debe ser igual o posterior a la fecha inicial.' : !form.horaInicio || !form.horaFin ? 'Completa el horario para continuar.' : ''
+  const peopleCount = Number(form.cantidadPersonas)
+  const exceedsCapacity = Boolean(selectedSpace && peopleCount > Number(selectedSpace.capacidad))
+  const invalidTimeOrder = Boolean(form.horaInicio && form.horaFin && form.horaFin <= form.horaInicio)
+  const complete = Boolean(selectedSpace && form.fecha && form.fechaFin && form.fechaFin >= form.fecha && form.horaInicio && form.horaFin && !invalidTimeOrder && peopleCount > 0 && !exceedsCapacity)
+  const hint = !selectedSpace ? 'Selecciona un espacio para continuar.' : !form.fecha || !form.fechaFin ? 'Completa la fecha de inicio y la fecha de fin.' : form.fechaFin < form.fecha ? 'La fecha final debe ser igual o posterior a la fecha inicial.' : !form.horaInicio || !form.horaFin ? 'Completa el horario para continuar.' : invalidTimeOrder ? 'La hora de fin debe ser posterior a la hora de inicio.' : peopleCount < 1 ? 'Indica al menos 1 persona.' : exceedsCapacity ? `La cantidad de personas excede la capacidad máxima de este espacio (${selectedSpace.capacidad}).` : ''
   const updateForm = (changes) => { onFormChange({ ...form, ...changes }); onClearAvailability() }
 
   return (

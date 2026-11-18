@@ -138,7 +138,7 @@ export function CustomReservationSchedule({ form, setForm, hourlyRate = 0, avail
           <div className="reservation-time-range" aria-live="polite">
             <div><small>Inicio</small><strong>{form.horaInicio || '08:00'}</strong></div>
             <span aria-hidden="true">→</span>
-            <label className="reservation-end-field"><small htmlFor="reservation-end-time">Hora fin</small><select id="reservation-end-time" className="reservation-end-select" value={form.horaFin} onChange={(event) => setForm({ ...form, horaFin: event.target.value })} aria-label="Selecciona la hora de fin">
+            <label className="reservation-end-field"><small htmlFor="reservation-end-time">Hora fin</small><select id="reservation-end-time" className="reservation-end-select" value={form.horaFin || formatTime(endMinutes)} onChange={(event) => setForm({ ...form, horaFin: event.target.value })} aria-label="Selecciona la hora de fin">
               {endTimes.map((minutes) => <option key={minutes} value={formatTime(minutes)}>{formatTime(minutes)}</option>)}
             </select></label>
           </div>
