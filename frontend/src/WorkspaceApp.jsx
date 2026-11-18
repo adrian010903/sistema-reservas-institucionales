@@ -236,7 +236,10 @@ function WorkspaceApp() {
   }, [modalOpen])
 
   const navigate = (next, origin) => {
-    if (next === 'login') setReturnPage(origin && origin !== 'login' ? origin : 'home')
+    if (next === 'login') {
+      setReturnPage(origin && origin !== 'login' ? origin : 'home')
+      setAuthMode('login')
+    }
     setPage(next)
     setMessage('')
     const path = ROUTES[next] || ROUTES.home
@@ -401,8 +404,9 @@ function WorkspaceApp() {
     Object.entries(reportFilters).forEach(([key, value]) => {
       if (value) params.set(key, value)
     })
+    const query = params.toString()
     const timer = window.setTimeout(() => {
-      fetch(`${API}/admin/reportes/resumen?${params}`, { headers: auth, signal: controller.signal })
+      fetch(`${API}/admin/reportes/resumen${query ? `?${query}` : ''}`, { headers: auth, signal: controller.signal })
         .then(readJson)
         .then((summary) => {
           setReportSummary(summary)
@@ -827,6 +831,7 @@ function WorkspaceApp() {
   async function checkAvailability(event) {
     event.preventDefault()
     setMessage('')
+    if (!availabilityForm.fecha) return setMessage('Selecciona un día en el calendario para consultar disponibilidad')
     let body
     try {
       body = await fetchAvailability({
@@ -1086,7 +1091,7 @@ function WorkspaceApp() {
           <div>
             <p className="eyebrow">Panel administrativo · {user?.rol}</p>
             <h1>Resumen institucional</h1>
-            <p>Hola, {user?.nombre}. Supervisa reservas, pagos y capacidad desde un solo lugar.</p>
+            <p>Hola, {user?.nombre?.trim()}. Supervisa reservas, pagos y capacidad desde un solo lugar.</p>
           </div>
           <button className="primary-button" onClick={() => navigate('admin')}>
             Abrir administración
