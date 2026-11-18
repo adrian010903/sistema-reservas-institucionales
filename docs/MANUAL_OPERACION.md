@@ -22,20 +22,55 @@ Guía operativa para poner en marcha, monitorear, desplegar y recuperar el **Sis
 
 1. Copia `.env.example` como `.env` en la raíz del repositorio.
 2. Completa `DB_PASSWORD`, `DB_ROOT_PASSWORD` y `APP_JWT_SECRET` (mínimo 32 caracteres).
-3. Levanta los contenedores:
+3. Valida las variables obligatorias y la estructura de Compose sin iniciar servicios:
+
+```powershell
+docker compose config --quiet
+```
+4. Levanta los contenedores:
 
 ```powershell
 docker compose up --build -d
 ```
 
-4. Verifica el estado en `http://127.0.0.1:5173` y `http://127.0.0.1:5173/api/v1/status`.
-5. Para ver logs en tiempo real: `docker compose logs -f`.
-6. Para detener conservando datos e imágenes: `docker compose down` (evita `docker compose down -v` salvo que quieras borrar los volúmenes).
+5. Verifica el estado en `http://127.0.0.1:5173` y `http://127.0.0.1:5173/api/v1/status`.
+6. Para ver logs en tiempo real: `docker compose logs -f`.
+7. Para detener conservando datos e imágenes: `docker compose down` (evita `docker compose down -v` salvo que quieras borrar los volúmenes).
 
 ### Arranque sin Docker (IDE / terminal)
 
 - **Backend:** configura `backend/src/main/resources/application-local.properties` a partir de `application-local.properties.example` y ejecuta `ReservasBackendApplication` (o `.\mvnw.cmd spring-boot:run`).
 - **Frontend:** dentro de `frontend/`, ejecuta `npm ci` (o `npm install`) y `npm run dev`.
+
+### Variables específicas de Compose
+
+Esta aclaración procede de `compose.yaml`, `.env.example` y los Dockerfiles presentes en la rama. Estos archivos ya existen en la base compartida con `origin/main`; no son incorporaciones nuevas de `calidad-ci-docker`.
+
+| Variable en `.env` | Efecto en Compose |
+|---|---|
+| `DB_PASSWORD` | Obligatoria. Contraseña del usuario MySQL `reservas` y valor enviado al backend como `SPRING_DATASOURCE_PASSWORD`. |
+| `DB_ROOT_PASSWORD` | Obligatoria. Contraseña de root de MySQL, utilizada también por su healthcheck. |
+| `APP_JWT_SECRET` | Obligatoria. Se transmite al backend para firmar tokens; utiliza al menos 32 caracteres. |
+| `FRONTEND_PORT` | Puerto publicado solo en `127.0.0.1`; por defecto `5173`. |
+| `FRONTEND_URL` | Por defecto `http://localhost:5173`; también alimenta `CORS_ALLOWED_ORIGINS` en Compose. Si cambias el puerto, ajusta esta URL. |
+| `SPRING_JPA_SHOW_SQL`, `SPRING_JPA_FORMAT_SQL` | Valores enviados al contenedor para la configuración SQL; por defecto `false`. |
+
+Compose fija la URL JDBC a `db:3306`, el usuario a `reservas`, `SERVER_PORT=8081` y `UPLOAD_DIR=/app/uploads`. La base de datos no publica un puerto al host y el backend solo expone `8081` a la red de contenedores. No se utiliza el puerto de MySQL configurado en `application-local.properties` del equipo. La imagen frontend se construye con `VITE_API_URL=/api/v1`; ese valor no se toma de `.env` durante la ejecución de Compose.
+
+Mantén `.env` fuera de Git. `.dockerignore` excluye los archivos `.env*`, `application-local.properties` y las carpetas locales de uploads del contexto de construcción. Las opciones de integraciones externas ya listadas en la sección 3 no se amplían en esta actualización.
+
+### Persistencia de datos en Compose
+
+| Volumen | Montaje | Contenido |
+|---|---|---|
+| `mysql_data` | `/var/lib/mysql` en `db` | Datos de MySQL. |
+| `uploads_data` | `/app/uploads` en `backend` | Imágenes subidas, mediante `UPLOAD_DIR=/app/uploads`. |
+
+`docker compose down` retira contenedores y redes, conservando estos volúmenes. Al ejecutar de nuevo `docker compose up -d` con el mismo proyecto Compose, se reutilizan. Los nombres reales pueden llevar el prefijo del proyecto; cambiar el nombre del proyecto puede crear otros volúmenes y dar la impresión de que los datos desaparecieron.
+
+`docker compose down -v` elimina los volúmenes: no lo uses para detener tu entorno si necesitas conservar los datos. La limpieza con `-v` del workflow Docker corresponde únicamente a los datos temporales de CI. Los volúmenes aportan persistencia entre recreaciones de contenedores, pero no constituyen una copia de seguridad.
+
+Para comprobar la persistencia local, registra un dato y sube una imagen de prueba; ejecuta `docker compose down`, vuelve a iniciar con `docker compose up -d` y verifica ambos desde la aplicación. Este es un procedimiento propuesto de comprobación: no se ejecutó durante esta actualización documental.
 
 ---
 

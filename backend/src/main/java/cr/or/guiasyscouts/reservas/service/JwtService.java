@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 import javax.crypto.SecretKey;
 import java.util.Date;
 
+import java.nio.charset.StandardCharsets;
+
 @Service
 public class JwtService {
 
@@ -20,7 +22,10 @@ public class JwtService {
             @Value("${app.jwt.secret}") String secret,
             @Value("${app.jwt.expiration-ms}") long expirationMs
     ) {
-        byte[] keyBytes = Decoders.BASE64.decode(java.util.Base64.getEncoder().encodeToString(secret.getBytes()));
+        byte[] keyBytes = Decoders.BASE64.decode(
+                java.util.Base64.getEncoder()
+                        .encodeToString(secret.getBytes(StandardCharsets.UTF_8))
+        );
         this.signingKey = Keys.hmacShaKeyFor(keyBytes);
         this.expirationMs = expirationMs;
     }
