@@ -6,6 +6,7 @@ export default function SpacesPage({
   onPlaceChange, onAvailabilityChange, onTypeChange, onCheckAvailability, onClearAvailability, onCreatePlace, onCreateSpace,
   onEditPlace, onDeletePlace, onEditSpace, onDeleteSpace, onReserve,
 }) {
+  const formatSpacesCount = (count) => `${count} ${count === 1 ? 'espacio' : 'espacios'}`
   const isAdmin = user && ['ADMIN', 'SUPERADMIN'].includes(user.rol)
   const currentPlace = places.find((place) => String(place.id) === String(selectedPlaceId))
   const visibleSpaces = (selectedPlaceId === 'sin-lugar' ? spaces.filter((space) => !space.lugarId) : spaces.filter((space) => String(space.lugarId) === String(selectedPlaceId))).filter((space) => availableSpaceIds === null || availableSpaceIds.includes(space.id))
@@ -20,17 +21,17 @@ export default function SpacesPage({
       {message && <p className="form-message">{message}</p>}
       <div className="place-selector">
         {places.map((place, index) => <article className={`place-card place-tone-${index % 3} ${String(selectedPlaceId) === String(place.id) ? 'selected' : ''} ${place.estado === 'INACTIVO' ? 'inactive' : ''}`} style={place.imagenUrl ? { backgroundImage: `linear-gradient(0deg,rgba(35,13,75,.88),rgba(35,13,75,.2)),url(${BACKEND}${place.imagenUrl})` } : undefined} key={place.id}>
-          <button className="place-select-button" onClick={() => onPlaceChange(place.id)}><span>⌂</span><strong>{place.nombre}</strong><small>{place.descripcion || place.direccion || 'Lugar institucional'}</small><b>{spaces.filter((space) => space.lugarId === place.id).length} espacios</b></button>
+          <button className="place-select-button" onClick={() => onPlaceChange(place.id)}><span>⌂</span><strong>{place.nombre}</strong><small>{place.descripcion || place.direccion || 'Lugar institucional'}</small><b>{formatSpacesCount(spaces.filter((space) => space.lugarId === place.id).length)}</b></button>
           {isAdmin && <div className="card-admin-actions"><button onClick={() => onEditPlace(place)}>Editar</button>{showDemoControls && <button className="danger" disabled={place.estado === 'INACTIVO'} onClick={() => onDeletePlace(place)}>Eliminar</button>}</div>}
         </article>)}
-        {isAdmin && spaces.some((space) => !space.lugarId) && <article className={`place-card unassigned ${selectedPlaceId === 'sin-lugar' ? 'selected' : ''}`}><button className="place-select-button" onClick={() => onPlaceChange('sin-lugar')}><span>!</span><strong>Sin lugar asignado</strong><small>Espacios que debes organizar</small><b>{spaces.filter((space) => !space.lugarId).length} espacios</b></button></article>}
+        {isAdmin && spaces.some((space) => !space.lugarId) && <article className={`place-card unassigned ${selectedPlaceId === 'sin-lugar' ? 'selected' : ''}`}><button className="place-select-button" onClick={() => onPlaceChange('sin-lugar')}><span>!</span><strong>Sin lugar asignado</strong><small>Espacios que debes organizar</small><b>{formatSpacesCount(spaces.filter((space) => !space.lugarId).length)}</b></button></article>}
       </div>
       {places.length === 0 && !(isAdmin && spaces.some((space) => !space.lugarId)) ? <div className="catalog-empty"><strong>Aún no hay lugares registrados</strong><span>Un administrador debe crear primero Sede Nacional, Campo Escuela, Hostel u otro lugar.</span></div> : (
         <section className="place-section">
           <div className="place-heading"><div className="place-symbol">⌂</div><div><h2>{selectedPlaceId === 'sin-lugar' ? 'Sin lugar asignado' : currentPlace?.nombre || 'Selecciona un lugar'}</h2><span>{visibleSpaces.length} espacio(s)</span></div>{isAdmin && currentPlace && <div className="place-heading-actions"><button onClick={() => onEditPlace(currentPlace)}>Editar lugar</button>{showDemoControls && <button className="danger" disabled={currentPlace.estado === 'INACTIVO'} onClick={() => onDeletePlace(currentPlace)}>Eliminar lugar</button>}</div>}</div>
           {showSprint2 && selectedPlaceId !== 'sin-lugar' && <><AvailabilityDateStrip value={availabilityForm.fecha} onChange={(fecha) => { updateAvailability('fecha', fecha); onClearAvailability(false) }} />
             <form className="availability-bar" onSubmit={onCheckAvailability}>
-              <label className="availability-date-input">Fecha<input type="date" required value={availabilityForm.fecha} onChange={(event) => updateAvailability('fecha', event.target.value)} /></label>
+              <label className="availability-date-input">Fecha<input type="date" value={availabilityForm.fecha} onChange={(event) => updateAvailability('fecha', event.target.value)} /></label>
               <label>Desde<input type="time" min="08:00" max="17:00" required value={availabilityForm.horaInicio} onChange={(event) => updateAvailability('horaInicio', event.target.value)} /></label>
               <label>Hasta<input type="time" min="08:00" max="17:00" required value={availabilityForm.horaFin} onChange={(event) => updateAvailability('horaFin', event.target.value)} /></label>
               <label>Tipo<select value={availabilityTypeId} onChange={(event) => onTypeChange(event.target.value)}><option value="">Todos</option>{types.map((type) => <option key={type.id} value={type.id}>{type.nombre}</option>)}</select></label>
