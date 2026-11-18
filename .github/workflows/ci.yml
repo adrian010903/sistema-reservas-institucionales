@@ -74,6 +74,14 @@ jobs:
           path: backend/target/site/jacoco/
           if-no-files-found: ignore
 
+      - name: Save backend build
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-build
+          path: backend/target/*.jar
+          if-no-files-found: error
+          retention-days: 14
+
   backend-static-analysis:
     name: Backend Static Analysis
     runs-on: ubuntu-latest
