@@ -22,16 +22,24 @@ Las recomendaciones orientan la investigación, no confirman la causa raíz. Par
 
 ## Límites actuales
 
-- Los logs completos siguen en la plataforma de despliegue; esta pantalla centraliza incidentes resumidos, no sustituye un proveedor de logs centralizados.
-- No se envían avisos externos por correo, SMS o Slack. La alerta aparece en el panel mientras una persona administradora lo consulta.
-- Una caída total de la base de datos impide guardar el incidente en la misma base. Para esa situación, consulta los logs/estado del servicio en Render.
+- El panel interno centraliza incidentes resumidos en la base de datos; los logs completos de aplicación viven en Render y, para staging, en Better Stack cuando el perfil `betterstack` está activo.
+- Las alertas internas del panel solo son visibles cuando una persona administradora lo consulta; las alertas externas por correo dependen de Better Stack (ver sección siguiente).
+- Una caída total de la base de datos impide guardar el incidente en `incidentes_soporte`. Para esa situación, consulta los logs y monitores en Render o Better Stack.
 - La configuración detectada de correo y Stripe no valida conectividad, dominio, firma de webhook ni entrega real.
-- El historial no tiene política automática de expiración todavía. Antes de operación prolongada, definir retención y respaldo.
 
-## Logs centralizados (opcional, solo staging)
+## Conservación y retención de incidentes
+
+El historial de `incidentes_soporte` se conserva bajo las siguientes reglas operativas:
+
+1. **Incidentes `ABIERTO`:** no se eliminan ni caducan automáticamente; permanecen visibles en **Administración > Diagnóstico** hasta que el monitor los cierre por recuperación del componente o un administrador los marque como resueltos (acción que queda registrada en `auditoria`).
+2. **Incidentes `RESUELTO`:** se conservan en la base de datos durante **al menos 90 días** desde su fecha de resolución (`resuelta_en`) como respaldo para auditorías, análisis de recurrencia y defensa del proyecto. La consulta en el panel muestra los **100 incidentes más recientes** ordenados por `ultima_vez`.
+3. **Limpieza controlada:** el sistema no ejecuta purga automática en este momento; transcurridos 90 días desde la resolución, la depuración de registros `RESUELTO` antiguos debe realizarse mediante mantenimiento controlado de base de datos (previo respaldo).
+4. **Respaldo externo:** los logs detallados enviados a Better Stack (staging) y los logs de plataforma en Render conservan su propia retención según el plan activo de cada servicio.
+
+## Logs centralizados, monitores y alertas (staging en Better Stack)
 
 El backend puede enviar sus logs a una fuente de Better Stack usando el appender
-Logback incluido. La integración está apagada por defecto; para activarla solo en
+Logback incluido (`com.logtail:logback-logtail`). La integración está apagada por defecto; para activarla solo en
 `reservas-backend-staging`, configura estas variables en el servicio de Render:
 
 | Variable | Valor |
@@ -51,6 +59,12 @@ Render también permite configurar Log Streams a nivel de workspace, pero el
 destino predeterminado incluye todos los servicios compatibles. En el plan Hobby
 no se puede excluir un servicio individual, así que no uses ese destino global
 si debe mantenerse producción fuera de Better Stack.
+
+### Estado verificado en staging (17/11/2026)
+
+- **Ingesta de logs:** tras corregir el empaquetado de `logback-logtail-0.4.0.jar` en el JAR ejecutable (PR #36) y activar `SPRING_PROFILES_ACTIVE=betterstack`, `reservas-backend-staging` arrancó correctamente y se verificaron logs reales entrando en **Better Stack > Live tail** (run `44194179235`).
+- **Monitores de disponibilidad:** configurados en Better Stack para `Backend de staging` y `frontend de staging` (chequeos cada 3 minutos, en estado `Up`).
+- **Alerta externa sobre logs:** configurada la regla `value > 0` sobre la consulta `"Se detectó un error interno"` en `reservas-backend-staging`, notificando al equipo (`Current team`). Se comprobó la entrega del correo mediante **Send a test alert**. Queda pendiente únicamente validar el disparo de esa alerta con un fallo real controlado en staging.
 
 ## Validación local
 

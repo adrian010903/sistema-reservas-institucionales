@@ -104,7 +104,9 @@ La arquitectura del sistema y el flujo de contribución están descritos en
 [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) y
 [docs/GUIA_CONTRIBUCION.md](docs/GUIA_CONTRIBUCION.md).
 
-El despliegue manual y aislado a staging en Render, junto con los pasos pendientes para producción y rollback, se documenta en [docs/CD_RENDER.md](docs/CD_RENDER.md).
+El despliegue controlado por ambientes en Render, junto con la estrategia de producción y rollback, se documenta en [docs/CD_RENDER.md](docs/CD_RENDER.md).
+
+La operación diaria, variables por ambiente, monitoreo y recuperación ante incidentes se describen en [docs/MANUAL_OPERACION.md](docs/MANUAL_OPERACION.md).
 
 ## Pruebas
 
