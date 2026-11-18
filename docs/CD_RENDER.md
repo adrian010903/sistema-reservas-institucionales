@@ -18,7 +18,7 @@ Cada ambiente usa servicios, base de datos y variables propios. Antes de tocar R
 |---|---|---|---|
 | Desarrollo automático | Sí (PR #33) | **Sí** | Run que esperó checks pendientes: [44035342704](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44035342704). Run que desplegó backend y frontend: [44035523905](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44035523905) (commit `4a5b216`) |
 | Desarrollo sin configuración | Sí | Sí, falló antes de desplegar | [44033843916](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44033843916): se detuvo en "Verificar configuración de desarrollo" (commit `64727f5`, antes de que existiera la configuración) |
-| Staging (deploy y E2E) | Sí (PR #30–#32) | Sí | [E2E staging](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44000560355) |
+| Staging (deploy y E2E) | Sí (PR #30–#32, #36) | Sí | Deploy `e2cdffd` con Better Stack: [44194179235](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44194179235); [E2E staging](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44000560355) |
 | Rollback en staging | Sí | **Pendiente**: ensayo coordinado con Adrián (sección 8) | — |
 | Producción con aprobación | Sí (PR #33 y #34) | **No ejecutado** por decisión del equipo | Validaciones cubiertas por pruebas automáticas (sección 9) |
 | Rollback en producción | Sí (PR #34) | **No ejecutado** | Validaciones cubiertas por pruebas automáticas (sección 9) |
@@ -194,10 +194,10 @@ Un Blue/Green completo mantiene dos copias de producción, despliega en la inact
 | Environment `development` con `RENDER_API_KEY`, IDs y URL | Informado por Adrián; despliegues exitosos de desarrollo | 2026-11-17 |
 | Autodeploy **apagado** en `sistema-reservas-backend` y `sistema-reservas-institucionales` | Confirmado por Adrián | 2026-11-17 |
 | Environment `production` con *Required reviewers* (Shirley, Dana, Alejandra y Adrián), *Prevent self-review* activado y despliegue permitido solo desde `main` | Verificado en la API pública de GitHub (`/environments/production`) | 2026-11-17 |
+| `RENDER_API_KEY` y las cuatro variables `RENDER_PROD_*` en el environment `production` | Verificado por Adrián mediante GitHub CLI (`gh secret list` y `gh variable list`) | 2026-11-17 |
+| Base de datos de desarrollo aislada de producción | Confirmado por Adrián en `reservas-backend-dev`: utiliza un esquema dedicado (`reservas_dev`), distinto al de producción y staging | 2026-11-17 |
 
 **Pendiente de confirmar:**
 
-1. `RENDER_API_KEY` y variables `RENDER_PROD_*` en el environment `production` (no son visibles sin permisos de administración; el workflow las exige antes de contactar Render).
-2. Base de datos de desarrollo aislada de producción.
-3. Fecha y hora del ensayo de rollback en staging (sección 8).
-4. Opcional: agregar `Pruebas CD / Simulacros de scripts de despliegue` a los checks requeridos de la protección de `main`.
+1. Fecha y hora del ensayo de rollback en staging (sección 8).
+2. Opcional: agregar `Pruebas CD / Simulacros de scripts de despliegue` a los checks requeridos de la protección de `main`.
