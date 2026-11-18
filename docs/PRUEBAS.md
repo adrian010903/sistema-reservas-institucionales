@@ -82,7 +82,7 @@ Partes del sistema que no tenían pruebas propias al revisar el proyecto, y qué
 
 ## Cómo ejecutarlas
 
-Backend (unitarias, integración y cobertura):
+Backend (unitarias, integración, cobertura y análisis estático):
 
 ```bash
 cd backend
@@ -108,3 +108,56 @@ npm run test:e2e
 | E2E staging | 16/11/2026 | 4 de 4 aprobadas | [Ejecución en Actions](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44000560355); [reporte Playwright](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44000560355/artifacts/14291677652) |
 
 Los reportes de Playwright se descargan como archivo `.zip` desde la ejecución. Al abrir `index.html` se ve cada escenario marcado como aprobado o fallido, con capturas y traza de los que fallan.
+
+## Calidad del backend en `calidad-ci-docker`
+
+
+### SpotBugs y Find Security Bugs
+
+`backend/pom.xml` incorpora `spotbugs-maven-plugin` **4.10.5.0** y el detector `findsecbugs-plugin` **1.14.0**. El análisis usa `effort=Max`, `threshold=High` y `failOnError=true`. Por tanto, el check bloquea el proceso cuando SpotBugs detecta hallazgos configurados con nivel High.; no equivale a demostrar que no existen otros problemas de seguridad.
+
+La ejecución `spotbugs-check` está vinculada a la fase `verify`. El filtro `backend/spotbugs-exclude.xml` excluye únicamente `SPRING_CSRF_PROTECTION_DISABLED` para `cr.or.guiasyscouts.reservas.config.SecurityConfig`; no deshabilita todas las comprobaciones de esa clase ni todos los detectores de seguridad.
+
+Para reproducir el check desde `backend/` con Java 17:
+
+```bash
+bash ./mvnw --batch-mode --no-transfer-progress -DskipTests compile spotbugs:check
+```
+
+En PowerShell, sustituye `bash ./mvnw` por `.\mvnw.cmd`. Este comando compila y analiza el backend sin ejecutar las pruebas. Para pruebas y cobertura por separado, como en CI:
+
+```bash
+bash ./mvnw --batch-mode --no-transfer-progress -Dspotbugs.skip=true verify
+```
+
+### Check `Backend Static Analysis` y correcciones
+
+En `.github/workflows/ci.yml`, el job `backend-static-analysis` se muestra como **Backend Static Analysis**, usa Temurin 17 y tiene un límite de 20 minutos. Ejecuta el primer comando anterior de forma independiente de **Backend tests**. Los jobs de pruebas de CI y Docker usan `-Dspotbugs.skip=true verify` para evitar repetir el análisis.
+
+El workflow CI se activa en pull requests hacia `main` y en pushes a `main`, `feature/**` y `bugfix/**`. Un push directo a `calidad-ci-docker` no está incluido en esos patrones; la configuración permite analizarla mediante un pull request hacia `main`. El YAML no demuestra por sí solo que el check sea obligatorio en la protección de la rama.
+
+El commit `51776e2` contiene estas correcciones tras el análisis estático:
+
+| Archivo | Corrección observable |
+|---|---|
+| `JwtService.java` | Usa `StandardCharsets.UTF_8` al convertir el secreto a bytes, evitando depender de la codificación predeterminada del equipo. |
+| `ApiExceptionHandler.java` | Guarda `exception.getReason()` en una variable y valida ese mismo valor antes de usarlo. |
+| `ImagenEspacioService.java` | Comprueba si `Path.getFileName()` devuelve `null` antes de convertirlo a texto al eliminar la imagen anterior. |
+
+### Artefactos de CI
+
+| Artefacto | Fuente | Condición de publicación |
+|---|---|---|
+| `backend-build` | `backend/target/*.jar` | Se publica tras el paso de pruebas satisfactorio, conserva los archivos 14 días y falla si no encuentra el JAR. Es una adición de esta rama. |
+| `backend-coverage-report` | `backend/target/site/jacoco/` | El paso se intenta incluso si falla un paso anterior (`always()`); ignora la ausencia de archivos. Ya existía en la base compartida. |
+| `backend-test-results` (workflow Docker) | `backend/target/surefire-reports/` y `backend/target/site/jacoco/` | Se intenta con `always()` e ignora archivos ausentes. Ya existía en la base compartida. |
+
+JaCoCo genera el reporte durante `verify`; el comando aislado de SpotBugs no genera cobertura. La configuración de JaCoCo no establece un mínimo obligatorio de cobertura. Los artefactos disponibles se consultan en la ejecución correspondiente de GitHub Actions; La ejecución del PR #41 confirmó la publicación de `backend-build` y `backend-coverage-report`..
+
+### Validación Docker/Compose
+
+La validación existente en `.github/workflows/docker.yml` ejecuta `docker compose config --quiet`, construye las imágenes y arranca los servicios. Después espera una respuesta satisfactoria de `/api/v1/status` a través del frontend y comprueba que `/login` contiene `id="root"`, con hasta 60 intentos separados por 3 segundos. Si falla, muestra logs; al finalizar elimina los contenedores y volúmenes temporales del runner con `docker compose down -v`.
+
+Es una prueba de construcción y arranque, no una prueba de recuperación de datos. La persistencia local y las variables necesarias se explican en [MANUAL_OPERACION.md](MANUAL_OPERACION.md#persistencia-de-datos-en-compose). Esta validación ya existía en la base compartida; el cambio propio de la rama es omitir SpotBugs en su job de pruebas para centralizarlo en **Backend Static Analysis**.
+
+En la validación del PR #41, los workflows CI, Docker, E2E y Pruebas CD finalizaron correctamente.
