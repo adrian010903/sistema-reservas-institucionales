@@ -21,7 +21,8 @@ Cada ambiente usa servicios, base de datos y variables propios. Antes de tocar R
 | Falla real en desarrollo y recuperación | Sí | Sí: un backend que no arrancó se detectó y se recuperó con el siguiente merge | Incidente INC-CD-01 (sección 13): fallo [44173771585](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44173771585), recuperación [44174070436](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44174070436) |
 | Staging (deploy y E2E) | Sí (PR #30–#32, #36) | Sí | Deploy `e2cdffd` con Better Stack: [44194179235](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44194179235); [E2E staging](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44000560355) |
 | Rollback en staging | Sí | **Pendiente**: ensayo coordinado con Adrián (sección 8) | — |
-| Producción con aprobación | Sí (PR #33 y #34) | **No ejecutado** por decisión del equipo | Validaciones cubiertas por pruebas automáticas (sección 9) |
+| Controles de producción (sin desplegar) | Sí (PR #33 y #34) | **Sí**: se detiene sin `PRODUCCION` y se pausa en *Waiting* hasta la aprobación | Sin confirmación: [#4](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44567867644) (Dana). Pausa en *Waiting* y cancelación: [#3](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44210880335) (Adrián). Detalle en la sección 6 |
+| Despliegue real a producción | Sí | **No ejecutado** por decisión del equipo | — |
 | Rollback en producción | Sí (PR #34) | **No ejecutado** | Validaciones cubiertas por pruebas automáticas (sección 9) |
 | Pruebas de los scripts de CD | Sí (PR #37) | Se ejecutan en el workflow `Pruebas CD` en cada PR y en ramas `feature/`, `bugfix/` y `hotfix/` | Artefacto `resultados-pruebas-cd` de cada run |
 
@@ -84,7 +85,15 @@ Un estado `live` y rutas accesibles no sustituyen la revisión funcional de stag
 1. **Validar antes de pedir aprobación** (sin secretos): `validar-produccion.sh` exige ejecutar desde `main` y escribir `PRODUCCION`. Para `deploy` exige además `CI`, `Docker` y `E2E` en verde para el commit. Para `rollback` no exige esos checks (el rollback sirve para salir de una versión con fallos) y solo comprueba el formato `dep-...` del ID. Si algo falla, no se llega a pedir aprobación. `PRODUCCION` evita ejecuciones accidentales; **no reemplaza la aprobación**.
 2. **Desplegar o revertir producción**: usa el environment `production`. GitHub pausa el job en *Waiting* hasta que un revisor lo apruebe. Solo entonces se leen los secretos, `validar-config.sh production` comprueba las variables y `render.sh verificar` exige exactamente `sistema-reservas-backend` y `sistema-reservas-institucionales`, su URL y autodeploy apagado.
 
-**No se ha ejecutado ningún despliegue ni rollback a producción.**
+**No se ha ejecutado ningún despliegue ni rollback a producción.** Sí se probaron sus controles, sin desplegar:
+
+| Prueba | Ejecución | Quién | Resultado |
+|---|---|---|---|
+| Ejecutar `deploy` escribiendo `prueba` en lugar de `PRODUCCION` | [#4](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44567867644) (19/11/2026) | Dana | El job **Validar antes de pedir aprobación** falló en 4 segundos con `Debes escribir PRODUCCION en el campo de confirmación`. El job **Desplegar o revertir producción** no se ejecutó: no se pidió aprobación, no se leyeron secretos y no se contactó Render |
+| Ejecuciones que no pasaron la validación | [#1](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44210429508) y [#2](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44210502282) (17/11/2026) | Adrián | Se detuvieron en **Validar antes de pedir aprobación**; el despliegue se omitió (*skipped*) |
+| Ejecución válida que espera aprobación | [#3](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44210880335) (17/11/2026) | Adrián | Pasó la validación y el job de producción quedó en *Waiting* unos 7 minutos esperando a un revisor. Se canceló sin aprobaciones, así que no se desplegó nada |
+
+Para repetir la prueba segura: Actions > `CD producción (Render)` > `Run workflow` desde `main`, con `operation=deploy` y cualquier texto distinto de `PRODUCCION` en la confirmación. Debe fallar en **Validar** y omitir el despliegue.
 
 ## 7. Rollback y recuperación ante fallos
 
@@ -201,7 +210,7 @@ Un Blue/Green completo mantiene dos copias de producción, despliega en la inact
 
 **Pendiente de confirmar:**
 
-1. Fecha y hora del ensayo de rollback en staging (sección 8) y de la prueba de pausa en *Waiting* de producción.
+1. Fecha y hora del ensayo de rollback en staging (sección 8).
 2. Opcional: agregar `Pruebas CD / Simulacros de scripts de despliegue` a los checks requeridos de la protección de `main`.
 
 ## 13. Registro de incidentes de CD
