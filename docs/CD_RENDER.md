@@ -20,7 +20,7 @@ Cada ambiente usa servicios, base de datos y variables propios. Antes de tocar R
 | Desarrollo sin configuración | Sí | Sí, falló antes de desplegar | [44033843916](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44033843916): se detuvo en "Verificar configuración de desarrollo" (commit `64727f5`, antes de que existiera la configuración) |
 | Falla real en desarrollo y recuperación | Sí | Sí: un backend que no arrancó se detectó y se recuperó con el siguiente merge | Incidente INC-CD-01 (sección 13): fallo [44173771585](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44173771585), recuperación [44174070436](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44174070436) |
 | Staging (deploy y E2E) | Sí (PR #30–#32, #36) | Sí | Deploy `e2cdffd` con Better Stack: [44194179235](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44194179235); [E2E staging](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44000560355) |
-| Rollback en staging | Sí | **Pendiente**: ensayo coordinado con Adrián (sección 8) | — |
+| Rollback en staging | Sí | **Sí**: ensayo del 19/11/2026 con el frontend de staging, y vuelta a la versión final | Rollback [#9](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44633714483), vuelta [#10](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44634192352), [E2E staging #28](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44634945297). Detalle en la sección 8 |
 | Controles de producción (sin desplegar) | Sí (PR #33 y #34) | **Sí**: se detiene sin `PRODUCCION` y se pausa en *Waiting* hasta la aprobación | Sin confirmación: [#4](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44567867644) (Dana). Pausa en *Waiting* y cancelación: [#3](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44210880335) (Adrián). Detalle en la sección 6 |
 | Despliegue real a producción | Sí | **No ejecutado** por decisión del equipo | — |
 | Rollback en producción | Sí (PR #34) | **No ejecutado** | Validaciones cubiertas por pruebas automáticas (sección 9) |
@@ -135,18 +135,24 @@ Se ejecuta **junto con Adrián**, en staging, nunca en producción. Para el prim
 
 7. Ejecutar `CD staging (Render)` con `operation=deploy` desde `main`, esperar verde y ejecutar E2E staging.
 
-**Evidencia a guardar**
+**Evidencia del ensayo (19/11/2026)**
+
+Hicimos el ensayo siguiendo este guion. Antes de empezar confirmamos en Render que staging estaba estable y tomamos los IDs de los despliegues.
 
 | Dato | Valor |
 |---|---|
-| Fecha y participantes | |
+| Fecha | 19/11/2026, entre las 4:59 p. m. y las 5:11 p. m. (hora de Costa Rica) |
+| Estado previo | Staging estable: [CD staging 44631706678](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44631706678) en verde con `main` (`175bf8e`) |
 | Servicio | `reservas-frontend-staging` |
-| Despliegue de origen (versión final) | `dep-...` |
-| Despliegue elegido para el rollback | `dep-...` |
-| Nuevo despliegue creado por el rollback | `dep-...` |
-| Run del rollback | enlace |
-| Verificación de recuperación (`/login`, E2E) | resultado y captura |
-| Run de vuelta a la versión final | enlace |
+| Despliegue de origen (versión final) | `dep-dbvnq9mk1f9s73fbtvbg` |
+| Despliegue elegido para el rollback | `dep-dbudmumk1f9s739v1m4g` (anterior exitoso, en estado `deactivated`) |
+| Nuevo despliegue creado por el rollback | `dep-dbvnusec6qcc738h3ft0` |
+| Run del rollback | [CD staging #9](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44633714483): `Rollback de frontend iniciado: dep-dbvnusec6qcc738h3ft0 (origen: dep-dbudmumk1f9s739v1m4g)` y `Rollback de frontend validado`. Tardó unos 20 segundos |
+| Verificación de recuperación | El workflow comprobó que `/login` respondiera con la versión anterior |
+| Run de vuelta a la versión final | [CD staging #10](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44634192352): `operation=deploy` desde `main` (`175bf8e`). Backend y frontend quedaron `live` y respondiendo. Tardó unos 3 minutos y medio |
+| Verificación final | [E2E staging #28](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44634945297) en verde (registro, inicio de sesión, reservas y aprobación del administrador), con el artefacto `e2e-staging-report` |
+
+**Qué comprobamos.** El rollback tardó solo unos segundos, porque Render ya tenía guardada la versión anterior; en cambio, volver a desplegar la versión final tardó unos minutos, porque hay que construir el backend y el frontend. El workflow solo aceptó una versión anterior que había funcionado en ese mismo servicio, y revisó que la página abriera antes de darlo por terminado. Al final, E2E staging confirmó que todo seguía funcionando. Usamos solo el frontend para no tocar la base de datos.
 
 ## 9. Pruebas automáticas de los scripts
 
@@ -210,8 +216,7 @@ Un Blue/Green completo mantiene dos copias de producción, despliega en la inact
 
 **Pendiente de confirmar:**
 
-1. Fecha y hora del ensayo de rollback en staging (sección 8).
-2. Opcional: agregar `Pruebas CD / Simulacros de scripts de despliegue` a los checks requeridos de la protección de `main`.
+1. Opcional: agregar `Pruebas CD / Simulacros de scripts de despliegue` a los checks requeridos de la protección de `main`.
 
 ## 13. Registro de incidentes de CD
 
