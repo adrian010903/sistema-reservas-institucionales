@@ -71,9 +71,57 @@ del frontend.
   imágenes. En el host solo publica el puerto del frontend en `127.0.0.1`.
 - GitHub Actions ejecuta lint y build del frontend, pruebas y cobertura del
   backend, pruebas de navegador y una comprobación de arranque de Compose.
-- El despliegue automatizado existente es manual y está limitado a staging.
-  Producción, aprobación explícita y rollback ensayado no están automatizados
-  por este repositorio; ver [CD_RENDER.md](CD_RENDER.md).
+- El despliegue continuo (CD) publica el sistema en tres ambientes de Render:
+  desarrollo de forma automática, staging de forma manual y producción de forma
+  manual con aprobación explícita. Los tres tienen rollback. Se describe en la
+  sección siguiente y el detalle de operación está en [CD_RENDER.md](CD_RENDER.md).
+
+### Despliegue continuo (CD)
+
+```mermaid
+flowchart LR
+    PR[Pull Request] --> CHK[Checks: CI, Docker, E2E y Pruebas CD]
+    CHK --> REV[Revisión y aprobación]
+    REV --> MAIN[Merge a main]
+    MAIN --> DEV[CD desarrollo]
+    DEV -->|automático| RDEV[(Render desarrollo)]
+    MAIN -. manual .-> STG[CD staging]
+    STG --> RSTG[(Render staging)]
+    RSTG --> E2ES[E2E staging]
+    MAIN -. manual .-> PROD[CD producción]
+    PROD --> VAL[Validar: main, PRODUCCION y checks]
+    VAL --> APR{Aprobación del environment production}
+    APR -->|aprobado| RPROD[(Render producción)]
+```
+
+Cada ambiente tiene sus propios servicios en Render, su propia base de datos y
+su propio environment en GitHub (`development`, `staging` y `production`), donde
+se guardan las claves y variables. Así un despliegue de un ambiente no puede
+tocar otro.
+
+- **Desarrollo:** el workflow `CD desarrollo (Render)` se inicia solo cuando
+  terminan los checks de `main`. Antes de desplegar comprueba que `CI`, `Docker`
+  y `E2E` hayan pasado para el mismo commit; si alguno falló, no despliega.
+  Publica en `reservas-backend-dev` y `reservas-frontend-dev`.
+- **Staging:** el workflow `CD staging (Render)` se ejecuta a mano para hacer
+  pruebas de aceptación. Después se corre `E2E staging` sobre la versión
+  publicada.
+- **Producción:** el workflow `CD producción (Render)` se ejecuta a mano y solo
+  desde `main`. Primero valida que se haya escrito `PRODUCCION` y que los checks
+  estén en verde. Después se detiene hasta que una persona revisora, distinta de
+  quien lo inició, lo apruebe. Solo entonces publica en
+  `sistema-reservas-backend` y `sistema-reservas-institucionales`.
+- **Rollback:** staging y producción permiten volver a un despliegue anterior
+  que haya funcionado. En producción también necesita aprobación, pero no exige
+  los checks del commit actual, porque sirve precisamente para salir de una
+  versión con fallos. En desarrollo se revierte el PR y se vuelve a desplegar.
+
+Antes de tocar Render, los workflows verifican el nombre exacto del servicio,
+su URL y que el autodeploy de Render esté apagado, para que ningún despliegue
+ocurra fuera de este control. La lógica común está en `.github/scripts/`
+(`render.sh`, `checks.sh`, `validar-config.sh` y `validar-produccion.sh`) y el
+workflow `Pruebas CD` la prueba en cada Pull Request con 42 pruebas
+automatizadas que simulan las respuestas de Render y GitHub, sin desplegar nada.
 
 ## Evidencia de verificación
 
