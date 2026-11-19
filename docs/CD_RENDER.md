@@ -18,11 +18,12 @@ Cada ambiente usa servicios, base de datos y variables propios. Antes de tocar R
 |---|---|---|---|
 | Desarrollo automático | Sí (PR #33) | **Sí** | Run que esperó checks pendientes: [44035342704](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44035342704). Run que desplegó backend y frontend: [44035523905](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44035523905) (commit `4a5b216`) |
 | Desarrollo sin configuración | Sí | Sí, falló antes de desplegar | [44033843916](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44033843916): se detuvo en "Verificar configuración de desarrollo" (commit `64727f5`, antes de que existiera la configuración) |
+| Falla real en desarrollo y recuperación | Sí | Sí: un backend que no arrancó se detectó y se recuperó con el siguiente merge | Incidente INC-CD-01 (sección 13): fallo [44173771585](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44173771585), recuperación [44174070436](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44174070436) |
 | Staging (deploy y E2E) | Sí (PR #30–#32, #36) | Sí | Deploy `e2cdffd` con Better Stack: [44194179235](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44194179235); [E2E staging](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44000560355) |
 | Rollback en staging | Sí | **Pendiente**: ensayo coordinado con Adrián (sección 8) | — |
 | Producción con aprobación | Sí (PR #33 y #34) | **No ejecutado** por decisión del equipo | Validaciones cubiertas por pruebas automáticas (sección 9) |
 | Rollback en producción | Sí (PR #34) | **No ejecutado** | Validaciones cubiertas por pruebas automáticas (sección 9) |
-| Pruebas de los scripts de CD | Este PR | Se ejecutan en el workflow `Pruebas CD` | Artefacto `resultados-pruebas-cd` del run |
+| Pruebas de los scripts de CD | Sí (PR #37) | Se ejecutan en el workflow `Pruebas CD` en cada PR y en ramas `feature/`, `bugfix/` y `hotfix/` | Artefacto `resultados-pruebas-cd` de cada run |
 
 ## 3. Variables por environment
 
@@ -166,6 +167,7 @@ bash .github/scripts/test-validaciones.sh
 | `El servicio ... se llama '...' y no cumple la regla ...` | El ID es de otro ambiente | Usar el ID del servicio correcto |
 | `... no coincide con la URL esperada o tiene el autodeploy encendido` | URL distinta o autodeploy activo | Corregir la URL (sin barra final) o apagar el autodeploy en Render |
 | `El despliegue de X falló: build_failed` | Error al construir en Render | Revisar los logs del deploy en Render; corregir en un PR |
+| `El despliegue de X falló: update_failed` | Render construyó la versión, pero la aplicación no arrancó; Render mantiene la versión anterior | Revisar los logs de arranque del deploy en Render (ver INC-CD-01); corregir en un PR |
 | `La comprobación de salud falló: ...` | El servicio quedó `live` pero no responde | Revisar logs y Diagnóstico; si es necesario, hacer rollback |
 | `Algún check falló; no se despliega` (desarrollo) | CI, Docker o E2E falló en `main` | Corregir en un PR; el siguiente merge vuelve a desplegar |
 | `El commit ... no tiene todos los checks en verde` (producción) | Se intentó publicar un commit sin checks completos | Esperar o corregir los checks |
@@ -199,5 +201,27 @@ Un Blue/Green completo mantiene dos copias de producción, despliega en la inact
 
 **Pendiente de confirmar:**
 
-1. Fecha y hora del ensayo de rollback en staging (sección 8).
+1. Fecha y hora del ensayo de rollback en staging (sección 8) y de la prueba de pausa en *Waiting* de producción.
 2. Opcional: agregar `Pruebas CD / Simulacros de scripts de despliegue` a los checks requeridos de la protección de `main`.
+
+## 13. Registro de incidentes de CD
+
+### INC-CD-01: el backend de desarrollo no arrancó después de un merge (17/11/2026)
+
+**Qué pasó.** Después de hacer merge del PR #35 (commit `4c0aba9`), el workflow `CD desarrollo (Render)` intentó desplegar esa versión en `reservas-backend-dev`. Render estuvo unos 19 minutos intentándolo y al final el workflow falló con el mensaje `El despliegue de backend falló: update_failed` ([run 44173771585](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44173771585)). `update_failed` quiere decir que Render sí pudo construir la versión, pero la aplicación no logró arrancar.
+
+**Qué se afectó.** Solo desarrollo, y muy poco. Render dejó funcionando la versión anterior del backend, y como el workflow se detuvo en el backend, tampoco desplegó el frontend, así que no quedó un frontend nuevo conectado a un backend roto. Staging y producción no se tocaron.
+
+**Cómo lo diagnosticamos.**
+
+1. Abrí el run fallido en Actions, entré al job **Desplegar desarrollo** y al paso **Desplegar backend y frontend**.
+2. En el log vi qué despliegue de Render era, qué commit se estaba desplegando y el estado `update_failed`.
+3. Adrián, que administra Render, revisó los logs de arranque de ese despliegue y encontró un error del `LogtailAppender`, que es lo que envía los logs a Better Stack.
+
+**Por qué pasó.** La librería `logback-logtail` estaba marcada como `<optional>true</optional>` en `backend/pom.xml`, así que no se metía dentro del JAR. Pero `logback-spring.xml` la necesita cuando está activo el perfil `betterstack`. Sin esa librería, la aplicación no podía arrancar.
+
+**Cómo se resolvió.** El PR #36 quitó `<optional>true</optional>`. Con el siguiente merge (commit `33869b2`), el workflow desplegó solo y esta vez el backend quedó `live` ([run 44174070436](https://github.com/adrian010903/sistema-reservas-institucionales/actions/runs/44174070436)). No hubo que hacer rollback.
+
+**Un detalle.** En Actions también aparecen dos ejecuciones como *cancelled*. No fue un error: GitHub deja una sola ejecución en espera por grupo de `concurrency` y cancela las repetidas.
+
+**Qué aprendimos.** CI y Docker no detectaron este problema porque arrancan la aplicación sin el perfil `betterstack`. Cuando se cambien dependencias o la configuración de logs, conviene probar también con el perfil que usan los servicios de Render, por ejemplo ejecutando el JAR con ese perfil antes del merge. También comprobamos que el workflow hace lo que debe ante una falla real: avisa con un mensaje claro, se detiene y no deja el ambiente a medias.

@@ -1,7 +1,8 @@
 name: Pruebas CD
 
 # Ejecuta los simulacros de los scripts de despliegue en cada Pull Request
-# y en cada push. No usa secretos, no se conecta a Render y no despliega nada.
+# y en cada push a main y a las ramas feature/, bugfix/ y hotfix/.
+# No usa secretos, no se conecta a Render y no despliega nada.
 on:
   pull_request:
     branches: [main]
@@ -10,6 +11,7 @@ on:
       - main
       - "feature/**"
       - "bugfix/**"
+      - "hotfix/**"
 
 permissions:
   contents: read
