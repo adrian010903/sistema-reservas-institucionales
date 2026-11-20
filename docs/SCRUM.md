@@ -77,11 +77,26 @@ Una historia de usuario se considera terminada cuando:
 
 | Ceremonia | Sprint | Fecha | Medio | Evidencia |
 |---|---|---|---|---|
-| Daily Scrum | Sprint 1 | 10/09/2026 | | |
-| Daily Scrum | Sprint 1 | 17/09/2026 | | |
-| Sprint Review | Sprint 2 | | Videollamada con el Product Owner | |
-| Sprint Review | Sprint 3 | 20/10/2026 | Google Meet | |
-| Sprint Retrospective | Sprint 3 | 20/10/2026 | Google Meet | |
+| Daily Scrum | Sprint 1 | 10/09/2026 | | Registrada en el Informe 04 |
+| Daily Scrum | Sprint 1 | 17/09/2026 | | Registrada en el Informe 04 |
+| Daily Scrum | Sprint 1 | 19/09/2026 | Google Meet | [Captura](evidencias/2026-09-19-daily-sprint1.png) |
+| Daily Scrum | Sprint 2 | 09/10/2026 | Google Meet | [Captura](evidencias/2026-10-09-daily-sprint2.png) |
+| Sprint Review | Sprint 3 | 20/10/2026 | Google Meet | [Captura](evidencias/2026-10-20-review-retro-sprint3.png) |
+| Sprint Retrospective | Sprint 3 | 20/10/2026 | Google Meet | [Captura](evidencias/2026-10-20-review-retro-sprint3.png) |
+
+### Daily Scrum — 19/09/2026 (Sprint 1)
+
+![Daily Scrum del Sprint 1](evidencias/2026-09-19-daily-sprint1.png)
+
+### Daily Scrum — 09/10/2026 (Sprint 2)
+
+![Daily Scrum del Sprint 2](evidencias/2026-10-09-daily-sprint2.png)
+
+### Sprint Review y Sprint Retrospective — 20/10/2026 (Sprint 3)
+
+Participaron el Product Owner, la representante institucional de Guías y Scouts, el Scrum Master y el equipo de desarrollo.
+
+![Sprint Review y Retrospective del Sprint 3](evidencias/2026-10-20-review-retro-sprint3.png)
 
 ## Mejoras surgidas de las retrospectivas
 
