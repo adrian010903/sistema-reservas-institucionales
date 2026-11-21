@@ -83,6 +83,9 @@ Una historia de usuario se considera terminada cuando:
 | Daily Scrum | Sprint 2 | 09/10/2026 | Google Meet | [Captura](evidencias/2026-10-09-daily-sprint2.png) |
 | Sprint Review | Sprint 3 | 20/10/2026 | Google Meet | [Captura](evidencias/2026-10-20-review-retro-sprint3.png) |
 | Sprint Retrospective | Sprint 3 | 20/10/2026 | Google Meet | [Captura](evidencias/2026-10-20-review-retro-sprint3.png) |
+| Daily Scrum | Sprint 4 | 20/11/2026 | Videollamada | [Captura](evidencias/2026-11-20-daily-retro-sprint4.jpg) |
+| Sprint Retrospective | Sprint 4 | 20/11/2026 | Videollamada | [Captura](evidencias/2026-11-20-daily-retro-sprint4.jpg) |
+| Sprint Review | Sprint 4 | | | Faltante |
 
 ### Daily Scrum — 19/09/2026 (Sprint 1)
 
@@ -97,6 +100,16 @@ Una historia de usuario se considera terminada cuando:
 Participaron el Product Owner, la representante institucional de Guías y Scouts, el Scrum Master y el equipo de desarrollo.
 
 ![Sprint Review y Retrospective del Sprint 3](evidencias/2026-10-20-review-retro-sprint3.png)
+
+### Daily Scrum y Sprint Retrospective — 20/11/2026 (Sprint 4)
+
+Participó el equipo de desarrollo y el Scrum Master. Se revisó el estado final del proyecto, lo que se cumplió y lo que quedó pendiente, y se probó el sistema por última vez.
+
+![Daily Scrum y Retrospective del Sprint 4](evidencias/2026-11-20-daily-retro-sprint4.jpg)
+
+### Sprint Review — Sprint 4 (con el Product Owner)
+
+Faltante
 
 ## Mejoras surgidas de las retrospectivas
 
