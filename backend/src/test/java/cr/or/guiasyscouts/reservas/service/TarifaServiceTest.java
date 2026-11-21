@@ -21,7 +21,7 @@ class TarifaServiceTest {
     void leeLaTarifaPersistidaCuandoExiste() {
         ConfiguracionPlataforma configuracion = new ConfiguracionPlataforma();
         configuracion.setId(ConfiguracionPlataforma.ID_GLOBAL);
-        configuracion.setTarifaHora(new BigDecimal("31415.99"));
+        configuracion.setTarifaHora(new BigDecimal("31415.98"));
         when(repository.findById(ConfiguracionPlataforma.ID_GLOBAL)).thenReturn(Optional.of(configuracion));
 
         assertEquals(new BigDecimal("31415.90"), service.tarifaHora());
