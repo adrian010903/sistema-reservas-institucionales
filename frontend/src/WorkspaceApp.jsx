@@ -13,7 +13,7 @@ import AdminDashboard from './pages/AdminDashboard'
 import AdminPage from './pages/AdminPage'
 import SpacesPage from './pages/SpacesPage'
 import ReservePage from './pages/ReservePage'
-import { API, BACKEND, readJson, readJsonArray } from './services/api'
+import { BACKEND } from './services/api'
 import {
   fetchAdminPayments,
   fetchAdminReservations,
@@ -43,6 +43,26 @@ import {
   fetchAvailability,
   updateReservation as updateReservationRequest,
 } from './services/reservationService'
+import {
+  deactivateCatalogItem,
+  fetchAdminCatalog,
+  fetchPublicConfig,
+  fetchPublicPlaces,
+  fetchPublicSpaces,
+  savePlaceRequest,
+  saveSpaceRequest,
+} from './services/catalogService'
+import {
+  cancelStripeSession,
+  confirmStripeSession,
+  createMockPayment,
+  fetchMyPayments,
+  requestReceipt,
+  startStripeCheckout,
+} from './services/paymentService'
+import { fetchNotifications, markNotificationRead } from './services/notificationService'
+import { DeleteConfirmationModal, PlaceEditorModal, SpaceEditorModal } from './components/CatalogModals'
+import { ReservationEditorModal, ReservationSummaryModal } from './components/ReservationModals'
 import { isStrongPassword, PASSWORD_MESSAGE } from './utils/password'
 import { reservationDates, reservationHasEnded } from './utils/reservations'
 
@@ -273,22 +293,19 @@ function WorkspaceApp() {
   }, [page, autoRotateCharts])
 
   useEffect(() => {
-    fetch(`${API}/configuracion-publica`)
-      .then((r) => (r.ok ? r.json() : Promise.reject()))
+    fetchPublicConfig()
       .then((data) => {
         setHourlyRate(Number(data.tarifaHora))
         setRateForm(String(data.tarifaHora))
       })
       .catch(() => setHourlyRate(25000))
-    fetch(`${API}/espacios`)
-      .then(readJsonArray)
+    fetchPublicSpaces()
       .then((data) => {
         setSpaces(data)
         setTypes([...new Map(data.map((space) => [space.tipoId, { id: space.tipoId, nombre: space.tipo }])).values()])
       })
       .catch(() => setSpaces([]))
-    fetch(`${API}/lugares`)
-      .then(readJsonArray)
+    fetchPublicPlaces()
       .then((data) => {
         setPlaces(data)
         if (data.length) setSelectedPlaceId((current) => current || data[0].id)
@@ -298,12 +315,10 @@ function WorkspaceApp() {
 
   useEffect(() => {
     if (!token) return
-    fetch(`${API}/pagos/mios`, { headers: auth })
-      .then(readJsonArray)
+    fetchMyPayments(auth)
       .then(setPayments)
       .catch(() => setPayments([]))
-    fetch(`${API}/notificaciones`, { headers: auth })
-      .then(readJsonArray)
+    fetchNotifications(auth)
       .then(setNotifications)
       .catch(() => setNotifications([]))
   }, [token, page, auth])
@@ -315,11 +330,7 @@ function WorkspaceApp() {
     if (params.get('stripe_cancelled') === '1') {
       const sessionId = sessionStorage.getItem('stripe_pending_session')
       if (token && sessionId) {
-        fetch(`${API}/pagos/stripe/cancelar`, {
-          method: 'POST',
-          headers: { ...auth, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ sessionId }),
-        }).then(readJson).then((payment) => {
+        cancelStripeSession(auth, sessionId).then((payment) => {
           setPayments((current) => (current.some((item) => item.id === payment.id) ? current.map((item) => item.id === payment.id ? payment : item) : [payment, ...current]))
           setMessage(payment.estado === 'APROBADO' ? 'Stripe confirmó el pago. La reserva quedó confirmada.' : 'El pago se canceló en Stripe. Puedes intentarlo de nuevo cuando quieras.')
         }).catch(() => setMessage('El pago se canceló. Si sigue pendiente, vuelve a cargar esta pantalla.'))
@@ -333,8 +344,7 @@ function WorkspaceApp() {
     const pendingSessionId = sessionId || sessionStorage.getItem('stripe_pending_session')
     if (!token || !pendingSessionId || stripeHandledRef.current === pendingSessionId) return
     stripeHandledRef.current = pendingSessionId
-    fetch(`${API}/pagos/stripe/confirmar?session_id=${encodeURIComponent(pendingSessionId)}`, { headers: auth })
-      .then(readJson)
+    confirmStripeSession(auth, pendingSessionId)
       .then((payment) => {
         setPaymentResult(payment)
         setPayments((current) => (current.some((item) => item.id === payment.id) ? current.map((item) => (item.id === payment.id ? payment : item)) : [payment, ...current]))
@@ -350,7 +360,7 @@ function WorkspaceApp() {
 
   useEffect(() => {
     if (!user || !['ADMIN', 'SUPERADMIN'].includes(user.rol)) return
-    Promise.all([fetch(`${API}/admin/catalogo/tipos`, { headers: auth }).then(readJsonArray), fetch(`${API}/admin/catalogo/categorias`, { headers: auth }).then(readJsonArray), fetch(`${API}/admin/catalogo/espacios`, { headers: auth }).then(readJsonArray), fetch(`${API}/admin/catalogo/lugares`, { headers: auth }).then(readJsonArray)])
+    fetchAdminCatalog(auth)
       .then(([typeData, categoryData, spaceData, placeData]) => {
         setTypes(typeData)
         setCategories(categoryData)
@@ -557,13 +567,8 @@ function WorkspaceApp() {
     setPaying(true)
     if (paymentMethod === 'STRIPE') {
       try {
-        const response = await fetch(`${API}/pagos/stripe/checkout`, {
-          method: 'POST',
-          headers: { ...auth, 'Content-Type': 'application/json' },
-          body: JSON.stringify({ reservaId: Number(paymentReservationId) }),
-        })
-        const body = await response.json().catch(() => ({}))
-        if (!response.ok) return setMessage(body.detail || body.message || `Error ${response.status} al iniciar Stripe Checkout`)
+        const { ok, status, body } = await startStripeCheckout(auth, Number(paymentReservationId))
+        if (!ok) return setMessage(body.detail || body.message || `Error ${status} al iniciar Stripe Checkout`)
         if (!body.url) return setMessage('Stripe no devolvió el enlace de Checkout')
         if (body.sessionId) sessionStorage.setItem('stripe_pending_session', body.sessionId)
         window.location.assign(body.url)
@@ -575,17 +580,9 @@ function WorkspaceApp() {
       }
       return
     }
-    const response = await fetch(`${API}/pagos/mock`, {
-      method: 'POST',
-      headers: { ...auth, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        reservaId: Number(paymentReservationId),
-        metodo: paymentMethod,
-      }),
-    })
-    const body = await response.json().catch(() => ({}))
+    const { ok, status, body } = await createMockPayment(auth, Number(paymentReservationId), paymentMethod)
     setPaying(false)
-    if (!response.ok) return setMessage(body.detail || body.message || `Error ${response.status} al registrar el pago`)
+    if (!ok) return setMessage(body.detail || body.message || `Error ${status} al registrar el pago`)
     setPaymentResult(body)
     setPayments((current) => (current.some((payment) => payment.id === body.id) ? current.map((payment) => (payment.id === body.id ? body : payment)) : [body, ...current]))
     if (body.estado === 'APROBADO') confirmReservationPayment(body.reservaId)
@@ -657,20 +654,9 @@ function WorkspaceApp() {
       estado: editingSpace.estado,
     }
     const creating = !editingSpace.id
-    let response = await fetch(creating ? `${API}/admin/catalogo/espacios` : `${API}/admin/catalogo/espacios/${editingSpace.id}`, {
-      method: creating ? 'POST' : 'PUT',
-      headers: { ...auth, 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-    let updated = await response.json().catch(() => ({}))
-    if (response.ok && spaceImage) {
-      const imageData = new FormData()
-      imageData.append('imagen', spaceImage)
-      response = await fetch(`${API}/admin/catalogo/espacios/${updated.id}/imagen`, { method: 'POST', headers: auth, body: imageData })
-      updated = await response.json().catch(() => ({}))
-    }
+    const { ok, status, body: updated } = await saveSpaceRequest(auth, editingSpace.id, payload, spaceImage)
     setSavingSpace(false)
-    if (!response.ok) return setMessage(updated.detail || updated.message || `Error ${response.status} al guardar el espacio`)
+    if (!ok) return setMessage(updated.detail || updated.message || `Error ${status} al guardar el espacio`)
     setSpaces((current) => (creating ? [...current, updated] : current.map((space) => (space.id === updated.id ? updated : space))))
     setSelectedSpace((current) => (current?.id === updated.id ? updated : current))
     setSelectedPlaceId(updated.lugarId)
@@ -685,20 +671,9 @@ function WorkspaceApp() {
     setSavingSpace(true)
     setMessage('')
     const creating = !editingPlaceId
-    let response = await fetch(editingPlaceId ? `${API}/admin/catalogo/lugares/${editingPlaceId}` : `${API}/admin/catalogo/lugares`, {
-      method: editingPlaceId ? 'PUT' : 'POST',
-      headers: { ...auth, 'Content-Type': 'application/json' },
-      body: JSON.stringify(placeForm),
-    })
-    let body = await response.json().catch(() => ({}))
-    if (response.ok && placeImage) {
-      const imageData = new FormData()
-      imageData.append('imagen', placeImage)
-      response = await fetch(`${API}/admin/catalogo/lugares/${body.id}/imagen`, { method: 'POST', headers: auth, body: imageData })
-      body = await response.json().catch(() => ({}))
-    }
+    const { ok, status, body } = await savePlaceRequest(auth, editingPlaceId, placeForm, placeImage)
     setSavingSpace(false)
-    if (!response.ok) return setMessage(body.detail || body.message || `Error ${response.status} al guardar el lugar`)
+    if (!ok) return setMessage(body.detail || body.message || `Error ${status} al guardar el lugar`)
     setPlaces((current) => (creating ? [...current, body] : current.map((place) => (place.id === body.id ? body : place))))
     setSelectedPlaceId(body.id)
     setShowPlaceEditor(false)
@@ -752,9 +727,9 @@ function WorkspaceApp() {
 
   async function confirmCatalogDeletion() {
     const { type, item } = deleteTarget
-    const response = await fetch(`${API}/admin/catalogo/${type === 'place' ? 'lugares' : 'espacios'}/${item.id}`, { method: 'DELETE', headers: auth })
+    const { ok, status } = await deactivateCatalogItem(auth, type, item.id)
     setDeleteTarget(null)
-    if (!response.ok) return setMessage(`No se pudo desactivar ${type === 'place' ? 'el lugar' : 'el espacio'} (error ${response.status})`)
+    if (!ok) return setMessage(`No se pudo desactivar ${type === 'place' ? 'el lugar' : 'el espacio'} (error ${status})`)
     if (type === 'place') setPlaces((current) => current.map((value) => (value.id === item.id ? { ...value, estado: 'INACTIVO' } : value)))
     else setSpaces((current) => current.map((value) => (value.id === item.id ? { ...value, estado: 'INACTIVO' } : value)))
     setMessage(`${type === 'place' ? 'Lugar' : 'Espacio'} desactivado correctamente`)
@@ -898,9 +873,8 @@ function WorkspaceApp() {
 
   async function readNotification(notification) {
     if (notification.leida) return
-    const response = await fetch(`${API}/notificaciones/${notification.id}/leer`, { method: 'PATCH', headers: auth })
-    if (!response.ok) return
-    const body = await response.json()
+    const body = await markNotificationRead(auth, notification.id)
+    if (!body) return
     setNotifications((current) => current.map((item) => (item.id === body.id ? body : item)))
   }
 
@@ -955,9 +929,7 @@ function WorkspaceApp() {
   }
 
   async function downloadReceipt(payment) {
-    const response = await fetch(`${API}/pagos/${payment.id}/comprobante`, {
-      headers: auth,
-    })
+    const response = await requestReceipt(auth, payment.id)
     if (!response.ok) return setMessage(`No se pudo generar el comprobante (error ${response.status})`)
     const blob = await response.blob()
     const url = URL.createObjectURL(blob)
@@ -1022,12 +994,10 @@ function WorkspaceApp() {
     clearSession()
     clearReservations()
     setPayments([])
-    fetch(`${API}/espacios`)
-      .then(readJsonArray)
+    fetchPublicSpaces()
       .then(setSpaces)
       .catch(() => setSpaces([]))
-    fetch(`${API}/lugares`)
-      .then(readJsonArray)
+    fetchPublicPlaces()
       .then((data) => {
         setPlaces(data)
         setSelectedPlaceId(data[0]?.id || null)
@@ -1211,441 +1181,75 @@ function WorkspaceApp() {
         />
       )}
       {showSummary && (
-        <div
-          className="custom-modal-overlay"
-          onMouseDown={(event) => {
-            if (event.target === event.currentTarget) {
-              setShowSummary(false)
-              setEditingSummaryRate(false)
-            }
+        <ReservationSummaryModal
+          user={user}
+          selectedSpace={selectedSpace}
+          places={places}
+          form={form}
+          hours={hours}
+          hourlyRate={hourlyRate}
+          editingRate={editingSummaryRate}
+          rateForm={rateForm}
+          savingRate={savingRate}
+          onRateFormChange={setRateForm}
+          onToggleRateEditor={() => {
+            setRateForm(String(hourlyRate))
+            setEditingSummaryRate((current) => !current)
           }}
-        >
-          <section className="custom-modal reservation-review-modal" role="dialog" aria-modal="true" aria-labelledby="reservation-summary-title">
-            <button
-              type="button"
-              className="custom-modal-close"
-              aria-label="Cerrar resumen de reserva"
-              onClick={() => {
-                setShowSummary(false)
-                setEditingSummaryRate(false)
-              }}
-            >
-              ×
-            </button>
-            <div
-              className="review-cover"
-              style={
-                selectedSpace?.imagenUrl
-                  ? {
-                      backgroundImage: `linear-gradient(0deg,rgba(33,11,77,.72),transparent),url(${BACKEND}${selectedSpace.imagenUrl})`,
-                    }
-                  : undefined
-              }
-            >
-              <span>Horario disponible</span>
-              <h2 id="reservation-summary-title">{selectedSpace?.nombre}</h2>
-            </div>
-            <p className="eyebrow">Resumen de reserva</p>
-            <div className="review-location">
-              <strong>{places.find((place) => String(place.id) === String(selectedSpace?.lugarId))?.nombre}</strong>
-              <small>
-                {selectedSpace?.tipo} · {selectedSpace?.categoria}
-              </small>
-            </div>
-            <div className="modal-summary-grid">
-              <div>
-                <small>Fechas</small>
-                <strong>
-                  {form.fecha} → {form.fechaFin}
-                </strong>
-              </div>
-              <div>
-                <small>Días</small>
-                <strong>{reservationDates(form.fecha, form.fechaFin).length}</strong>
-              </div>
-              <div>
-                <small>Horario diario</small>
-                <strong>
-                  {form.horaInicio} - {form.horaFin}
-                </strong>
-              </div>
-              <div>
-                <small>Personas</small>
-                <strong>{form.cantidadPersonas}</strong>
-              </div>
-            </div>
-            <div className="modal-total">
-              {user && ['ADMIN', 'SUPERADMIN'].includes(user.rol) && (
-                <div className="modal-rate-heading">
-                  <span>Tarifa por hora</span>
-                  <button
-                    type="button"
-                    className="modal-rate-edit"
-                    onClick={() => {
-                      setRateForm(String(hourlyRate))
-                      setEditingSummaryRate((current) => !current)
-                    }}
-                  >
-                    {editingSummaryRate ? 'Cancelar' : 'Editar precio'}
-                  </button>
-                </div>
-              )}
-              {editingSummaryRate && user && ['ADMIN', 'SUPERADMIN'].includes(user.rol) && (
-                <form className="modal-rate-form" onSubmit={saveRate}>
-                  <label>
-                    Nuevo precio por hora (CRC)
-                    <input type="number" min="0.01" step="0.01" required value={rateForm} onChange={(event) => setRateForm(event.target.value)} />
-                  </label>
-                  <button className="primary-button" disabled={savingRate}>
-                    {savingRate ? 'Guardando…' : 'Actualizar precio'}
-                  </button>
-                </form>
-              )}
-              <span className="modal-rate-breakdown">
-                ₡{hourlyRate.toLocaleString('es-CR')} × {hours} hora(s) × {reservationDates(form.fecha, form.fechaFin).length} día(s)
-              </span>
-              <strong>₡{(hours * hourlyRate * reservationDates(form.fecha, form.fechaFin).length).toLocaleString('es-CR')}</strong>
-              <small>Se creará una reserva diaria por cada fecha seleccionada.</small>
-            </div>
-            <div className="custom-modal-actions">
-              <button className="secondary-button" onClick={() => setShowSummary(false)}>
-                Modificar
-              </button>
-              <button className="primary-button" onClick={confirmReservation}>
-                Confirmar y continuar al pago
-              </button>
-            </div>
-          </section>
-        </div>
+          onSaveRate={saveRate}
+          onClose={() => {
+            setShowSummary(false)
+            setEditingSummaryRate(false)
+          }}
+          onModify={() => setShowSummary(false)}
+          onConfirm={confirmReservation}
+        />
       )}
       {editingSpace && (
-        <div className="custom-modal-overlay">
-          <form className="custom-modal space-editor media-editor" onSubmit={saveSpace}>
-            <button type="button" className="custom-modal-close" onClick={() => setEditingSpace(null)}>
-              ×
-            </button>
-            <p className="eyebrow">Administración</p>
-            <h2>{editingSpace.id ? 'Editar espacio' : 'Crear espacio'}</h2>
-            <div
-              className="editor-media-preview"
-              style={
-                spaceImagePreview
-                  ? {
-                      backgroundImage: `linear-gradient(0deg,rgba(33,11,77,.55),transparent),url(${spaceImagePreview})`,
-                    }
-                  : undefined
-              }
-            >
-              <span>{spaceImagePreview ? 'Vista previa' : 'Agrega una fotografía del espacio'}</span>
-            </div>
-            <div className="space-editor-grid">
-              <label>
-                Nombre
-                <input required maxLength="120" value={editingSpace.nombre} onChange={(e) => setEditingSpace({ ...editingSpace, nombre: e.target.value })} />
-              </label>
-              <label>
-                Capacidad
-                <input
-                  required
-                  type="number"
-                  min="1"
-                  value={editingSpace.capacidad}
-                  onChange={(e) =>
-                    setEditingSpace({
-                      ...editingSpace,
-                      capacidad: e.target.value,
-                    })
-                  }
-                />
-              </label>
-              <label className="full-field">
-                Descripción
-                <textarea
-                  maxLength="500"
-                  rows="3"
-                  value={editingSpace.descripcion || ''}
-                  onChange={(e) =>
-                    setEditingSpace({
-                      ...editingSpace,
-                      descripcion: e.target.value,
-                    })
-                  }
-                />
-              </label>
-              <label>
-                Lugar
-                <select
-                  required
-                  value={editingSpace.lugarId}
-                  onChange={(e) =>
-                    setEditingSpace({
-                      ...editingSpace,
-                      lugarId: e.target.value,
-                    })
-                  }
-                >
-                  <option value="">Seleccionar lugar</option>
-                  {places
-                    .filter((place) => place.estado === 'ACTIVO')
-                    .map((place) => (
-                      <option key={place.id} value={place.id}>
-                        {place.nombre}
-                      </option>
-                    ))}
-                </select>
-              </label>
-              <label>
-                Tipo
-                <select required value={editingSpace.tipoId} onChange={(e) => setEditingSpace({ ...editingSpace, tipoId: e.target.value })}>
-                  {types.map((type) => (
-                    <option key={type.id} value={type.id}>
-                      {type.nombre}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Categoría
-                <select
-                  required
-                  value={editingSpace.categoriaId}
-                  onChange={(e) =>
-                    setEditingSpace({
-                      ...editingSpace,
-                      categoriaId: e.target.value,
-                    })
-                  }
-                >
-                  {categories.map((category) => (
-                    <option key={category.id} value={category.id}>
-                      {category.nombre}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label>
-                Estado
-                <select value={editingSpace.estado} onChange={(e) => setEditingSpace({ ...editingSpace, estado: e.target.value })}>
-                  <option value="DISPONIBLE">Disponible</option>
-                  <option value="MANTENIMIENTO">Mantenimiento</option>
-                  <option value="INACTIVO">Inactivo</option>
-                </select>
-              </label>
-              <label className="file-field">
-                Fotografía
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={(e) => {
-                    const file = e.target.files[0] || null
-                    setSpaceImage(file)
-                    setSpaceImagePreview(file ? URL.createObjectURL(file) : '')
-                  }}
-                />
-                <small>JPG, PNG o WEBP · máximo 5 MB</small>
-              </label>
-            </div>
-            {message && <p className="form-error">{message}</p>}
-            <div className="custom-modal-actions">
-              <button type="button" className="secondary-button" onClick={() => setEditingSpace(null)}>
-                Cancelar
-              </button>
-              <button className="primary-button" disabled={savingSpace}>
-                {savingSpace ? 'Guardando…' : editingSpace.id ? 'Guardar cambios' : 'Crear espacio'}
-              </button>
-            </div>
-          </form>
-        </div>
+        <SpaceEditorModal
+          space={editingSpace}
+          places={places}
+          types={types}
+          categories={categories}
+          imagePreview={spaceImagePreview}
+          message={message}
+          saving={savingSpace}
+          onChange={setEditingSpace}
+          onImageChange={(file) => {
+            setSpaceImage(file)
+            setSpaceImagePreview(file ? URL.createObjectURL(file) : '')
+          }}
+          onClose={() => setEditingSpace(null)}
+          onSubmit={saveSpace}
+        />
       )}
       {showPlaceEditor && (
-        <div className="custom-modal-overlay">
-          <form className="custom-modal media-editor" onSubmit={savePlace}>
-            <button type="button" className="custom-modal-close" onClick={() => setShowPlaceEditor(false)}>
-              ×
-            </button>
-            <p className="eyebrow">Administración</p>
-            <h2>{editingPlaceId ? 'Editar lugar' : 'Crear lugar'}</h2>
-            <div
-              className="editor-media-preview place-preview"
-              style={
-                placeImagePreview
-                  ? {
-                      backgroundImage: `linear-gradient(0deg,rgba(33,11,77,.55),transparent),url(${placeImagePreview})`,
-                    }
-                  : undefined
-              }
-            >
-              <span>{placeImagePreview ? 'Vista previa de portada' : 'Agrega una portada del lugar'}</span>
-            </div>
-            <div className="space-editor-grid">
-              <label>
-                Nombre
-                <input required maxLength="120" placeholder="Ej. Hostel" value={placeForm.nombre} onChange={(e) => setPlaceForm({ ...placeForm, nombre: e.target.value })} />
-              </label>
-              <label>
-                Estado
-                <select value={placeForm.estado} onChange={(e) => setPlaceForm({ ...placeForm, estado: e.target.value })}>
-                  <option value="ACTIVO">Activo</option>
-                  <option value="INACTIVO">Inactivo</option>
-                </select>
-              </label>
-              <label className="full-field">
-                Descripción
-                <textarea rows="3" maxLength="500" value={placeForm.descripcion} onChange={(e) => setPlaceForm({ ...placeForm, descripcion: e.target.value })} />
-              </label>
-              <label className="full-field">
-                Dirección
-                <input maxLength="250" value={placeForm.direccion} onChange={(e) => setPlaceForm({ ...placeForm, direccion: e.target.value })} />
-              </label>
-              <label className="full-field file-field">
-                Fotografía de portada
-                <input
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp"
-                  onChange={(e) => {
-                    const file = e.target.files[0] || null
-                    setPlaceImage(file)
-                    setPlaceImagePreview(file ? URL.createObjectURL(file) : '')
-                  }}
-                />
-                <small>JPG, PNG o WEBP · máximo 5 MB</small>
-              </label>
-            </div>
-            {message && <p className="form-error">{message}</p>}
-            <div className="custom-modal-actions">
-              <button type="button" className="secondary-button" onClick={() => setShowPlaceEditor(false)}>
-                Cancelar
-              </button>
-              <button className="primary-button" disabled={savingSpace}>
-                {savingSpace ? 'Guardando…' : editingPlaceId ? 'Guardar cambios' : 'Crear lugar'}
-              </button>
-            </div>
-          </form>
-        </div>
+        <PlaceEditorModal
+          placeId={editingPlaceId}
+          placeForm={placeForm}
+          imagePreview={placeImagePreview}
+          message={message}
+          saving={savingSpace}
+          onChange={setPlaceForm}
+          onImageChange={(file) => {
+            setPlaceImage(file)
+            setPlaceImagePreview(file ? URL.createObjectURL(file) : '')
+          }}
+          onClose={() => setShowPlaceEditor(false)}
+          onSubmit={savePlace}
+        />
       )}
-      {deleteTarget && (
-        <div className="custom-modal-overlay">
-          <section className="custom-modal confirmation-dialog">
-            <div className="confirmation-icon">!</div>
-            <p className="eyebrow">Confirmar acción</p>
-            <h2>Desactivar {deleteTarget.type === 'place' ? 'lugar' : 'espacio'}</h2>
-            <p>
-              ¿Deseas desactivar <strong>{deleteTarget.item.nombre}</strong>? {deleteTarget.type === 'place' ? 'Sus espacios dejarán de mostrarse públicamente.' : 'Ya no podrá reservarse mientras permanezca inactivo.'}
-            </p>
-            <div className="custom-modal-actions">
-              <button className="secondary-button" onClick={() => setDeleteTarget(null)}>
-                Conservar
-              </button>
-              <button className="danger-confirm" onClick={confirmCatalogDeletion}>
-                Sí, desactivar
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
+      {deleteTarget && <DeleteConfirmationModal target={deleteTarget} onCancel={() => setDeleteTarget(null)} onConfirm={confirmCatalogDeletion} />}
       {editingReservation && (
-        <div className="custom-modal-overlay">
-          <form className="custom-modal" onSubmit={saveReservation}>
-            <button type="button" className="custom-modal-close" onClick={() => setEditingReservation(null)}>
-              ×
-            </button>
-            <p className="eyebrow">Gestión de reserva</p>
-            <h2>Modificar reserva #{editingReservation.id}</h2>
-            <div className="space-editor-grid">
-              <label className="full-field">
-                Espacio
-                <select
-                  required
-                  value={editingReservation.espacioId}
-                  onChange={(e) =>
-                    setEditingReservation({
-                      ...editingReservation,
-                      espacioId: e.target.value,
-                    })
-                  }
-                >
-                  {spaces
-                    .filter((space) => space.estado === 'DISPONIBLE')
-                    .map((space) => (
-                      <option key={space.id} value={space.id}>
-                        {space.lugar} · {space.nombre}
-                      </option>
-                    ))}
-                </select>
-              </label>
-              <label>
-                Fecha
-                <input
-                  type="date"
-                  required
-                  value={editingReservation.fecha}
-                  onChange={(e) =>
-                    setEditingReservation({
-                      ...editingReservation,
-                      fecha: e.target.value,
-                    })
-                  }
-                />
-              </label>
-              <label>
-                Personas
-                <input
-                  type="number"
-                  min="1"
-                  required
-                  value={editingReservation.cantidadPersonas}
-                  onChange={(e) =>
-                    setEditingReservation({
-                      ...editingReservation,
-                      cantidadPersonas: e.target.value,
-                    })
-                  }
-                />
-              </label>
-              <label>
-                Hora inicio
-                <input
-                  type="time"
-                  min="08:00"
-                  max="17:00"
-                  required
-                  value={editingReservation.horaInicio}
-                  onChange={(e) =>
-                    setEditingReservation({
-                      ...editingReservation,
-                      horaInicio: e.target.value,
-                    })
-                  }
-                />
-              </label>
-              <label>
-                Hora fin
-                <input
-                  type="time"
-                  min="08:00"
-                  max="17:00"
-                  required
-                  value={editingReservation.horaFin}
-                  onChange={(e) =>
-                    setEditingReservation({
-                      ...editingReservation,
-                      horaFin: e.target.value,
-                    })
-                  }
-                />
-              </label>
-            </div>
-            {message && <p className="form-error">{message}</p>}
-            <div className="custom-modal-actions">
-              <button type="button" className="secondary-button" onClick={() => setEditingReservation(null)}>
-                Volver
-              </button>
-              <button className="primary-button" disabled={savingReservation}>
-                {savingReservation ? 'Guardando…' : 'Guardar cambios'}
-              </button>
-            </div>
-          </form>
-        </div>
+        <ReservationEditorModal
+          reservation={editingReservation}
+          spaces={spaces}
+          message={message}
+          saving={savingReservation}
+          onChange={setEditingReservation}
+          onClose={() => setEditingReservation(null)}
+          onSubmit={saveReservation}
+        />
       )}
       {page !== 'home' && <SocialFooter />}
     </div>
